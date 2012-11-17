@@ -1,0 +1,35 @@
+Revision history for Perl extension PDL::LinearAlgebra
+
+0.06  Thu Oct 09 00:00:00 2007
+
+  * remove conflicting cplx routine (thanks to P. Dupre)
+  * remove prototype of sec
+
+0.05  Fri Aug 17 00:00:00 2007
+
+  * version information fixes
+
+0.04  Thu Aug 16 00:00:00 2007
+
+  * mnorm fix (complex)
+  * mfun fix (inplace operations are not supported on upstream PDL::Complex (PDL <= 2.4.3)
+  * remove stringizing routine for PDL::Complex (in upstream now PDL >= 2.4.3)
+    add format variables (forgotten in upstream PDL 2.4.3)
+  * sumover for PDL::Complex fix (dims < 2)
+  * documentation improvements and fixes
+
+0.03  Mon Sep 12 18:05:15 2005
+
+  * documentation corrections
+
+0.02  Wed Aug 24 13:39:15 2005
+
+  * mnorm threading
+  * new routine mrcond
+  * documentation corrections
+  * add PDL.pm in prerequities (Makefile.PL)
+  
+0.01  Mon Aug 15 14:57:24 2005
+
+  * Initial release
+

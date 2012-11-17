@@ -1,0 +1,11 @@
+Source: pdl-linearalgebra
+Section: perl
+Priority: optional
+Maintainer: Gregory Vanuxem <vanuxemg@yahoo.fr>
+Standards-Version: 3.6.0
+Build-Depends: debhelper (>= 4.0.19), perl (>= 5.8), pdl (>= 2.4.)
+
+Package: pdl-linearalgebra
+Architecture: any
+Depends: ${perl:Depends}, ${shlibs:Depends}
+Description: Linear Algebra utilities for PDL
