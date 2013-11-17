@@ -92,6 +92,7 @@ use strict;
 
 
 
+=encoding Latin-1
 =head1 NAME
 
 PDL::LinearAlgebra::Real - PDL interface to the real lapack linear algebra programming library
