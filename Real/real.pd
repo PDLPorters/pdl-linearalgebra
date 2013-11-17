@@ -4,14 +4,14 @@
 
 do('../Config');
 
-our $VERSION = 0.04;
+our $VERSION = 0.07;
 use PDL::Exporter;
 
 
 #TODO 
 # dot
 
-pp_setversion(0.04);
+pp_setversion(0.07);
 
 sub generate_code($){
 	if ($config{WITHOUT_THREAD}){
@@ -41,6 +41,10 @@ pp_addhdr('
 
 pp_addhdr('
 #include <math.h>
+
+#if defined(PDL_CORE_VERSION) && PDL_CORE_VERSION < 10
+typedef PDL_Long PDL_Indx;
+#endif
 
 /* avoid annoying warnings */
 typedef PDL_Long logical;

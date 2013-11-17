@@ -2,13 +2,13 @@
 
 
 do('../Config');
-our $VERSION = 0.03;
+our $VERSION = 0.07;
 use PDL::Exporter;
 
 
 
 
-pp_setversion(0.03);
+pp_setversion(0.07);
 
 
 if ($config{CBLAS}){
@@ -23,6 +23,10 @@ pp_addhdr('
 
 pp_addhdr('
 #include <math.h>
+
+#if defined(PDL_CORE_VERSION) && PDL_CORE_VERSION < 10
+typedef PDL_Long PDL_Indx;
+#endif
 
 typedef PDL_Long logical;
 typedef PDL_Long integer;

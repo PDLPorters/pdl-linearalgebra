@@ -1,4 +1,4 @@
-our $VERSION = 0.04;
+our $VERSION = 0.07;
 use PDL::Exporter;
 
 if ($^O =~ /MSWin/) {
@@ -9,6 +9,11 @@ pp_addhdr('
 
 pp_addhdr('
 #include <math.h>
+
+#if defined(PDL_CORE_VERSION) && PDL_CORE_VERSION < 10
+typedef PDL_Long PDL_Indx;
+#endif
+
 typedef PDL_Long logical;
 typedef PDL_Long integer;
 typedef PDL_Long ftnlen;
@@ -84,7 +89,7 @@ double z_abs(dcomplex *z)
 ');
 
 
-pp_setversion(0.04);
+pp_setversion(0.07);
 
 pp_addpm({At=>'Top'},<<'EOD');
 use PDL::Func;
