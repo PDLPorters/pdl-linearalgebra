@@ -250,8 +250,8 @@ pp_def('geexp',
 	//     and set scale = t/2^ns ... 
 
 	// Compute Infinity norm
-	hnorm = dlange_("I", &$PRIV(__n_size), &$PRIV(__n_size), $P(A), 
-			&$PRIV(__n_size), wsp);
+	hnorm = dlange_("I", &(integer){$PRIV(__n_size)}, &(integer){$PRIV(__n_size)}, $P(A), 
+			&(integer){$PRIV(__n_size)}, wsp);
 	
 	hnorm = abs($scale() * hnorm);
 	if (hnorm == 0.)
@@ -287,8 +287,8 @@ pp_def('geexp',
 		
 		// ---  H2 = scale2*H*H ... 
 		
-		dgemm_("n", "n", &$PRIV(__n_size), &$PRIV(__n_size), &$PRIV(__n_size), &scale2, h__, &$PRIV(__n_size), h__, 
-		    &$PRIV(__n_size), &c_b7, &coef[ih2], &$PRIV(__n_size), (ftnlen)1, (ftnlen)1);
+		dgemm_("n", "n", &(integer){$PRIV(__n_size)}, &(integer){$PRIV(__n_size)}, &(integer){$PRIV(__n_size)}, &scale2, h__, &(integer){$PRIV(__n_size)}, h__, 
+		    &(integer){$PRIV(__n_size)}, &c_b7, &coef[ih2], &(integer){$PRIV(__n_size)}, (ftnlen)1, (ftnlen)1);
 		
 		// ---  initialize p (numerator) and q (denominator) ...
 		cp = coef[$deg() - 1];
@@ -307,8 +307,8 @@ pp_def('geexp',
 		k = $deg() - 2;
 		do{
 			iused = iodd * iq + (1 - iodd) * ip;
-			dgemm_("n", "n", &$PRIV(__n_size), &$PRIV(__n_size), &$PRIV(__n_size), &c_b11, &wsp[iused], &$PRIV(__n_size), &coef[ih2], &$PRIV(__n_size), &c_b7, &
-			    wsp[ifree], &$PRIV(__n_size), (ftnlen)1, (ftnlen)1);
+			dgemm_("n", "n", &(integer){$PRIV(__n_size)}, &(integer){$PRIV(__n_size)}, &(integer){$PRIV(__n_size)}, &c_b11, &wsp[iused], &(integer){$PRIV(__n_size)}, &coef[ih2], &(integer){$PRIV(__n_size)}, &c_b7, &
+			    wsp[ifree], &(integer){$PRIV(__n_size)}, (ftnlen)1, (ftnlen)1);
 			for (j = 0; j < $PRIV(__n_size); j++) {
 				wsp[ifree + j  * ($PRIV(__n_size) + 1)] += coef[k];
 			}
@@ -325,18 +325,18 @@ pp_def('geexp',
 		
 		if (iodd == 1)
 		{
-			dgemm_("n", "n", &$PRIV(__n_size), &$PRIV(__n_size), &$PRIV(__n_size), &scale, &wsp[iq], &$PRIV(__n_size), h__, &$PRIV(__n_size), &
-				c_b7, &wsp[ifree], &$PRIV(__n_size), (ftnlen)1, (ftnlen)1);
+			dgemm_("n", "n", &(integer){$PRIV(__n_size)}, &(integer){$PRIV(__n_size)}, &(integer){$PRIV(__n_size)}, &scale, &wsp[iq], &(integer){$PRIV(__n_size)}, h__, &(integer){$PRIV(__n_size)}, &
+				c_b7, &wsp[ifree], &(integer){$PRIV(__n_size)}, (ftnlen)1, (ftnlen)1);
 			iq = ifree;
 		}
 		else
 		{
-			dgemm_("n", "n", &$PRIV(__n_size), &$PRIV(__n_size), &$PRIV(__n_size), &scale, &wsp[ip], &$PRIV(__n_size), h__, &$PRIV(__n_size), &
-				c_b7, &wsp[ifree], &$PRIV(__n_size), (ftnlen)1, (ftnlen)1);
+			dgemm_("n", "n", &(integer){$PRIV(__n_size)}, &(integer){$PRIV(__n_size)}, &(integer){$PRIV(__n_size)}, &scale, &wsp[ip], &(integer){$PRIV(__n_size)}, h__, &(integer){$PRIV(__n_size)}, &
+				c_b7, &wsp[ifree], &(integer){$PRIV(__n_size)}, (ftnlen)1, (ftnlen)1);
 			ip = ifree;
 		}
 		daxpy_(&mm, &c_b19, &wsp[ip], &c__1, &wsp[iq], &c__1);
-		dgesv_(&$PRIV(__n_size), &$PRIV(__n_size), &wsp[iq], &$PRIV(__n_size), ipiv, &wsp[ip], &$PRIV(__n_size), $P(info));
+		dgesv_(&(integer){$PRIV(__n_size)}, &(integer){$PRIV(__n_size)}, &wsp[iq], &(integer){$PRIV(__n_size)}, ipiv, &wsp[ip], &(integer){$PRIV(__n_size)}, $P(info));
 	
 		if ($info() != 0)
 		{
@@ -360,8 +360,8 @@ pp_def('geexp',
 				for (k = 0; k < i__1; k++) {
 					iget = iodd * ip + (1 - iodd) * iq;
 					iput = (1 - iodd) * ip + iodd * iq;
-					dgemm_("n", "n", &$PRIV(__n_size), &$PRIV(__n_size), &$PRIV(__n_size), &c_b11, &wsp[iget], &$PRIV(__n_size), &wsp[iget], &$PRIV(__n_size), &c_b7,
-						&wsp[iput], &$PRIV(__n_size), (ftnlen)1, (ftnlen)1);
+					dgemm_("n", "n", &(integer){$PRIV(__n_size)}, &(integer){$PRIV(__n_size)}, &(integer){$PRIV(__n_size)}, &c_b11, &wsp[iget], &(integer){$PRIV(__n_size)}, &wsp[iget], &(integer){$PRIV(__n_size)}, &c_b7,
+						&wsp[iput], &(integer){$PRIV(__n_size)}, (ftnlen)1, (ftnlen)1);
 					iodd = 1 - iodd;
 				}
 			}
@@ -568,8 +568,8 @@ ACM - Transactions On Mathematical Software, 24(1):130-156, 1998
 	// ---  scaling: seek ns such that ||t*H/2^ns|| < 1/2; 
 	//     and set scale = t/2^ns ... 
 	// Compute Infinity norm
-	hnorm = zlange_("I", &$PRIV(__n_size), &$PRIV(__n_size), &h__[0], 
-			&$PRIV(__n_size), &wsp[0].r);
+	hnorm = zlange_("I", &(integer){$PRIV(__n_size)}, &(integer){$PRIV(__n_size)}, &h__[0], 
+			&(integer){$PRIV(__n_size)}, &wsp[0].r);
 
 	    hnorm = abs($scale() * hnorm);
 	    if (hnorm == 0.)
@@ -607,8 +607,8 @@ ACM - Transactions On Mathematical Software, 24(1):130-156, 1998
 		    }
 		
 		// ---  H2 = scale2*H*H ...
-		    zgemm_("n", "n", &$PRIV(__n_size), &$PRIV(__n_size), &$PRIV(__n_size), &scale2, &h__[0], &$PRIV(__n_size), &h__[0], 
-			    &$PRIV(__n_size), &c_b1, &wsp[ih2], &$PRIV(__n_size), (ftnlen)1, (ftnlen)1);
+		    zgemm_("n", "n", &(integer){$PRIV(__n_size)}, &(integer){$PRIV(__n_size)}, &(integer){$PRIV(__n_size)}, &scale2, &h__[0], &(integer){$PRIV(__n_size)}, &h__[0], 
+			    &(integer){$PRIV(__n_size)}, &c_b1, &wsp[ih2], &(integer){$PRIV(__n_size)}, (ftnlen)1, (ftnlen)1);
 		
 		// ---  initialise p (numerator) and q (denominator) ...
 		
@@ -640,8 +640,8 @@ ACM - Transactions On Mathematical Software, 24(1):130-156, 1998
 		    do
 		    {
 			    iused = iodd * iq + (1 - iodd) * ip;
-			    zgemm_("n", "n", &$PRIV(__n_size), &$PRIV(__n_size), &$PRIV(__n_size), &c_b2, &wsp[iused], &$PRIV(__n_size), &wsp[ih2], &$PRIV(__n_size), &c_b1, &
-				    wsp[ifree], &$PRIV(__n_size), (ftnlen)1, (ftnlen)1);
+			    zgemm_("n", "n", &(integer){$PRIV(__n_size)}, &(integer){$PRIV(__n_size)}, &(integer){$PRIV(__n_size)}, &c_b2, &wsp[iused], &(integer){$PRIV(__n_size)}, &wsp[ih2], &(integer){$PRIV(__n_size)}, &c_b1, &
+				    wsp[ifree], &(integer){$PRIV(__n_size)}, (ftnlen)1, (ftnlen)1);
 			    for (j = 0; j < $PRIV(__n_size); j++) {
 				i__1 = ifree + j  * ($PRIV(__n_size) + 1);
 				i__2 = ifree + j  * ($PRIV(__n_size) + 1);
@@ -664,19 +664,19 @@ ACM - Transactions On Mathematical Software, 24(1):130-156, 1998
 		
 		    if (iodd != 0)
 		    {
-			zgemm_("n", "n", &$PRIV(__n_size), &$PRIV(__n_size), &$PRIV(__n_size), &scale, &wsp[iq], &$PRIV(__n_size), &h__[0], &$PRIV(__n_size), &
-				c_b1, &wsp[ifree], &$PRIV(__n_size), (ftnlen)1, (ftnlen)1);
+			zgemm_("n", "n", &(integer){$PRIV(__n_size)}, &(integer){$PRIV(__n_size)}, &(integer){$PRIV(__n_size)}, &scale, &wsp[iq], &(integer){$PRIV(__n_size)}, &h__[0], &(integer){$PRIV(__n_size)}, &
+				c_b1, &wsp[ifree], &(integer){$PRIV(__n_size)}, (ftnlen)1, (ftnlen)1);
 			iq = ifree;
 		    }else
 		    {
-			zgemm_("n", "n", &$PRIV(__n_size), &$PRIV(__n_size), &$PRIV(__n_size), &scale, &wsp[ip], &$PRIV(__n_size), &h__[0], &$PRIV(__n_size), &
-				c_b1, &wsp[ifree], &$PRIV(__n_size), (ftnlen)1, (ftnlen)1);
+			zgemm_("n", "n", &(integer){$PRIV(__n_size)}, &(integer){$PRIV(__n_size)}, &(integer){$PRIV(__n_size)}, &scale, &wsp[ip], &(integer){$PRIV(__n_size)}, &h__[0], &(integer){$PRIV(__n_size)}, &
+				c_b1, &wsp[ifree], &(integer){$PRIV(__n_size)}, (ftnlen)1, (ftnlen)1);
 			ip = ifree;
 		    }
 		    z__1.r = -1.;
 		    z__1.i = -0.;
 		    zaxpy_(&mm, &z__1, &wsp[ip], &c__1, &wsp[iq], &c__1);
-		    zgesv_(&$PRIV(__n_size), &$PRIV(__n_size), &wsp[iq], &$PRIV(__n_size), ipiv, &wsp[ip], &$PRIV(__n_size), $P(info));
+		    zgesv_(&(integer){$PRIV(__n_size)}, &(integer){$PRIV(__n_size)}, &wsp[iq], &(integer){$PRIV(__n_size)}, ipiv, &wsp[ip], &(integer){$PRIV(__n_size)}, $P(info));
 
 		    if ($info() == 0) 
 		    {
@@ -701,8 +701,8 @@ ACM - Transactions On Mathematical Software, 24(1):130-156, 1998
 				    {
 					iget = iodd * ip + (1 - iodd) * iq;
 					iput = (1 - iodd) * ip + iodd * iq;
-					zgemm_("n", "n", &$PRIV(__n_size), &$PRIV(__n_size), &$PRIV(__n_size), &c_b2, &wsp[iget], &$PRIV(__n_size), &wsp[iget], &$PRIV(__n_size), &c_b1, 
-						&wsp[iput], &$PRIV(__n_size), (ftnlen)1, (ftnlen)1);
+					zgemm_("n", "n", &(integer){$PRIV(__n_size)}, &(integer){$PRIV(__n_size)}, &(integer){$PRIV(__n_size)}, &c_b2, &wsp[iget], &(integer){$PRIV(__n_size)}, &wsp[iget], &(integer){$PRIV(__n_size)}, &c_b1, 
+						&wsp[iput], &(integer){$PRIV(__n_size)}, (ftnlen)1, (ftnlen)1);
 					iodd = 1 - iodd;
 				    }
 			    }
@@ -842,9 +842,9 @@ void dfunc_wrapper(dcomplex *p, integer n, SV* dfunc)
    HV *bless_stash;
 
    pdl *pdl;
-   PDL_Long odims[1];
+   PDL_Indx odims[1];
 
-   PDL_Long dims[] = {2,n};
+   PDL_Indx dims[] = {2,n};
    pdl = PDL->pdlnew();
    PDL->setdims (pdl, dims, 2);
    pdl->datatype = PDL_D;
