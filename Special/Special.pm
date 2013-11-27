@@ -12,7 +12,9 @@ no warnings 'uninitialized';
 @EXPORT_OK  = qw( mhilb mvander mpart mhankel mtoeplitz mtri mpascal mcompanion);
 %EXPORT_TAGS = (Func=>[@EXPORT_OK]);
 
-our $VERSION = 0.03;
+our $VERSION = '0.06_01';
+$VERSION = eval $VERSION;
+
 our @ISA = ( 'PDL::Exporter');
 
 use strict;

@@ -2,7 +2,7 @@ use ExtUtils::MakeMaker;
 
 WriteMakefile(
         'NAME' => 'PDL::LinearAlgebra',
-        'VERSION' => 0.07,
+        'VERSION' => '0.06_01',
         'BUILD_REQUIRES' =>  { "PDL" => 0, },
 	'PREREQ_PM' => { "PDL" => 0, },
         'DIR' =>  [ qw/Trans Real Complex Special/],

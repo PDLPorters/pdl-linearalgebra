@@ -1,5 +1,9 @@
 Revision history for Perl extension PDL::LinearAlgebra
 
+0.06_01  Sun Nov 17 11:21:52 2013
+
+  * update build to work with new PDL_Indx data type
+
 0.06  Thu Oct 09 00:00:00 2007
 
   * remove conflicting cplx routine (thanks to P. Dupre)

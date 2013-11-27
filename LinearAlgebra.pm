@@ -20,7 +20,8 @@ use constant{
 
 use strict;
 
-our $VERSION = 0.06;
+our $VERSION = '0.06_01';
+$VERSION = eval $VERSION;
 
 @PDL::LinearAlgebra::ISA = qw/PDL::Exporter/;
 @PDL::LinearAlgebra::EXPORT_OK = qw/t diag issym minv mtriinv msyminv mposinv mdet mposdet mrcond positivise
