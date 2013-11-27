@@ -1,5 +1,9 @@
 Revision history for Perl extension PDL::LinearAlgebra
 
+0.06_02  Wed Nov 27 14:19:17 EST 2013
+
+  * fix CPAN dependency info so PDL is used for config
+
 0.06_01  Sun Nov 17 11:21:52 2013
 
   * update build to work with new PDL_Indx data type
