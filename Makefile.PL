@@ -2,7 +2,7 @@ use ExtUtils::MakeMaker;
 
 WriteMakefile(
         'NAME' => 'PDL::LinearAlgebra',
-        'VERSION' => '0.06_02',
+        'VERSION' => '0.07',
         'CONFIGURE_REQUIRES' =>  { "PDL" => 0, },
         'BUILD_REQUIRES' =>  { "PDL" => 0, },
 	'PREREQ_PM' => { "PDL" => 0, },

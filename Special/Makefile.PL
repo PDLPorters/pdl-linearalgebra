@@ -2,7 +2,7 @@ use ExtUtils::MakeMaker;
 
 WriteMakefile(
         'NAME' => 'PDL::LinearAlgebra::Special',
-        'VERSION' => '0.06_02',
+        'VERSION' => '0.07',
        );
 __END__
 

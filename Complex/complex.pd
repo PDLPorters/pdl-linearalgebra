@@ -2,7 +2,7 @@
 
 
 do('../Config');
-our $VERSION = '0.06_02';
+our $VERSION = '0.07';
 pp_setversion(qq{'$VERSION'});
 $VERSION = eval $VERSION;
 
@@ -112,6 +112,7 @@ use PDL::LinearAlgebra::Real;
 	);
 	BEGIN{ $^W = $warningFlag ; }
 }
+
 
 
 
