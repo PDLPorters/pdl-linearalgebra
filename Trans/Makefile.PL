@@ -16,7 +16,7 @@ $hash{LDLOADLIBS} .= 'oldnames.lib kernel32.lib user32.lib gdi32.lib winspool.li
 
 WriteMakefile(
 	%hash,
-	'VERSION' => '0.07',
+	'VERSION' => '0.07_01',
 );
 
 # Add genpp rule
