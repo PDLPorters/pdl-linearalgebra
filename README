@@ -1,4 +1,4 @@
-PDL/LinearAlgebra version 0.04
+PDL/LinearAlgebra version 0.07
 =============================
 
 This module provides a PDL interface to some routines of BLAS and LAPACK library.
