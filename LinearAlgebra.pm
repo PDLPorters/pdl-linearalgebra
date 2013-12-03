@@ -20,7 +20,7 @@ use constant{
 
 use strict;
 
-our $VERSION = '0.07_01';
+our $VERSION = '0.08';
 $VERSION = eval $VERSION;
 
 @PDL::LinearAlgebra::ISA = qw/PDL::Exporter/;

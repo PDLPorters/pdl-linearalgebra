@@ -1,5 +1,5 @@
-PDL/LinearAlgebra version 0.07
-=============================
+PDL/LinearAlgebra version 0.08
+=================================
 
 This module provides a PDL interface to some routines of BLAS and LAPACK library.
 Moreover it provides some linear algebra based routines (transcendental functions for matrices)
@@ -24,8 +24,9 @@ This module requires PDL and working BLAS and LAPACK libraries.
 COPYRIGHT AND LICENCE
 
 Copyright (C) 2005-2007 Grégory Vanuxem
+Copyright (C) 2013 Chris Marshall
 
 This library is free software; you can redistribute it and/or modify
-it under the terms of the artistic license as specified in the Artistic
-file.
+it under the terms of the Perl Artistic License as in the file Artistic_2
+in this distribution.
 

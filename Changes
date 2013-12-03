@@ -1,8 +1,19 @@
 Revision history for Perl extension PDL::LinearAlgebra
 
-0.07_01  TBD
 
-  * TBD
+0.08  Tue Dec  3 06:07:55 EST 2013
+
+  * use VERSION_FROM in Makefile.PLs
+  * update license to Artistic 2.0
+  * bump VERSION to 0.08 for official release
+
+0.07_01  Sat Nov 30 18:17:48 EST 2013
+
+  * fixed bug in msyminv()
+  * global conversion from DOS to UNIX line endings
+  * explicitly specifying a Latin-1 encoding in the PODs
+  * removed debianization. This package is already in debian
+  * partial clean up of $VERSION specification
 
 0.07  Wed Nov 27 17:09:40 EST 2013
 
