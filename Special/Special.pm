@@ -19,6 +19,8 @@ our @ISA = ( 'PDL::Exporter');
 
 use strict;
 
+=encoding Latin-1
+
 =head1 NAME
 
 PDL::LinearAlgebra::Special - Special matrices for PDL

@@ -123,6 +123,8 @@ sub norm {
 }
 ########################################################################
 
+=encoding Latin-1
+
 =head1 NAME
 
 PDL::LinearAlgebra - Linear Algebra utils for PDL

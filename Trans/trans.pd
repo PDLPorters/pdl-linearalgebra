@@ -107,6 +107,7 @@ use PDL::LinearAlgebra::Complex qw //;
 use strict;
 
 =encoding Latin-1
+
 =head1 NAME
 
 PDL::LinearAlgebra::Trans - Linear Algebra based transcendental functions for PDL
