@@ -304,7 +304,7 @@ sub PDL::mpascal {
 		require PDL::Stat::Distributions;
 		$mat = xvals($m);
 		if ($n > 1){
-			return PDL::Stat::Distributions::choose($mat + $mat->dummy(0),$mat)[0];		
+			return (PDL::Stat::Distributions::choose($mat + $mat->dummy(0),$mat))[0];		
 		}
 		else{
 			$mat = PDL::Stat::Distributions::choose($mat,$mat->dummy(0));
