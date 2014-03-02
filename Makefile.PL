@@ -2,6 +2,8 @@ use ExtUtils::MakeMaker;
 
 WriteMakefile(
         'NAME' => 'PDL::LinearAlgebra',
+        'ABSTRACT' => 'PDL bindings to some BLAS and LAPACK library routines',
+        'AUTHOR' => [ "Chris Marshall <chm@cpan.org>" ],
         'VERSION_FROM' => 'LinearAlgebra.pm',
         'LICENSE' => 'artistic_2',
         'META_MERGE' => {
