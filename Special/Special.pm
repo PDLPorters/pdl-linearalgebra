@@ -316,7 +316,7 @@ sub PDL::mpascal {
 			require PDL::GSLSF::GAMMA;
 			if ($n > 1){
 				$mat = xvals($m);
-				return PDL::GSLSF::GAMMA::gsl_sf_choose($mat + $mat->dummy(0),$mat);					
+				return (PDL::GSLSF::GAMMA::gsl_sf_choose($mat + $mat->dummy(0),$mat))[0];					
 			}else{
 				$mat = xvals($m, $m);
 				return (PDL::GSLSF::GAMMA::gsl_sf_choose($mat->tritosym,$mat->xchg(0,1)->tritosym))[0]->mtri($n);
