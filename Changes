@@ -1,9 +1,15 @@
 Revision history for Perl extension PDL::LinearAlgebra
 
 
-0.08_01
+0.08_02
 
   * TBD
+
+0.08_01
+
+  * Add AUTHOR and ABSTRACT info to Makefile.PL
+  * Apply patch from CPAN RT bug #38167
+  * Fix encoding specs for POD
 
 0.08  Tue Dec  3 06:07:55 EST 2013
 
