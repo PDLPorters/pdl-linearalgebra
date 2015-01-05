@@ -20,6 +20,12 @@ WriteMakefile(
         'BUILD_REQUIRES' =>  { "PDL" => 0, },
 	'PREREQ_PM' => { "PDL" => 0, },
         'DIR' =>  [ qw/Trans Real Complex Special/],
+        'dist' => { PREOP=> '$(MKPATH) $(DISTVNAME)/GENERATED'
+                            . ' && $(PERL) "-MPDL::PP qw[PDL::LinearAlgebra::Trans   PDL::LinearAlgebra::Trans   $(DISTVNAME)/GENERATED/Trans]"   Trans/trans.pd'
+                            . ' && $(PERL) "-MPDL::PP qw[PDL::LinearAlgebra::Real    PDL::LinearAlgebra::Real    $(DISTVNAME)/GENERATED/Real]"    Real/real.pd'
+                            . ' && $(PERL) "-MPDL::PP qw[PDL::LinearAlgebra::Complex PDL::LinearAlgebra::Complex $(DISTVNAME)/GENERATED/Complex]" Complex/complex.pd'
+                            . ' && $(RM_F) $(DISTVNAME)/GENERATED/*.xs'
+                  }
        );
 __END__
 
