@@ -2,7 +2,7 @@
 
 
 do('../Config');
-our $VERSION = '0.08_01';
+our $VERSION = '0.08_03';
 pp_setversion(qq{'$VERSION'});
 $VERSION = eval $VERSION;
 

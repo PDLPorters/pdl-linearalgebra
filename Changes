@@ -1,9 +1,14 @@
 Revision history for Perl extension PDL::LinearAlgebra
 
 
+0.08_03
+
+  * Test of KMX patch to Makefile.PL for better docs on metacpan.org and search.cpan.org
+  * Improved library detection for SPP PDL edition
+
 0.08_02
 
-  * TBD
+  * Test of KMX patch to Makefile.PL
 
 0.08_01
 
