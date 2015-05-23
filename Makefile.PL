@@ -7,6 +7,7 @@ WriteMakefile(
         'VERSION_FROM' => 'LinearAlgebra.pm',
         'LICENSE' => 'artistic_2',
         'META_MERGE' => {
+           "meta-spec" => { version => 2 },
            resources => {
               homepage => 'http://pdl.perl.org/',
               repository  => {
