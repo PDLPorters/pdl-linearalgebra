@@ -18,7 +18,7 @@ WriteMakefile(
         },
         'CONFIGURE_REQUIRES' =>  { "PDL" => 0, },
         'BUILD_REQUIRES' =>  { "PDL" => 0, },
-	'PREREQ_PM' => { "PDL" => 0, },
+	'PREREQ_PM' => { "PDL" => 0, "constant" => 1.03, },
         'DIR' =>  [ qw/Trans Real Complex Special/],
         'dist' => { PREOP=> '$(MKPATH) $(DISTVNAME)/GENERATED'
                             . ' && $(PERL) "-MPDL::PP qw[PDL::LinearAlgebra::Trans   PDL::LinearAlgebra::Trans   $(DISTVNAME)/GENERATED/Trans]"   Trans/trans.pd'
