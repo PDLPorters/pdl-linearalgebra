@@ -1,6 +1,11 @@
 Revision history for Perl extension PDL::LinearAlgebra
 
 
+0.09
+
+  * Use correct meta-spec for META_MERGE
+  * Require constant 1.03 - older version do not work with hashes.
+
 0.08_03
 
   * Test of KMX patch to Makefile.PL for better docs on metacpan.org and search.cpan.org
