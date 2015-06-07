@@ -3,6 +3,7 @@ Revision history for Perl extension PDL::LinearAlgebra
 
 0.09
 
+  * Use new GENERATE feature to make POD from PP files
   * Use correct meta-spec for META_MERGE
   * Require constant 1.03 - older version do not work with hashes.
 
