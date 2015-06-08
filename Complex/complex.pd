@@ -86,7 +86,8 @@ use PDL::Complex;
 use PDL::LinearAlgebra::Real;
 
 { 
-  package PDL;
+  package # hide from CPAN
+    PDL;
 	my $warningFlag;
   	BEGIN{
   		$warningFlag = $^W;
@@ -99,7 +100,8 @@ use PDL::LinearAlgebra::Real;
 	BEGIN{ $^W = $warningFlag ; }	
 }
 { 
-  package PDL::Complex;
+  package # hide from CPAN
+    PDL::Complex;
 	my $warningFlag;
   	BEGIN{
   		$warningFlag = $^W;

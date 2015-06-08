@@ -75,7 +75,8 @@ use strict;
 
 
 { 
-  package PDL;
+  package # hide from CPAN
+    PDL;
   my $warningFlag;
   BEGIN{
   	$warningFlag = $^W;
