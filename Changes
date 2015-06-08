@@ -1,9 +1,9 @@
 Revision history for Perl extension PDL::LinearAlgebra
 
 
-0.09_01
+0.10
 
-  * tbd
+  * Add -lquadmath to compiler flags for gfortran
 
 0.09
 
