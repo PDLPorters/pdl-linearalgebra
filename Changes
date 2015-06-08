@@ -1,6 +1,11 @@
 Revision history for Perl extension PDL::LinearAlgebra
 
 
+0.11
+
+  * Hide PDL and PDL::Complex package declarations from
+    PAUSE/CPAN indexer
+
 0.10
 
   * Add -lquadmath to compiler flags for gfortran
