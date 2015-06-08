@@ -20,7 +20,7 @@ use constant{
 
 use strict;
 
-our $VERSION = '0.11';
+our $VERSION = '0.12';
 $VERSION = eval $VERSION;
 
 @PDL::LinearAlgebra::ISA = qw/PDL::Exporter/;
@@ -47,7 +47,8 @@ sub neginf() { $neginf->copy };
 
 {
 
-package PDL::Complex;
+package # hide from CPAN indexer
+  PDL::Complex;
 
 use PDL::Types;
 

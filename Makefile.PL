@@ -22,6 +22,7 @@ WriteMakefile(
 	'PREREQ_PM' => { "PDL" => 0, "constant" => 1.03, },
         'DIR' =>  [ qw/Trans Real Complex Special/],
         'dist' => { PREOP=>'$(PERL) -MPDL::Core::Dev -e pdlpp_mkgen $(DISTVNAME)' }, # GENERATED subdir in dist tarball
+        'clean' => { FILES => '*~' },
        );
 __END__
 
