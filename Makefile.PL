@@ -15,7 +15,7 @@ WriteMakefile(
                  type => 'git',
                  web => 'https://github.com/PDLPorters/pdl-linearalgebra',
               },
-              bugtracker => 'https://github.com/PDLPorters/pdl-linearalgebra/issues',
+              bugtracker => {web=>'https://github.com/PDLPorters/pdl-linearalgebra/issues'},
            },
            x_IRC => 'irc://irc.perl.org/#pdl',
         },
