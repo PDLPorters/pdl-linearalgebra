@@ -4,15 +4,14 @@ Complex/complex.pd
 Complex/Makefile.PL
 Complex/Makefile.PL.pkg
 Config
-LinearAlgebra.pm
 Makefile.PL
 MANIFEST			This list of files
 README
 Real/Makefile.PL
 Real/Makefile.PL.pkg
 Real/real.pd
-Special/Makefile.PL
-Special/Special.pm
+lib/PDL/LinearAlgebra.pm
+lib/PDL/LinearAlgebra/Special.pm
 t/1.t
 Trans/Makefile.PL
 Trans/Makefile.PL.pkg
