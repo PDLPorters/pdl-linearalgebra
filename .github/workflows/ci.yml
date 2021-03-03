@@ -1,0 +1,46 @@
+name: perl
+on:
+  push:
+    branches:
+      - '*'
+    tags-ignore:
+      - '*'
+  pull_request:
+jobs:
+  ubuntu:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        perl-version: ['5.14', '5.20']
+    steps:
+      - uses: actions/checkout@v2
+      - uses: shogo82148/actions-setup-perl@v1
+        with:
+          distribution: strawberry # ignored non-windows
+          perl-version: ${{ matrix.perl-version }}
+      - run: perl -V
+      - name: Ubuntu packages
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get -y update && sudo apt-get -y install build-essential gfortran liblapack-dev
+      - run: cpanm -n PDL # configure dep
+      - run: cpanm -n --installdeps .
+      - name: Run tests (no coverage)
+        if: ${{ !matrix.coverage }}
+        run: perl Makefile.PL && HARNESS_OPTIONS='j4' make test
+      - name: Run tests (with coverage)
+        if: ${{ matrix.coverage }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cpanm -n Devel::Cover::Report::Coveralls
+          HARNESS_OPTIONS='j4' cover -test -report Coveralls
+      - name: Run release tests # after main tests so built
+        if: ${{ matrix.release-test }}
+        env:
+          AUTHOR_TESTING: 1
+          RELEASE_TESTING: 1
+        run: |
+          cpanm -n --installdeps --with-develop .
+          prove -br xt
