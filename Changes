@@ -1,3 +1,5 @@
+- add [c]gtsv functions
+
 0.14 2019-12-09
 - updated build-file perms - thanks @manwar
 - support Lapack >= 3.7.0 - thanks Grégory Vanuxem

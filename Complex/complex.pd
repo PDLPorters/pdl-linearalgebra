@@ -63,7 +63,6 @@ sub generate_code($){
 	}
 }
 
-
 sub pp_defc{
 	my $function = shift;
 	pp_def(('c'.$function), Doc=>"
@@ -112,8 +111,6 @@ use PDL::LinearAlgebra::Real;
 	BEGIN{ $^W = $warningFlag ; }
 }
 
-
-
 =encoding Latin-1
 
 =head1 NAME
@@ -133,14 +130,94 @@ PDL::LinearAlgebra::Complex - PDL interface to the lapack linear algebra program
  $job = 0;
  cgesdd($a, $job, $info, $s , $u, $v);
 
-
 =head1 DESCRIPTION
 
 This module provides an interface to parts of the lapack library (complex numbers).
 These routines accept either float or double piddles.
 
-
 EOD
+
+pp_defc("gtsv",
+	HandleBad => 0,
+	Pars => '[phys]DL(2,n); [phys]D(2,n); [phys]DU(2,n); [io,phys]B(2,n,nrhs); int [o,phys]info()',
+	GenericTypes => [F,D],
+	Code => generate_code '
+	     types(F) %{
+		extern int cgtsv_(integer *n, integer *nrhs,
+		float *dl, float *d, float *du, float *b,
+                integer *ldb, integer *info);
+             %}
+             types(D) %{
+		extern int zgtsv_(integer *n, integer *nrhs,
+		double *dl, double *d, double *du, double *b,
+                integer *ldb, integer *info);
+             %}
+		$TFD(cgtsv_,zgtsv_)(
+		&(integer){$PRIV(__n_size)},
+		&(integer){$PRIV(__nrhs_size)},
+		$P(DL),
+		$P(D),
+		$P(DU),
+		$P(B),
+		&(integer){$PRIV(__n_size)},
+		$P(info));
+',
+      Doc => '
+
+=for ref
+
+Solves the equation
+
+	A * X = B
+
+where A is an C<n> by C<n> tridiagonal matrix, by Gaussian elimination with
+partial pivoting, and B is an C<n> by C<nrhs> matrix.
+
+Note that the equation C<A**T*X = B>  may be solved by interchanging the
+order of the arguments DU and DL.
+
+B<NB> This differs from the LINPACK function C<cgtsl> in that C<DL>
+starts from its first element, while the LINPACK equivalent starts from
+its second element.
+
+    Arguments
+    =========
+
+    DL:   On entry, DL must contain the (n-1) sub-diagonal elements of A.
+
+          On exit, DL is overwritten by the (n-2) elements of the
+          second super-diagonal of the upper triangular matrix U from
+          the LU factorization of A, in DL(1), ..., DL(n-2).
+
+    D:    On entry, D must contain the diagonal elements of A.
+
+          On exit, D is overwritten by the n diagonal elements of U.
+
+    DU:   On entry, DU must contain the (n-1) super-diagonal elements of A.
+
+          On exit, DU is overwritten by the (n-1) elements of the
+          first super-diagonal of the U.
+
+    B:    On entry, the n by nrhs matrix of right hand side matrix B.
+          On exit, if info = 0, the n by nrhs solution matrix X.
+
+    info:   = 0:  successful exit
+            < 0:  if info = -i, the i-th argument had an illegal value
+            > 0:  if info = i, U(i,i) is exactly zero, and the solution
+                  has not been computed.  The factorization has not been
+                  completed unless i = n.
+
+=for example
+
+ use PDL::Complex;
+ $dl = random(float, 9) + random(float, 9) * i;
+ $d = random(float, 10) + random(float, 10) * i;
+ $du = random(float, 9) + random(float, 9) * i;
+ $b = random(10,5) + random(10,5) * i;
+ cgtsv($dl, $d, $du, $b, ($info=null));
+ print "X is:\n$b" unless $info;
+
+');
 
 pp_defc("gesvd",
        HandleBad => 0,
@@ -151,7 +228,6 @@ pp_defc("gesvd",
 		integer lwork;
 		char trau, travt;
              types(F) %{
-
 		extern int cgesvd_(char *jobu, char *jobvt, integer *m, integer *n, float *a,
 		integer *lda, float *s, float *u, int *ldu,
 		float *vt, integer *ldvt, float *work, integer *lwork, float *rwork,
@@ -160,7 +236,6 @@ pp_defc("gesvd",
 		float tmp_work[2];
              %}
              types(D) %{
-
 		extern int zgesvd_(char *jobz,char *jobvt, integer *m, integer *n,
 		double *a, integer *lda, double *s, double *u, int *ldu,
 		double *vt, integer *ldvt, double *work, integer *lwork, double *rwork,
@@ -198,8 +273,6 @@ pp_defc("gesvd",
 				break;
 			default: travt = \'N\';
 		}
-
-
 
 		$TFD(cgesvd_,zgesvd_)(
 		&trau,
@@ -469,8 +542,6 @@ pp_defc("ggsvd",
 			work = (double *)malloc(2*(lwork * sizeof(double)));
 			rwork = (double *)malloc(2 * $SIZE (n) *  sizeof(double));
 		%}		
-
-
 		
 		$TFD(cggsvd3_,zggsvd3_)(
 		&pjobu,
@@ -501,8 +572,6 @@ pp_defc("ggsvd",
 		free(rwork);
 		free(work);
 ');
-
-
 
 pp_defc("geev",
        HandleBad => 0,
@@ -3180,7 +3249,6 @@ Complex version of gels.
             = 1: the linear system involves A**H.
 
 ');
-
 
 pp_defc("gelsy",
        HandleBad => 0,

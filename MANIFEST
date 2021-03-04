@@ -11,5 +11,7 @@ Real/real.pd
 lib/PDL/LinearAlgebra.pm
 lib/PDL/LinearAlgebra/Special.pm
 t/1.t
+t/cgtsv.t
+t/gtsv.t
 Trans/Makefile.PL
 Trans/trans.pd
