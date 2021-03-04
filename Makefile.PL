@@ -13,20 +13,28 @@ our $libs0 = (
   `pkg-config @pkgs --libs` ||
   '-L/usr/lib/atlas -llapack -lblas -latlas'
 ) . ' ' . ExtUtils::F77->runtime;
+our $inc = '-DF77_USCORE='. (ExtUtils::F77->trail_ ? '_' : '');
 {
   # work around Devel::CheckLib not doing Text::ParseWords::shellwords
   use Text::ParseWords qw(shellwords);
   my @libpath = map {my $r=$_;$r=~s/^-L//?$r:()} shellwords $libs0;
+  my $f77_uscore = (ExtUtils::F77->trail_ ? '_' : '');
   check_lib_or_exit(
     lib => 'lapack',
     libpath => \@libpath,
     header => [($^O =~ /MSWin/ ? 'float.h' : ()), qw(stdio.h math.h)],
-    function => <<'EOF',
+    function => <<EOF,
+
+#define F77_USCORE $f77_uscore
+#define CONCAT_(A, B) A ## B
+#define CONCAT(A, B) CONCAT_(A, B)
+#define FORTRAN(name) CONCAT(name, F77_USCORE)
+
 long c_zero = 0;
 long c_nine = 9;
-extern long ilaenv_(long *ispec, char *name__, char *opts, long *n1,
+extern long FORTRAN(ilaenv)(long *ispec, char *name__, char *opts, long *n1,
   long *n2, long *n3, long *n4, long name_len, long opts_len);
-long i = ilaenv_(&c_nine, "SGESDD", " ", &c_zero, &c_zero, &c_zero, &c_zero, 6, 1);
+long i = FORTRAN(ilaenv)(&c_nine, "SGESDD", " ", &c_zero, &c_zero, &c_zero, &c_zero, 6, 1);
 if (argc > 2) printf("%ld", i); /* try to stop optimiser eliminating */
 EOF
   );
@@ -54,7 +62,7 @@ WriteMakefile(
   CONFIGURE_REQUIRES =>  {
     "PDL" => '2.075',
     "Devel::CheckLib" => 0,
-    "ExtUtils::F77" => 0,
+    "ExtUtils::F77" => '1.26',
   },
   PREREQ_PM => {
     "PDL" => '2.075', # RedoDimsCode with SIZE() available
