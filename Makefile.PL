@@ -18,19 +18,21 @@ WriteMakefile(
   VERSION_FROM => 'lib/PDL/LinearAlgebra.pm',
   LICENSE => 'artistic_2',
   META_MERGE => {
-     "meta-spec" => { version => 2 },
-     resources => {
-        homepage => 'http://pdl.perl.org/',
-        repository  => {
-           url => 'git://github.com/PDLPorters/pdl-linearalgebra.git',
-           type => 'git',
-           web => 'https://github.com/PDLPorters/pdl-linearalgebra',
-        },
-        bugtracker => {web=>'https://github.com/PDLPorters/pdl-linearalgebra/issues'},
-     },
-     x_IRC => 'irc://irc.perl.org/#pdl',
+    "meta-spec" => { version => 2 },
+    resources => {
+      homepage => 'http://pdl.perl.org/',
+      repository  => {
+        url => 'git://github.com/PDLPorters/pdl-linearalgebra.git',
+        type => 'git',
+        web => 'https://github.com/PDLPorters/pdl-linearalgebra',
+      },
+      bugtracker => {web=>'https://github.com/PDLPorters/pdl-linearalgebra/issues'},
+    },
+    x_IRC => 'irc://irc.perl.org/#pdl',
   },
-  CONFIGURE_REQUIRES =>  { "PDL" => 0, },
+  CONFIGURE_REQUIRES =>  {
+    "PDL" => 0,
+  },
   PREREQ_PM => { "PDL" => 0 },
   dist => { PREOP=>'$(PERL) -MPDL::Core::Dev -e pdlpp_mkgen $(DISTVNAME)' }, # GENERATED subdir in dist tarball
   clean => { FILES => '*~' },
