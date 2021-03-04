@@ -50,7 +50,7 @@ jobs:
         with:
           target-setup-perl: false
           target-install-dist-perl-deps: true
-          dist-perl-deps-configure: PDL
+          dist-perl-deps-configure: PDL Devel::CheckLib ExtUtils::F77
           target-test-release-testing: true
           target-test: true
           test-enable-release-testing: ${{ matrix.release-test }}
