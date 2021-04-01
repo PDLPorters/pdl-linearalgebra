@@ -63,14 +63,40 @@ sub generate_code($){
 	}
 }
 
+my %float2native = (F => 'G', D => 'C');
 sub pp_defc {
   my ($function, %hash) = @_;
   $hash{GenericTypes} ||= [qw(F D)];
-  $hash{Doc} ||= "\n=for ref\n\nComplex version of $function\n\n";
+  my $doc = $hash{Doc} || "\n=for ref\n\nComplex version of $function\n\n";
+  $hash{Doc} = undef;
   my $decl = delete $hash{_decl};
   $decl =~ s/\$GENERIC\(\)\s*\*/void */g; # dodge float vs float complex ptr problem
   $hash{Code} = "$decl\n$hash{Code}";
-  pp_def("c$function", %hash);
+  pp_def("__Cc$function", %hash);
+  my %hash2 = %hash;
+  $hash2{Pars} =~ s/\(2,/(/g;
+  $hash2{GenericTypes} = [map $float2native{$_} || $_, @{$hash{GenericTypes}}];
+  $hash2{Code} =~ s/\$GENERIC\(\)/\$TFD(float,double)/g;
+  $hash2{Code} =~ s/\$TFD\(/\$TGC(/g;
+  pp_def("__Nc$function", %hash2);
+  pp_add_exported("c$function");
+  pp_addpm(<<EOF);
+=head2 c$function
+
+=for sig
+
+  Signature: ($hash{Pars})
+
+$doc
+
+=cut
+
+sub PDL::c$function {
+  \$_[0]->type->real ? goto &PDL::__Cc$function : goto &PDL::__Nc$function;
+}
+*c$function = \\&PDL::c$function;
+
+EOF
 }
 
 #pp_bless('PDL::Complex');
@@ -124,6 +150,17 @@ PDL::LinearAlgebra::Complex - PDL interface to the lapack linear algebra program
  $s = r2C zeroes(100);
  $u = r2C zeroes(100,100);
  $v = r2C zeroes(100,100);
+ $info = 0;
+ $job = 0;
+ cgesdd($a, $job, $info, $s , $u, $v);
+
+ # or, using native complex numbers:
+ use PDL;
+ use PDL::LinearAlgebra::Complex;
+ $a = random(cdouble, 100, 100);
+ $s = zeroes(cdouble, 100);
+ $u = zeroes(cdouble, 100, 100);
+ $v = zeroes(cdouble, 100, 100);
  $info = 0;
  $job = 0;
  cgesdd($a, $job, $info, $s , $u, $v);

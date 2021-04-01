@@ -20,6 +20,16 @@ for my $D (3..N+2) { #first differences
     my $r=sequence($D)*(1-i)/(1+i);
     ok($b->complex->approx($r)->all, "1st diff. cgtsv in D=$D")
       or diag "info: ", $info, "\nGot: ", $b, "\nExpected: ", $r;
+
+    $c=zeroes(cdouble, $D);
+    $d=-ones($D)*(1+ci);
+    $e=ones($D)*(1+ci); $e->((-1)).=0+0*ci;
+    $b=ones($D)*(1-ci); $b->((-1)).=(1-$D)*(1-ci);
+    $info=pdl(short,0);
+    cgtsv($c, $d, $e, $b, $info);
+    $r=sequence($D)*(1-ci)/(1+ci);
+    ok($b->approx($r)->all, "1st diff. native cgtsv in D=$D")
+      or diag "info: ", $info, "\nGot: ", $b, "\nExpected: ", $r;
 }
 
 for my $D (3..N+2){ #second differences
