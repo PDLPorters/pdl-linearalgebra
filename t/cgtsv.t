@@ -7,9 +7,9 @@ use PDL::Complex;
 use PDL::NiceSlice;
 use PDL::LinearAlgebra::Complex;
 use constant N=>10;
-use Test::More tests => 2*N;
+use Test::More;
 
-for my $D (3..N+2) { #first differencess
+for my $D (3..N+2) { #first differences
     #solve (1+i)(b_{n+1}-b_n)=1-i with homogeneous BCs
     my $c=zeroes($D)+0*i;
     my $d=-ones($D)*(1+i);
@@ -35,3 +35,5 @@ for my $D (3..N+2){ #second differences
     ok($b->complex->approx($r)->all, "2nd diff. cgtsv in D=$D")
       or diag "info: ", $info, "\nGot: ", $b, "\nExpected: ", $r;
 }
+
+done_testing;
