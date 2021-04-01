@@ -4382,14 +4382,14 @@ pp_defc("gecon",
              char pnorm = \'I\';
 
 	     types(F) %{
-		extern int sgecon_(char *norm, integer *n, float *a, integer *
+		extern int cgecon_(char *norm, integer *n, float *a, integer *
 		lda, float *anorm, float *rcond, float *work, float *
 		rwork, integer *info);
 		float *work = (float *) malloc(($PRIV(__n_size) * 4) *  sizeof(float));
 		float *rwork = (float *) malloc(($PRIV(__n_size) * 2)*  sizeof(integer));
              %}
              types(D) %{
-		extern int dgecon_(char *norm, integer *n, double *a, integer *
+		extern int zgecon_(char *norm, integer *n, double *a, integer *
 		lda, double *anorm, double *rcond, double *work, double *
 		rwork, integer *info);
 		double *work = (double *) malloc(($PRIV(__n_size)*4) *  sizeof(double));
@@ -4400,7 +4400,7 @@ pp_defc("gecon",
 		if($norm())
 			pnorm = \'O\';
 
-		$TFD(sgecon_,dgecon_)(
+		$TFD(cgecon_,zgecon_)(
 		&pnorm,
 		&(integer){$PRIV(__n_size)},
 		$P(A),
@@ -4549,13 +4549,13 @@ pp_defc("trcon",
              char pdiag = \'N\';
              char pnorm = \'I\';
 	     types(F) %{
-		extern int strcon_(char *norm, char *uplo, char *diag,integer *n, float *a, integer *
+		extern int ctrcon_(char *norm, char *uplo, char *diag,integer *n, float *a, integer *
 		lda, float *rcond, float *work, float *rwork, integer *info);
 		float *work = (float *) malloc(($PRIV(__n_size) * 4) *  sizeof(float));
 		float *rwork = (float *) malloc($PRIV(__n_size) *  sizeof(integer));
              %}
              types(D) %{
-		extern int dtrcon_(char *norm, char *uplo, char *diag, integer *n, double *a, integer *
+		extern int ztrcon_(char *norm, char *uplo, char *diag, integer *n, double *a, integer *
 		lda, double *rcond, double * work, double *rwork, integer *info);
 		double *work = (double *) malloc(($PRIV(__n_size)* 4) *  sizeof(double));
 		double *rwork = (double *) malloc($PRIV(__n_size) *  sizeof(integer));
@@ -4568,7 +4568,7 @@ pp_defc("trcon",
 		if($norm())
 			pnorm = \'O\';
 
-		$TFD(strcon_,dtrcon_)(
+		$TFD(ctrcon_,ztrcon_)(
 		&pnorm,
 		&puplo,
 		&pdiag,

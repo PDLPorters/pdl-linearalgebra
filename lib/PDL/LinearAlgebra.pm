@@ -970,8 +970,6 @@ sub PDL::mrcond {
 		$m->gecon($anorm,$norm,$rcond,$info);
 	}
 	return wantarray ? ($rcond, $info) : $rcond;
-
-	
 }
 
 sub PDL::Complex::mrcond {
