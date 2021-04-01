@@ -5345,8 +5345,9 @@ EOT
 );
 
 pp_addhdr('
-void cftrace(int n, float *mat, float *res)
+void cftrace(int n, void *a1, void *a2)
 {
+  float *mat = a1, *res = a2;
   int i;
   res[0] = mat[0];
   res[1] = mat[1];
@@ -5356,8 +5357,9 @@ void cftrace(int n, float *mat, float *res)
    	res[1] += mat[(i*(n+1))*2+1];
   }
 }
-void cdtrace(int n, double *mat, double *res)
+void cdtrace(int n, void *a1, void *a2)
 {
+  double *mat = a1, *res = a2;
   int i;
   res[0] = mat[0];
   res[1] = mat[1];
