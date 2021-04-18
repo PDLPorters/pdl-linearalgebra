@@ -1,11 +1,8 @@
-#!/usr/bin/perl
 use PDL::LiteF;
 use PDL::LinearAlgebra;
 use PDL::LinearAlgebra::Trans qw //;
 use PDL::Complex;
-use Test;
-
-BEGIN { plan tests => 9 };
+use Test::More;
 
 sub fapprox {
 	my($a,$b) = @_;
@@ -31,3 +28,5 @@ ok($a->mcrossprod->mposdet !=0);
 ok(fapprox($a->mcos->macos,pdl([[1.7018092, 0.093001244],[0.26737858,1.8645614]])));
 ok(fapprox($a->msin->masin,pdl([[ -1.4397834,0.093001244],[0.26737858,-1.2770313]])));
 ok(fapprox($a->mexp->mlog,$a));
+
+done_testing;
