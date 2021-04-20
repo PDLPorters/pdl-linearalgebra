@@ -1,3 +1,5 @@
+use strict;
+use warnings;
 use PDL::LiteF;
 use PDL::LinearAlgebra;
 use PDL::LinearAlgebra::Trans qw //;
@@ -9,13 +11,13 @@ sub fapprox {
 	PDL::abs($a-$b)->max < 0.0001;
 }
 
-$a = pdl([[1.7,3.2],[9.2,7.3]]);
+my $a = pdl([[1.7,3.2],[9.2,7.3]]);
 ok(fapprox($a->t,$a->xchg(0,1)));
 
-$aa = cplx random(2,2,2);
+my $aa = cplx random(2,2,2);
 ok(fapprox($aa->t(0),$aa->xchg(1,2)));
 
-$id = pdl([[1,0],[0,1]]);
+my $id = pdl([[1,0],[0,1]]);
 ok(fapprox($a->minv x $a,$id));
 
 ok(fapprox($a->mcrossprod->mposinv->tritosym x $a->mcrossprod,$id));
