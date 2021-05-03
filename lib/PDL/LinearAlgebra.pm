@@ -29,15 +29,12 @@ $VERSION = eval $VERSION;
 				mgeigen  mgeigenx msymeigen msymeigenx msymgeigen msymgeigenx
 				msolve mtrisolve msymsolve mpossolve msolvex msymsolvex mpossolvex
 				mrank mlls mllsy mllss mglm mlse tritosym mnorm mgschur mgschurx
-				mcrossprod mcond morth mschur mschurx posinf neginf nan
+				mcrossprod mcond morth mschur mschurx posinf neginf
 				NO WARN BARF setlaerror getlaerorr laerror/;
 %PDL::LinearAlgebra::EXPORT_TAGS = (Func=>[@PDL::LinearAlgebra::EXPORT_OK]);
 
 my $_laerror = BARF;
 
-my $nan;
-BEGIN { $nan = 0/pdl(0) }
-sub nan() { $nan->copy };
 my $posinf;
 BEGIN { $posinf = 1/pdl(0) }
 sub posinf() { $posinf->copy };
