@@ -111,7 +111,7 @@ Blas vector routine use increment.
 =head1 DESCRIPTION
 
 This module provides an interface to parts of the real lapack library.
-These routines accept either float or double piddles.
+These routines accept either float or double ndarrays.
 
 EOD
 
@@ -10843,7 +10843,7 @@ pp_def(
 	Doc => <<EOT
 =for ref
 
-Combine two pidlles into a single piddle.
+Combine two ndarrays into a single ndarray.
 This routine does backward and forward dataflow automatically.
 
 =cut
@@ -10893,7 +10893,7 @@ pp_def(
 	Doc => <<EOT
 =for ref
 
-Combine two pidlles into a single piddle.
+Combine two ndarrays into a single ndarray.
 This routine does backward and forward dataflow automatically.
 
 =cut

@@ -41,7 +41,7 @@ This module provides some constructors of well known matrices.
 
 =for ref
 
-Contruct Hilbert matrix from specifications list or template piddle
+Contruct Hilbert matrix from specifications list or template ndarray
 
 =for usage
 
