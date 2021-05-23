@@ -75,16 +75,19 @@ use strict;
     PDL;
   my $warningFlag;
   BEGIN{
-  	$warningFlag = $^W;
-        $^W = 0;
- }
+    $warningFlag = $^W;
+    $^W = 0;
+  }
 
   use overload (
-		'x'     =>  sub {PDL::mmult($_[0], $_[1])},
- );
- 
- BEGIN{ $^W = $warningFlag;}
+    'x' => sub {
+      $_[0]->type->real
+        ? PDL::mmult($_[0], $_[1])
+        : PDL::cmmult($_[0], $_[1])
+    },
+  );
 
+  BEGIN{ $^W = $warningFlag;}
 }
 
 =encoding Latin-1

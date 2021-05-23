@@ -56,5 +56,11 @@ EOF
 PDL::LinearAlgebra::Complex::cgetrf($lu=$A->copy, $ipiv=null, $info=null);
 is $info, 0, 'cgetrf native worked';
 is $ipiv->nelem, 6, 'cgetrf gave right-sized ipiv';
+$B=pdl q[0.233178433563939+0.298197173371207i 1.09431208340166+1.30493506686269i 1.09216041861621+0.794394153882734i 0.55609433247125+0.515431151337765i 0.439100406078467+1.39139453403467i 0.252359761958406+0.570614019329113i];
+PDL::LinearAlgebra::Complex::cgetrs($lu, 1, $x=$B->copy, $ipiv, $info=null);
+is $info, 0;
+$x = $x->dummy(0); # transpose; xchg rightly fails if 1-D
+$got = $A x $x;
+ok fapprox($got, $B->dummy(0)) or diag "got: $got";
 
 done_testing;
