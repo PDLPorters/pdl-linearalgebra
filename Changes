@@ -1,3 +1,4 @@
+0.20 2021-05-30
 - also export mpinv
 - fix RedoDimsCode for native-complex
 - fix matrix-multiplication overload to work with native-complex
