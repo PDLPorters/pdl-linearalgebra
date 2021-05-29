@@ -78,6 +78,14 @@ sub pp_defc {
   $hash2{GenericTypes} = [map $float2native{$_} || $_, @{$hash{GenericTypes}}];
   $hash2{Code} =~ s/\$GENERIC\(\)/\$TFD(float,double)/g;
   $hash2{Code} =~ s/\$TFD\(/\$TGC(/g;
+  if ($hash2{RedoDimsCode}) {
+    # decrement numbers being compared to, or dims offsets
+    $hash2{RedoDimsCode} =~ s/(>\s*)(\d+)|(\[\s*)(\d+)(\s*\])/
+      $1
+        ? $1.($2 - 1)
+        : $3.($4 - 1).$5
+    /ge;
+  }
   pp_def("__Nc$function", %hash2);
   pp_add_exported("c$function");
   pp_addpm(<<EOF);

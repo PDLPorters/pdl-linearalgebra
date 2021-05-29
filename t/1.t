@@ -43,4 +43,18 @@ $x = $x->inplace->xchg(0,1);
 my $got = $A x $x;
 ok fapprox($got, $B) or diag "got: $got";
 
+$A=pdl cdouble, <<'EOF';
+[
+ [  1   0   0   0   0   0]
+ [0.5   1   0 0.5   0   0]
+ [0.5   0   1   0   0 0.5]
+ [  0   0   0   1   0   0]
+ [  0   0   0 0.5   1 0.5]
+ [  0   0   0   0   0   1]
+]
+EOF
+PDL::LinearAlgebra::Complex::cgetrf($lu=$A->copy, $ipiv=null, $info=null);
+is $info, 0, 'cgetrf native worked';
+is $ipiv->nelem, 6, 'cgetrf gave right-sized ipiv';
+
 done_testing;

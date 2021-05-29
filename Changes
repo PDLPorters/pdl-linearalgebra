@@ -1,4 +1,5 @@
 - also export mpinv
+- fix RedoDimsCode for native-complex
 
 0.19 2021-05-24
 - change to PDL 2.047 with native complex i()
