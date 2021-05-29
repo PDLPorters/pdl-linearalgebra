@@ -5352,7 +5352,7 @@ Solve the BLS using a divide and conquer approach.
 
 =item 3
 
-Apply back all the Householder transformationss to solve
+Apply back all the Householder transformations to solve
 the original least squares problem.
 
 =back
@@ -10532,7 +10532,7 @@ pp_def("laswp",
 
 Performs a series of row interchanges on the matrix A.   
 One row interchange is initiated for each of rows k1 through k2 of A.
-Doesn\'t use PDL indice (start = 1).   
+Doesn\'t use PDL indices (start = 1).
 
     Arguments   
     =========   
