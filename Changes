@@ -1,3 +1,5 @@
+- change $PRIV() to $COMP()
+
 0.23 2021-09-25
 - fix mdet acting on complex matrices - thanks @wlmb
 
