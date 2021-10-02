@@ -16,3 +16,4 @@ Trans/Trans.o*
 Trans/selectfunc.o*
 Trans/Trans.pm
 Trans/Trans.xs
+*/pp-*.[co]*
