@@ -7,6 +7,7 @@ my $file = lc($pkg).".pd";
 my @pack = ([$file, $pkg, "PDL::LinearAlgebra::$pkg"]);
 my %hash = pdlpp_stdargs(@pack);
 $hash{LIBS}[0] .= $libs0;
+$hash{OBJECT} .= ' selectfunc$(OBJ_EXT)';
 
 WriteMakefile(
 	%hash,

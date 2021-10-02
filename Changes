@@ -1,3 +1,5 @@
+- separate out {Real,Complex,Trans}/selectfunc.c
+
 0.24 2021-10-01
 - change $PRIV() to $COMP()
 
