@@ -1,3 +1,4 @@
+0.25 2021-10-02
 - separate out {Real,Complex,Trans}/selectfunc.c
 - opt in to upcoming PDL multi-C feature
 
