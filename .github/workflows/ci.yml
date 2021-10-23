@@ -44,6 +44,8 @@ jobs:
       - name: Install PDL dependencies
         if: matrix.os == 'ubuntu-latest'
         uses: PDLPorters/devops/github-actions/install-dep-pdl-dep@master
+      - name: Install LAPACK
+        uses: PDLPorters/devops/github-actions/install-dep-lapack@gha-bulk-actions # TODO @master
       - name: Install Perl configure deps
         shell: bash
         run: |
