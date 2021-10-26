@@ -42,7 +42,6 @@ jobs:
           target-setup-perl: true
           perl-version: ${{ matrix.perl-version }}
       - name: Install PDL dependencies
-        if: matrix.os == 'ubuntu-latest'
         uses: PDLPorters/devops/github-actions/install-dep-pdl-dep@master
       - name: Install LAPACK
         uses: PDLPorters/devops/github-actions/install-dep-lapack@gha-bulk-actions # TODO @master
