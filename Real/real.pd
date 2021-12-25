@@ -1,7 +1,3 @@
-# TODO 'further details' ======= =========
-# If array not referenced, min 1.
-
-
 do('../Config');
 
 our $VERSION = '0.14';
@@ -34,11 +30,6 @@ pp_addhdr('
 }
 
 pp_addhdr('
-#ifndef PDL /* this is needed for PDL pre-2.058 */
-#define PDL PDL_LinearAlgebra_Real
-Core* PDL = NULL; PDL_COMMENT("Structure hold core C functions")
-#endif
-
 #include <math.h>
 
 /* avoid annoying warnings */

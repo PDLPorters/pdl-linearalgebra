@@ -11,11 +11,6 @@ pp_addhdr('
 }
 
 pp_addhdr('
-#ifndef PDL /* this is needed for PDL pre-2.058 */
-#define PDL PDL_LinearAlgebra_Trans
-Core* PDL = NULL; PDL_COMMENT("Structure hold core C functions")
-#endif
-
 #include <math.h>
 
 typedef PDL_Long logical;
