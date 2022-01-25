@@ -220,10 +220,7 @@ Supports threading.
 
 =cut
 
-sub t{
-	my $m = shift;
-	$m->t(@_);
-}
+sub t {shift->t(@_)}
 
 sub PDL::t {
 	$_[0]->xchg(0,1);
@@ -249,10 +246,7 @@ Supports threading.
 
 =cut
 
-sub issym{
-	my $m = shift;
-	$m->issym(@_);
-}
+sub issym {shift->issym(@_)}
 
 sub PDL::issym {
 	my ($m, $tol) = @_;
@@ -321,10 +315,7 @@ Supports threading.
 
 =cut
 
-sub diag{
-	my $m = shift;
-	$m->diag(@_);
-}
+sub diag {shift->diag(@_)}
 sub PDL::diag{
 	my ($a,$i, $vec) = @_;
 	my ($diag, $dim, @dims, $z);
@@ -407,10 +398,7 @@ Uses L<tricpy|PDL::LinearAlgebra::Real/tricpy> or L<ctricpy|PDL::LinearAlgebra::
 
 =cut
 
-sub tritosym{
-	my $m = shift;
-	$m->tritosym(@_);
-}
+sub tritosym {shift->tritosym(@_)}
 
 sub PDL::tritosym {
 	my ($m, $upper) = @_;
@@ -494,10 +482,7 @@ Uses L<crossprod|PDL::LinearAlgebra::Real/crossprod> or L<ccrossprod|PDL::Linear
 
 =cut
 
-sub mcrossprod{
-	my $m = shift;
-	$m->mcrossprod(@_);
-}
+sub mcrossprod {shift->mcrossprod(@_)}
 
 sub PDL::mcrossprod {
 	my($a, $b) = @_;
@@ -588,11 +573,7 @@ Supports threading.
 
 =cut
 
-sub mnorm {
-	my $m =shift;
-	$m->mnorm(@_);
-}
-
+sub mnorm {shift->mnorm(@_)}
 
 sub PDL::mnorm {
 	my ($m, $ord) = @_;
@@ -773,10 +754,7 @@ Uses L<potrf|PDL::LinearAlgebra::Real/potrf> or L<cpotrf|PDL::LinearAlgebra::Com
 
 =cut
 
-sub mposdet{
-	my $m =shift;
-	$m->mposdet(@_);
-}
+sub mposdet {shift->mposdet(@_)}
 
 sub PDL::mposdet {
 	my ($m, $upper)  = @_;
@@ -844,10 +822,7 @@ Supports threading.
 
 =cut
 
-sub mcond{
-	my $m =shift;
-	$m->mcond(@_);
-}
+sub mcond {shift->mcond(@_)}
 
 sub PDL::mcond {
 	my $m = shift;
@@ -933,10 +908,7 @@ Works on transposed array(s)
 
 =cut
 
-sub mrcond{
-	my $m =shift;
-	$m->mcond(@_);
-}
+sub mrcond {shift->mrcond(@_)}
 
 sub PDL::mrcond {
 	my ($m,$anorm) = @_;
@@ -1182,10 +1154,7 @@ Returns C<inverse, info> in array context.
 =cut
 
 
-sub mtriinv{
-	my $m = shift;
-	$m->mtriinv(@_);
-}
+sub mtriinv {shift->mtriinv(@_)}
 
 sub PDL::mtriinv{
 	my $m = shift;
@@ -1254,10 +1223,7 @@ from Lapack and returns C<inverse, info> in array context.
 
 =cut
 
-sub msyminv {
-	my $m = shift;
-	$m->msyminv(@_);
-}
+sub msyminv {shift->msyminv(@_)}
 
 sub PDL::msyminv {
 	my $m = shift;
@@ -1341,10 +1307,7 @@ from Lapack and returns C<inverse, info> in array context.
 
 =cut
 
-sub mposinv {
-	my $m = shift;
-	$m->mposinv(@_);
-}
+sub mposinv {shift->mposinv(@_)}
 
 sub PDL::mposinv {
 	my $m = shift;
@@ -1557,10 +1520,7 @@ Uses L<potrf|PDL::LinearAlgebra::Real/potrf> or L<cpotrf|PDL::LinearAlgebra::Com
 
 =cut
 
-sub mchol {
-	my $m = shift;
-	$m->mchol(@_);
-}
+sub mchol {shift->mchol(@_)}
 
 sub PDL::mchol {
 	my($m, $upper) = @_;
@@ -1735,11 +1695,7 @@ Works on tranposed array(s).
 =cut
 
 
-sub mschur{
-	my $m = shift;
-	$m->mschur(@_);
-
-}
+sub mschur {shift->mschur(@_)}
 
 sub PDL::mschur{
 	my ($m, $jobv, $jobvl, $jobvr, $select_func, $mult,$norm) = @_;
@@ -2560,10 +2516,7 @@ Works on transposed array.
 =cut
 
 
-sub mgschur{
-	my $m = shift;
-	$m->mgschur(@_);
-}
+sub mgschur {shift->mgschur(@_)}
 
 sub PDL::mgschur{
 	my($m, $p, $jobvsl, $jobvsr, $jobvl, $jobvr, $select_func, $mult, $norm) = @_;
@@ -3516,10 +3469,7 @@ from Lapack and returns C<Q> in scalar context. Works on transposed array.
 
 =cut
 
-sub mqr{
-	my $m = shift;
-	$m->mqr(@_);
-}
+sub mqr {shift->mqr(@_)}
 
 sub PDL::mqr {
 	my($m, $full) = @_;
@@ -3616,10 +3566,7 @@ from Lapack and returns C<Q> in scalar context. Works on transposed array.
 
 =cut
 
-sub mrq{
-	my $m = shift;
-	$m->mrq(@_);
-}
+sub mrq {shift->mrq(@_)}
 
 sub PDL::mrq {
 	my($m, $full) = @_;
@@ -3754,10 +3701,7 @@ from Lapack and returns C<Q> in scalar context. Works on transposed array.
 
 =cut
 
-sub mql{
-	my $m = shift;
-	$m->mql(@_);
-}
+sub mql {shift->mql(@_)}
 
 sub PDL::mql {
 	my($m, $full) = @_;
@@ -3892,10 +3836,7 @@ from Lapack and returns C<Q> in scalar context. Works on transposed array.
 
 =cut
 
-sub mlq{
-	my $m = shift;
-	$m->mlq(@_);
-}
+sub mlq {shift->mlq(@_)}
 
 sub PDL::mlq {
 	my($m, $full) = @_;
@@ -4012,11 +3953,7 @@ Works on transposed arrays.
 
 =cut
 
-
-sub msolve{
-	my $m = shift;
-	$m->msolve(@_);
-}
+sub msolve {shift->msolve(@_)}
 
 sub PDL::msolve {
 	my($a, $b) = @_;
@@ -4241,11 +4178,7 @@ Work on transposed array(s).
 
 =cut
 
-
-sub mtrisolve{
-	my $m = shift;
-	$m->mtrisolve(@_);
-}
+sub mtrisolve {shift->mtrisolve(@_)}
 
 sub PDL::mtrisolve{
 	my($a, $uplo, $b, $trans, $diag) = @_;
@@ -4337,10 +4270,7 @@ Works on transposed array(s).
 
 =cut
 
-sub msymsolve{
-	my $m = shift;
-	$m->msymsolve(@_);
-}
+sub msymsolve {shift->msymsolve(@_)}
 
 sub PDL::msymsolve {
 	my($a, $uplo, $b) = @_;
@@ -4534,10 +4464,7 @@ Works on transposed array(s).
 =cut
 
 
-sub mpossolve{
-	my $m = shift;
-	$m->mpossolve(@_);
-}
+sub mpossolve {shift->mpossolve(@_)}
 
 sub PDL::mpossolve {
 	my($a, $uplo, $b) = @_;
@@ -5037,10 +4964,7 @@ from Lapack. Works on transposed arrays.
 
 =cut
 
-sub mglm{
-	my $m = shift;
-	$m->mglm(@_);
-}
+sub mglm {shift->mglm(@_)}
 
 sub PDL::mglm{
 	my($a, $b, $d) = @_;
@@ -5192,11 +5116,7 @@ Works on transposed arrays.
 
 =cut
 
-sub meigen{
-	my $m = shift;
-	$m->meigen(@_);
-}
-
+sub meigen {shift->meigen(@_)}
 
 sub PDL::meigen {
 	my($m,$jobvl,$jobvr) = @_;
@@ -5535,11 +5455,7 @@ Works on transposed arrays.
 
 =cut
 
-
-sub mgeigen{
-	my $m = shift;
-	$m->mgeigen(@_);
-}
+sub mgeigen {shift->mgeigen(@_)}
 
 sub PDL::mgeigen {
 	my($a, $b,$jobvl,$jobvr) = @_;
@@ -5889,10 +5805,7 @@ Works on transposed array(s).
 
 =cut
 
-sub msymeigen{
-	my $m = shift;
-	$m->msymeigen(@_);
-}
+sub msymeigen {shift->msymeigen(@_)}
 
 sub PDL::msymeigen {
 	my($m, $upper, $jobv, $method) = @_;
@@ -6132,11 +6045,7 @@ Works on transposed array(s).
 
 =cut
 
-
-sub msymgeigen{
-	my $a = shift;
-	$a->msymgeigen(@_);
-}
+sub msymgeigen {shift->msymgeigen(@_)}
 
 sub PDL::msymgeigen {
 	my($a, $b, $upper, $jobv, $type, $method) = @_;
@@ -6374,12 +6283,7 @@ Uses L<gesdd|PDL::LinearAlgebra::Real/gesdd> or L<cgesdd|PDL::LinearAlgebra::Com
 
 =cut
 
-
-sub mdsvd{
-	my $a = shift;
-	$a->mdsvd(@_);
-}
-
+sub mdsvd {shift->mdsvd(@_)}
 
 sub PDL::mdsvd {
 	my($m, $job) = @_;
@@ -6501,11 +6405,7 @@ Uses L<gesvd|PDL::LinearAlgebra::Real/gesvd> or L<cgesvd|PDL::LinearAlgebra::Com
 
 =cut
 
-sub msvd{
-	my $a = shift;
-	$a->msvd(@_);
-}
-
+sub msvd {shift->msvd(@_)}
 
 sub PDL::msvd {
 	my($m, $jobu, $jobv) = @_;
@@ -6642,10 +6542,7 @@ L<cggsvd|PDL::LinearAlgebra::Complex/cggsvd> from Lapack. Works on transposed ar
 
 =cut
 
-sub mgsvd{
-	my $m =shift;
-	$m->mgsvd(@_);
-}
+sub mgsvd {shift->mgsvd(@_)}
 
 sub PDL::mgsvd {
 	my($a, $b, %opt) = @_;

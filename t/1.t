@@ -67,5 +67,4 @@ my $complex_matrix=(1+sequence(2,2))*$i;
 $got=$complex_matrix->mdet;
 ok(fapprox($got, 2), "Complex mdet") or diag "got $got";
 
-
 done_testing;
