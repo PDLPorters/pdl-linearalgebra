@@ -10565,7 +10565,7 @@ pp_def(
 	'tricpy',
 	Pars => 'A(m,n);int uplo();[o] C(m,n)',
 	Code => '
-		PDL_Long i, j, k;
+		PDL_Indx i, j, k;
 		
 		if ($uplo())
 		{
@@ -10603,8 +10603,8 @@ pp_def(
 	'cplx_eigen',
 	Pars => 'eigreval(n);eigimval(n); eigvec(n,p);int fortran();[o]cplx_val(q=2,n);[o]cplx_vec(r=2,n,p)',
 	Code => '
-	  register PDL_Long i,j;
-	  PDL_Long index;	  
+	  register PDL_Indx i,j;
+	  PDL_Indx index;
 
 	  if ($fortran())
 	  {
@@ -10692,7 +10692,7 @@ pp_def(
 	Pars => 'x(n); y(p);[o]out(q)',
 	RedoDimsCode => '$SIZE(q) = ( $PDL(x)->ndims > 0 ? $PDL(x)->dims[0] : 1) + ( $PDL(y)->ndims > 0 ? $PDL(y)->dims[0] : 1);',
 	Code => '
-	  register PDL_Long i,j;
+	  register PDL_Indx i,j;
 
 	  for (i=0; i < $SIZE(n); i++){
 	  	$out(q=>i) = $x(n=>i);
@@ -10704,7 +10704,7 @@ pp_def(
   	  }
 	',
        BackCode => '
-	  register PDL_Long i,j;
+	  register PDL_Indx i,j;
 
 	  for (i=0; i < $SIZE(n); i++){
 	  	$x(n=>i) = $out(q=>i);
@@ -10735,7 +10735,7 @@ pp_def(
 	Pars => 'x(n,m);y(n,p);[o]out(n,q);',
 	RedoDimsCode => '$SIZE(q) = $PDL(x)->dims[1] + $PDL(y)->dims[1];',
 	Code => '
-	  register PDL_Long i,j;
+	  register PDL_Indx i,j;
 	  loop(m)%{
 		  loop(n)%{
 			$out(n=>n,q=>m) = $x();
@@ -10751,7 +10751,7 @@ pp_def(
 	',
 
        BackCode => '
-	  register PDL_Long i,j;
+	  register PDL_Indx i,j;
 	  loop(m)%{
 		  loop(n)%{
 			$x() = $out(n=>n,q=>m);

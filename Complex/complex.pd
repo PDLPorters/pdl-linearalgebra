@@ -5177,7 +5177,7 @@ pp_def(
 	'ctricpy',
 	Pars => 'A(c=2,m,n);int uplo();[o] C(c=2,m,n)',
 	Code => '
-		PDL_Long i, j, k;
+		PDL_Indx i, j, k;
 		
 		if ($uplo())
 		{
@@ -5228,7 +5228,7 @@ pp_def(
 	Pars => 'x(c,n,m);y(c,n,p);[o]out(c,n,q);',
 	RedoDimsCode => '$SIZE(q) = $PDL(x)->dims[2] + $PDL(y)->dims[2];',
 	Code => '
-	  register PDL_Long i,j;
+	  register PDL_Indx i,j;
 	  loop(m)%{
 		  loop(n)%{
 			  loop(c)%{
@@ -5248,7 +5248,7 @@ pp_def(
 	',
 
        BackCode => '
-	  register PDL_Long i,j;
+	  register PDL_Indx i,j;
 	  loop(m)%{
 		  loop(n)%{
 			loop(c)%{
