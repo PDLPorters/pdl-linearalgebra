@@ -240,7 +240,7 @@ sub PDL::mtoeplitz {
 	$n = $m->copy unless defined $n;
 	my $mdim= $m->dim(-1);
 	my $ndim= $n->dim(-1);
-	$res = PDL::new_from_specification('PDL',$m->type,$ndim,$mdim);
+	$res = PDL->new_from_specification($m->type,$ndim,$mdim);
 
 	$ndim--;
 	$min = $mdim <= $ndim ? $mdim : $ndim;

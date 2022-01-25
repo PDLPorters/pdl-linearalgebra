@@ -78,7 +78,7 @@ sub ecplx {
   if (defined $im){
 	  $re = pdl($re) unless (UNIVERSAL::isa($re,'PDL'));
 	  $im = pdl($im) unless (UNIVERSAL::isa($im,'PDL'));
-	  my $ret =  PDL::new_from_specification('PDL::Complex', $re->type, 2, $re->dims);
+	  my $ret =  PDL::Complex->new_from_specification($re->type, 2, $re->dims);
 	  $ret->slice('(0),') .= $re;
 	  $ret->slice('(1),') .= $im;
 	  return $ret;
@@ -419,7 +419,7 @@ sub PDL::tritosym {
 	barf("tritosym: Require square array(s)")
 		unless( $dims[0] == $dims[1] );
 
-	my $b = $m->is_inplace ? $m : PDL::new_from_specification(ref($m),$m->type,@dims);
+	my $b = $m->is_inplace ? $m : ref($m)->new_from_specification($m->type,@dims);
 	$m->tricpy($upper, $b) unless $m->is_inplace(0);
 	$m->tricpy($upper, $b->xchg(0,1));
 	$b;
@@ -433,7 +433,7 @@ sub PDL::Complex::tritosym {
 	barf("tritosym: Require square array(s)")
 		if( $dims[1] != $dims[2] );
 
-	my $b = $m->is_inplace ? $m : PDL::new_from_specification(ref($m),$m->type,@dims);
+	my $b = $m->is_inplace ? $m : ref($m)->new_from_specification($m->type,@dims);
 	$conj = 1 unless defined($conj);
 	$conj ? PDL::Complex::Cconj($m)->ctricpy($upper, $b->xchg(1,2)) :
 			$m->ctricpy($upper, $b->xchg(1,2));
@@ -1769,7 +1769,7 @@ sub PDL::mschur{
 	 		&$select_func(PDL::Complex::complex(pdl($type,@_[0..1])));
 		};
 	}
-	$v = $jobv ? PDL::new_from_specification('PDL', $type, $dims[1], $dims[1],@dims[2..$#dims]) :
+	$v = $jobv ? PDL->new_from_specification($type, $dims[1], $dims[1],@dims[2..$#dims]) :
 				pdl($type,0);
 	$mm->gees( $jobv, $select, $wtmp, $wi, $v, $sdim,$info, $select_f);
 
@@ -1825,8 +1825,8 @@ sub PDL::mschur{
 					$vl = $v->copy if $jobvl;
 				}
 				else{
-					$vr = PDL::new_from_specification('PDL', $type, $dims[1], $dims[1],@dims[2..$#dims]) if $jobvr;
-					$vl = PDL::new_from_specification('PDL', $type, $dims[1], $dims[1],@dims[2..$#dims]) if $jobvl;
+					$vr = PDL->new_from_specification($type, $dims[1], $dims[1],@dims[2..$#dims]) if $jobvr;
+					$vl = PDL->new_from_specification($type, $dims[1], $dims[1],@dims[2..$#dims]) if $jobvl;
 					$mult = 0;
 				}
 				$mm->trevc($job, $mult, $sel, $vl, $vr, $sdims, my $infos=null);
@@ -1857,8 +1857,8 @@ sub PDL::mschur{
 				}
 			}
 			else{
-				$vr = PDL::new_from_specification('PDL', $type, $dims[1], $sdim) if $jobvr;
-				$vl = PDL::new_from_specification('PDL', $type, $dims[1], $sdim) if $jobvl;
+				$vr = PDL->new_from_specification($type, $dims[1], $sdim) if $jobvr;
+				$vl = PDL->new_from_specification($type, $dims[1], $sdim) if $jobvl;
 				$sel = zeroes($dims[1]);
 				$sel(:($sdim-1)) .= 1;
 				$mm->trevc($job, 2, $sel, $vl, $vr, $sdim, my $infos = null);
@@ -1897,8 +1897,8 @@ sub PDL::mschur{
 				$vl = $v->copy if $jobvl;
 			}
 			else{
-				$vr = PDL::new_from_specification('PDL', $type, $dims[1], $dims[1],@dims[2..$#dims]) if $jobvr;
-				$vl = PDL::new_from_specification('PDL', $type, $dims[1], $dims[1],@dims[2..$#dims]) if $jobvl;
+				$vr = PDL->new_from_specification($type, $dims[1], $dims[1],@dims[2..$#dims]) if $jobvr;
+				$vl = PDL->new_from_specification($type, $dims[1], $dims[1],@dims[2..$#dims]) if $jobvl;
 				$mult = 0;
 			}
 			$mm->trevc($job, $mult, $sel, $vl, $vr, $sdim, my $infos=null);
@@ -1965,7 +1965,7 @@ sub PDL::Complex::mschur {
 
 	$mm = $m->is_inplace ? $m->xchg(1,2) : $m->xchg(1,2)->copy;
 	$w = PDL::Complex->null;
-	$v = $jobv ? PDL::new_from_specification('PDL::Complex', $type, 2, $dims[1], $dims[1],@dims[3..$#dims]) :
+	$v = $jobv ? PDL::Complex->new_from_specification($type, 2, $dims[1], $dims[1],@dims[3..$#dims]) :
 				pdl($type,[0,0]);
 
 	$mm->cgees( $jobv, $select, $w, $v, $sdim, $info, $select_func);
@@ -2023,8 +2023,8 @@ sub PDL::Complex::mschur {
 					$vl = $v->copy if $jobvl;
 				}
 				else{
-					$vr = PDL::new_from_specification('PDL::Complex', $type, 2, $dims[1], $dims[1],@dims[3..$#dims]) if $jobvr;
-					$vl = PDL::new_from_specification('PDL::Complex', $type, 2, $dims[1], $dims[1],@dims[3..$#dims]) if $jobvl;
+					$vr = PDL::Complex->new_from_specification($type, 2, $dims[1], $dims[1],@dims[3..$#dims]) if $jobvr;
+					$vl = PDL::Complex->new_from_specification($type, 2, $dims[1], $dims[1],@dims[3..$#dims]) if $jobvl;
 					$mult = 0;
 				}
 				$mm->ctrevc($job, $mult, $sel, $vl, $vr, $sdims, my $infos=null);
@@ -2048,8 +2048,8 @@ sub PDL::Complex::mschur {
 				}
 			}
 			else{
-				$vr = PDL::new_from_specification('PDL::Complex', $type, 2,$dims[1], $sdim) if $jobvr;
-				$vl = PDL::new_from_specification('PDL::Complex', $type, 2, $dims[1], $sdim) if $jobvl;
+				$vr = PDL::Complex->new_from_specification($type, 2,$dims[1], $sdim) if $jobvr;
+				$vl = PDL::Complex->new_from_specification($type, 2, $dims[1], $sdim) if $jobvl;
 				$sel = zeroes($dims[1]);
 				$sel(:($sdim-1)) .= 1;
 				$mm->ctrevc($job, 2, $sel, $vl, $vr, $sdim, my $infos=null);
@@ -2067,8 +2067,8 @@ sub PDL::Complex::mschur {
 				$vl = $v->copy if $jobvl;
 			}
 			else{
-				$vr = PDL::new_from_specification('PDL::Complex', $type, 2, $dims[1], $dims[1],@dims[3..$#dims]) if $jobvr;
-				$vl = PDL::new_from_specification('PDL::Complex', $type, 2, $dims[1], $dims[1],@dims[3..$#dims]) if $jobvl;
+				$vr = PDL::Complex->new_from_specification($type, 2, $dims[1], $dims[1],@dims[3..$#dims]) if $jobvr;
+				$vl = PDL::Complex->new_from_specification($type, 2, $dims[1], $dims[1],@dims[3..$#dims]) if $jobvl;
 				$mult = 0;
 			}
 			$mm->ctrevc($job, $mult, $sel, $vl, $vr, $sdim, my $infos=null);
@@ -2188,7 +2188,7 @@ sub PDL::mschurx{
 
 	if (@dims == 3){
 		$w = PDL::Complex->null;
-		$v = $jobv ? PDL::new_from_specification('PDL::Complex', $type, 2, $dims[1], $dims[1]) :
+		$v = $jobv ? PDL::Complex->new_from_specification($type, 2, $dims[1], $dims[1]) :
 					pdl($type,[0,0]);
 		$mm->cgeesx( $jobv, $select, $sense, $w, $v, $sdim, $rconde, $rcondv,$info, $select_func);
 
@@ -2231,8 +2231,8 @@ sub PDL::mschurx{
 						$vl = $v->copy if $jobvl;
 					}
 					else{
-						$vr = PDL::new_from_specification('PDL::Complex', $type, 2, $dims[1], $dims[1]) if $jobvr;
-						$vl = PDL::new_from_specification('PDL::Complex', $type, 2, $dims[1], $dims[1]) if $jobvl;
+						$vr = PDL::Complex->new_from_specification($type, 2, $dims[1], $dims[1]) if $jobvr;
+						$vl = PDL::Complex->new_from_specification($type, 2, $dims[1], $dims[1]) if $jobvl;
 						$mult = 0;
 					}
 					$mm->ctrevc($job, $mult, $sel, $vl, $vr, $sdims, my $infos=null);
@@ -2256,8 +2256,8 @@ sub PDL::mschurx{
 					}
 				}
 				else{
-					$vr = PDL::new_from_specification('PDL::Complex', $type, 2,$dims[1], $sdim) if $jobvr;
-					$vl = PDL::new_from_specification('PDL::Complex', $type, 2, $dims[1], $sdim) if $jobvl;
+					$vr = PDL::Complex->new_from_specification($type, 2,$dims[1], $sdim) if $jobvr;
+					$vl = PDL::Complex->new_from_specification($type, 2, $dims[1], $sdim) if $jobvl;
 					$sel = zeroes($dims[1]);
 					$sel(:($sdim-1)) .= 1;
 					$mm->ctrevc($job, 2, $sel, $vl, $vr, $sdim, my $infos=null);
@@ -2275,8 +2275,8 @@ sub PDL::mschurx{
 					$vl = $v->copy if $jobvl;
 				}
 				else{
-					$vr = PDL::new_from_specification('PDL::Complex', $type, 2, $dims[1], $dims[1]) if $jobvr;
-					$vl = PDL::new_from_specification('PDL::Complex', $type, $dims[1], 2, $dims[1]) if $jobvl;
+					$vr = PDL::Complex->new_from_specification($type, 2, $dims[1], $dims[1]) if $jobvr;
+					$vl = PDL::Complex->new_from_specification($type, $dims[1], 2, $dims[1]) if $jobvl;
 					$mult = 0;
 				}
 				$mm->ctrevc($job, $mult, $sel, $vl, $vr, $sdim, my $infos=null);
@@ -2306,7 +2306,7 @@ sub PDL::mschurx{
 		}
 		$wi = null;
 	       	$wtmp = null;
-		$v = $jobv ? PDL::new_from_specification('PDL', $type, $dims[1], $dims[1]) :
+		$v = $jobv ? PDL->new_from_specification($type, $dims[1], $dims[1]) :
 					pdl($type,0);
 		$mm->geesx( $jobv, $select, $sense, $wtmp, $wi, $v, $sdim, $rconde, $rcondv,$info, $select_f);
 		if ($info){
@@ -2348,8 +2348,8 @@ sub PDL::mschurx{
 						$vl = $v->copy if $jobvl;
 					}
 					else{
-						$vr = PDL::new_from_specification('PDL', $type, $dims[1], $dims[1]) if $jobvr;
-						$vl = PDL::new_from_specification('PDL', $type, $dims[1], $dims[1]) if $jobvl;
+						$vr = PDL->new_from_specification($type, $dims[1], $dims[1]) if $jobvr;
+						$vl = PDL->new_from_specification($type, $dims[1], $dims[1]) if $jobvl;
 						$mult = 0;
 					}
 					$mm->trevc($job, $mult, $sel, $vl, $vr, $sdims, my $infos=null);
@@ -2380,8 +2380,8 @@ sub PDL::mschurx{
 					}
 				}
 				else{
-					$vr = PDL::new_from_specification('PDL', $type, $dims[1], $sdim) if $jobvr;
-					$vl = PDL::new_from_specification('PDL', $type, $dims[1], $sdim) if $jobvl;
+					$vr = PDL->new_from_specification($type, $dims[1], $sdim) if $jobvr;
+					$vl = PDL->new_from_specification($type, $dims[1], $sdim) if $jobvl;
 					$sel = zeroes($dims[1]);
 					$sel(:($sdim-1)) .= 1;
 					$mm->trevc($job, 2, $sel, $vl, $vr, $sdim, my $infos = null);
@@ -2420,8 +2420,8 @@ sub PDL::mschurx{
 					$vl = $v->copy if $jobvl;
 				}
 				else{
-					$vr = PDL::new_from_specification('PDL', $type, $dims[1], $dims[1]) if $jobvr;
-					$vl = PDL::new_from_specification('PDL', $type, $dims[1], $dims[1]) if $jobvl;
+					$vr = PDL->new_from_specification($type, $dims[1], $dims[1]) if $jobvr;
+					$vl = PDL->new_from_specification($type, $dims[1], $dims[1]) if $jobvl;
 					$mult = 0;
 				}
 				$mm->trevc($job, $mult, $sel, $vl, $vr, $sdim, my $infos=null);
@@ -2598,12 +2598,12 @@ sub PDL::mgschur{
 	$wtmp = null;
       	$wi = null;
 	$beta = null;
-#		$vsl = $jobvsl ? PDL::new_from_specification('PDL', $type, $mdims[1], $mdims[1],@mdims[2..$#mdims]) :
+#		$vsl = $jobvsl ? PDL->new_from_specification($type, $mdims[1], $mdims[1],@mdims[2..$#mdims]) :
 #				pdl($type,[[0]]);
 
 	# Lapack always write in VSL (g77 3.3) ???
-	$vsl = PDL::new_from_specification('PDL', $type, $mdims[1], $mdims[1],@mdims[2..$#mdims]);
-	$vsr = $jobvsr ? PDL::new_from_specification('PDL', $type, $mdims[1], $mdims[1],@mdims[2..$#mdims]) :
+	$vsl = PDL->new_from_specification($type, $mdims[1], $mdims[1],@mdims[2..$#mdims]);
+	$vsr = $jobvsr ? PDL->new_from_specification($type, $mdims[1], $mdims[1],@mdims[2..$#mdims]) :
 				pdl($type,[[0]]);
 	$mm->gges( $jobvsl, $jobvsr, $select, $pp, $wtmp, $wi, $beta, $vsl, $vsr, $sdim, $info, $select_f);
 
@@ -2674,7 +2674,7 @@ sub PDL::mgschur{
 						$vl = $vsl->copy;
 					}
 					else{
-						$vl = PDL::new_from_specification('PDL', $type, $mdims[1], $mdims[1],@mdims[2..$#mdims]);
+						$vl = PDL->new_from_specification($type, $mdims[1], $mdims[1],@mdims[2..$#mdims]);
 						$mult = 0;
 					}
 				}
@@ -2683,7 +2683,7 @@ sub PDL::mgschur{
 						$vr = $vsr->copy;
 					}
 					else{
-						$vr = PDL::new_from_specification('PDL', $type, $mdims[1], $mdims[1],@mdims[2..$#mdims]);
+						$vr = PDL->new_from_specification($type, $mdims[1], $mdims[1],@mdims[2..$#mdims]);
 						$mult = 0;
 					}
 				}
@@ -2717,8 +2717,8 @@ sub PDL::mgschur{
 				}
 			}
 			else{
-				$vr = PDL::new_from_specification('PDL', $type, $mdims[1], $sdim) if $jobvr;
-				$vl = PDL::new_from_specification('PDL', $type, $mdims[1], $sdim) if $jobvl;
+				$vr = PDL->new_from_specification($type, $mdims[1], $sdim) if $jobvr;
+				$vl = PDL->new_from_specification($type, $mdims[1], $sdim) if $jobvl;
 				$sel = zeroes($mdims[1]);
 				$sel(:($sdim-1)) .= 1;
 				$mm->tgevc($job, 2, $pp, $sel, $vl, $vr, $sdim, my $infos = null);
@@ -2757,7 +2757,7 @@ sub PDL::mgschur{
 					$vl = $vsl->copy;
 				}
 				else{
-					$vl = PDL::new_from_specification('PDL', $type, $mdims[1], $mdims[1],@mdims[2..$#mdims]);
+					$vl = PDL->new_from_specification($type, $mdims[1], $mdims[1],@mdims[2..$#mdims]);
 					$mult = 0;
 				}
 			}
@@ -2766,7 +2766,7 @@ sub PDL::mgschur{
 					$vr = $vsr->copy;
 				}
 				else{
-					$vr = PDL::new_from_specification('PDL', $type, $mdims[1], $mdims[1],@mdims[2..$#mdims]);
+					$vr = PDL->new_from_specification($type, $mdims[1], $mdims[1],@mdims[2..$#mdims]);
 					$mult = 0;
 				}
 			}
@@ -2851,10 +2851,10 @@ sub PDL::Complex::mgschur{
 
 	$w = PDL::Complex->null;
 	$beta = PDL::Complex->null;
-	$vsr = $jobvsr ? PDL::new_from_specification('PDL::Complex', $type, 2, $mdims[1], $mdims[1],@mdims[3..$#mdims]) :
+	$vsr = $jobvsr ? PDL::Complex->new_from_specification($type, 2, $mdims[1], $mdims[1],@mdims[3..$#mdims]) :
 				pdl($type,[0,0]);
-#	$vsl = PDL::new_from_specification('PDL::Complex', $type, 2, $mdims[1], $mdims[1]);
-	$vsl = $jobvsl ? PDL::new_from_specification('PDL::Complex', $type, 2, $mdims[1], $mdims[1],@mdims[3..$#mdims]) :
+#	$vsl = PDL::Complex->new_from_specification($type, 2, $mdims[1], $mdims[1]);
+	$vsl = $jobvsl ? PDL::Complex->new_from_specification($type, 2, $mdims[1], $mdims[1],@mdims[3..$#mdims]) :
 				pdl($type,[0,0]);
 
 	$mm->cgges( $jobvsl, $jobvsr, $select, $pp, $w, $beta, $vsl, $vsr, $sdim, $info, $select_func);
@@ -2923,7 +2923,7 @@ sub PDL::Complex::mgschur{
 						$vl = $vsl->copy;
 					}
 					else{
-						$vl = PDL::new_from_specification('PDL::Complex', $type, 2, $mdims[1], $mdims[1],@mdims[3..$#mdims]);
+						$vl = PDL::Complex->new_from_specification($type, 2, $mdims[1], $mdims[1],@mdims[3..$#mdims]);
 						$mult = 0;
 					}
 				}
@@ -2932,7 +2932,7 @@ sub PDL::Complex::mgschur{
 						$vr = $vsr->copy;
 					}
 					else{
-						$vr = PDL::new_from_specification('PDL::Complex', $type, 2, $mdims[1], $mdims[1],@mdims[3..$#mdims]);
+						$vr = PDL::Complex->new_from_specification($type, 2, $mdims[1], $mdims[1],@mdims[3..$#mdims]);
 						$mult = 0;
 					}
 				}
@@ -2955,8 +2955,8 @@ sub PDL::Complex::mgschur{
 				}
 			}
 			else{
-				$vr = PDL::new_from_specification('PDL::Complex', $type, 2,$mdims[1], $sdim) if $jobvr;;
-				$vl = PDL::new_from_specification('PDL::Complex', $type, 2, $mdims[1], $sdim) if $jobvl;;
+				$vr = PDL::Complex->new_from_specification($type, 2,$mdims[1], $sdim) if $jobvr;;
+				$vl = PDL::Complex->new_from_specification($type, 2, $mdims[1], $sdim) if $jobvl;;
 					$sel = zeroes($mdims[1]);
 				$sel(:($sdim-1)) .= 1;
 				$mm->ctgevc($job, 2, $pp, $sel, $vl, $vr, $sdim, my $infos=null);
@@ -2974,7 +2974,7 @@ sub PDL::Complex::mgschur{
 					$vl = $vsl->copy;
 					}
 				else{
-					$vl = PDL::new_from_specification('PDL::Complex', $type, 2, $mdims[1], $mdims[1],@mdims[3..$#mdims]);
+					$vl = PDL::Complex->new_from_specification($type, 2, $mdims[1], $mdims[1],@mdims[3..$#mdims]);
 					$mult = 0;
 				}
 			}
@@ -2983,7 +2983,7 @@ sub PDL::Complex::mgschur{
 					$vr = $vsr->copy;
 				}
 				else{
-					$vr = PDL::new_from_specification('PDL::Complex', $type, 2, $mdims[1], $mdims[1],@mdims[3..$#mdims]);
+					$vr = PDL::Complex->new_from_specification($type, 2, $mdims[1], $mdims[1],@mdims[3..$#mdims]);
 					$mult = 0;
 				}
 			}
@@ -3129,10 +3129,10 @@ sub PDL::mgschurx{
 	if (@mdims == 3){
 		$w = PDL::Complex->null;
 		$beta = PDL::Complex->null;
-#		$vsl = $jobvsl ? PDL::new_from_specification('PDL::Complex', $type, 2, $mdims[1], $mdims[1]) :
+#		$vsl = $jobvsl ? PDL::Complex->new_from_specification($type, 2, $mdims[1], $mdims[1]) :
 #					pdl($type,[0,0]);
-		$vsl = PDL::new_from_specification('PDL::Complex', $type, 2, $mdims[1], $mdims[1]);
-		$vsr = $jobvsr ? PDL::new_from_specification('PDL::Complex', $type, 2, $mdims[1], $mdims[1]) :
+		$vsl = PDL::Complex->new_from_specification($type, 2, $mdims[1], $mdims[1]);
+		$vsr = $jobvsr ? PDL::Complex->new_from_specification($type, 2, $mdims[1], $mdims[1]) :
 					pdl($type,[0,0]);
 		$mm->cggesx( $jobvsl, $jobvsr, $select, $sense, $pp, $w, $beta, $vsl, $vsr, $sdim, $rconde, $rcondv,$info, $select_func);
 		if ($info){
@@ -3178,7 +3178,7 @@ sub PDL::mgschurx{
 							$vl = $vsl->copy;
 						}
 						else{
-							$vl = PDL::new_from_specification('PDL::Complex', $type, 2, $mdims[1], $mdims[1]);
+							$vl = PDL::Complex->new_from_specification($type, 2, $mdims[1], $mdims[1]);
 							$mult = 0;
 						}
 					}
@@ -3187,7 +3187,7 @@ sub PDL::mgschurx{
 							$vr = $vsr->copy;
 						}
 						else{
-							$vr = PDL::new_from_specification('PDL::Complex', $type, 2, $mdims[1], $mdims[1]);
+							$vr = PDL::Complex->new_from_specification($type, 2, $mdims[1], $mdims[1]);
 							$mult = 0;
 						}
 					}
@@ -3210,8 +3210,8 @@ sub PDL::mgschurx{
 					}
 				}
 				else{
-					$vr = PDL::new_from_specification('PDL::Complex', $type, 2,$mdims[1], $sdim) if $jobvr;
-					$vl = PDL::new_from_specification('PDL::Complex', $type, 2, $mdims[1], $sdim) if $jobvl;
+					$vr = PDL::Complex->new_from_specification($type, 2,$mdims[1], $sdim) if $jobvr;
+					$vl = PDL::Complex->new_from_specification($type, 2, $mdims[1], $sdim) if $jobvl;
 					$sel = zeroes($mdims[1]);
 					$sel(:($sdim-1)) .= 1;
 					$mm->ctgevc($job, 2, $pp, $sel, $vl, $vr, $sdim, my $infos=null);
@@ -3229,7 +3229,7 @@ sub PDL::mgschurx{
 						$vl = $vsl->copy;
 					}
 					else{
-						$vl = PDL::new_from_specification('PDL::Complex', $type, 2, $mdims[1], $mdims[1]);
+						$vl = PDL::Complex->new_from_specification($type, 2, $mdims[1], $mdims[1]);
 						$mult = 0;
 					}
 				}
@@ -3238,7 +3238,7 @@ sub PDL::mgschurx{
 						$vr = $vsr->copy;
 					}
 					else{
-						$vr = PDL::new_from_specification('PDL::Complex', $type, 2, $mdims[1], $mdims[1]);
+						$vr = PDL::Complex->new_from_specification($type, 2, $mdims[1], $mdims[1]);
 						$mult = 0;
 					}
 				}
@@ -3279,10 +3279,10 @@ sub PDL::mgschurx{
 		$wi = null;
 	       	$wtmp = null;
 	       	$beta = null;
-		#$vsl = $jobvsl ? PDL::new_from_specification('PDL', $type, $mdims[1], $mdims[1]) :
+		#$vsl = $jobvsl ? PDL->new_from_specification($type, $mdims[1], $mdims[1]) :
 		#			pdl($type,[[0]]);
-		$vsl = PDL::new_from_specification('PDL', $type, $mdims[1], $mdims[1]);
-		$vsr = $jobvsr ? PDL::new_from_specification('PDL', $type, $mdims[1], $mdims[1]) :
+		$vsl = PDL->new_from_specification($type, $mdims[1], $mdims[1]);
+		$vsr = $jobvsr ? PDL->new_from_specification($type, $mdims[1], $mdims[1]) :
 					pdl($type,[[0]]);
 		$mm->ggesx( $jobvsl, $jobvsr, $select, $sense, $pp, $wtmp, $wi, $beta, $vsl, $vsr, $sdim, $rconde, $rcondv,$info, $select_f);
 		if ($info){
@@ -3330,7 +3330,7 @@ sub PDL::mgschurx{
 							$vl = $vsl->copy;
 						}
 						else{
-							$vl = PDL::new_from_specification('PDL', $type, $mdims[1], $mdims[1]);
+							$vl = PDL->new_from_specification($type, $mdims[1], $mdims[1]);
 							$mult = 0;
 						}
 					}
@@ -3339,7 +3339,7 @@ sub PDL::mgschurx{
 							$vr = $vsr->copy;
 						}
 						else{
-							$vr = PDL::new_from_specification('PDL', $type, $mdims[1], $mdims[1]);
+							$vr = PDL->new_from_specification($type, $mdims[1], $mdims[1]);
 							$mult = 0;
 						}
 					}
@@ -3371,8 +3371,8 @@ sub PDL::mgschurx{
 					}
 				}
 				else{
-					$vr = PDL::new_from_specification('PDL', $type, $mdims[1], $sdim) if $jobvr;
-					$vl = PDL::new_from_specification('PDL', $type, $mdims[1], $sdim) if $jobvl;
+					$vr = PDL->new_from_specification($type, $mdims[1], $sdim) if $jobvr;
+					$vl = PDL->new_from_specification($type, $mdims[1], $sdim) if $jobvl;
 					$sel = zeroes($mdims[1]);
 					$sel(:($sdim-1)) .= 1;
 					$mm->tgevc($job, 2, $pp, $sel, $vl, $vr, $sdim, my $infos = null);
@@ -3410,7 +3410,7 @@ sub PDL::mgschurx{
 						$vl = $vsl->copy;
 					}
 					else{
-						$vl = PDL::new_from_specification('PDL', $type, $mdims[1], $mdims[1]);
+						$vl = PDL->new_from_specification($type, $mdims[1], $mdims[1]);
 						$mult = 0;
 					}
 				}
@@ -3419,7 +3419,7 @@ sub PDL::mgschurx{
 						$vr = $vsr->copy;
 					}
 					else{
-						$vr = PDL::new_from_specification('PDL', $type, $mdims[1], $mdims[1]);
+						$vr = PDL->new_from_specification($type, $mdims[1], $mdims[1]);
 						$mult = 0;
 					}
 				}
@@ -3578,12 +3578,12 @@ sub PDL::Complex::mqr {
 		return $q->xchg(1,2)->sever unless wantarray;
 
 		if ($dims[1] < $dims[2] && !$full){
-			$r = PDL::new_from_specification('PDL::Complex',$m->type, 2, $min, $min);
+			$r = PDL::Complex->new_from_specification($m->type, 2, $min, $min);
 			$r .= 0;
 			$m->xchg(1,2)->(,,:($min-1))->ctricpy(0,$r);
 		}
 		else{
-			$r = PDL::new_from_specification('PDL::Complex', $m->type, 2, $dims[1],$dims[2]);
+			$r = PDL::Complex->new_from_specification($m->type, 2, $dims[1],$dims[2]);
 			$r .= 0;
 			$m->xchg(1,2)->ctricpy(0,$r);
 		}
@@ -3691,7 +3691,7 @@ sub PDL::Complex::mrq {
 	}
 	else{
 		if ($dims[1] > $dims[2] && $full){
-			$q = PDL::new_from_specification('PDL::Complex',$m->type, 2, $dims[1],$dims[1]);
+			$q = PDL::Complex->new_from_specification($m->type, 2, $dims[1],$dims[1]);
 			$q .= 0;
 			$q(,($dims[1] - $dims[2]):,:) .= $m;
 		}
@@ -3706,13 +3706,13 @@ sub PDL::Complex::mrq {
 		return $q->xchg(1,2)->sever unless wantarray;
 
 		if ($dims[1] > $dims[2] && $full){
-			$r = PDL::new_from_specification('PDL::Complex',$m->type,2,$dims[1],$dims[2]);
+			$r = PDL::Complex->new_from_specification($m->type,2,$dims[1],$dims[2]);
 			$r .= 0;
 			$m->xchg(1,2)->ctricpy(0,$r);
 			$r(,:($min-1),:($min-1))->diagonal(1,2) .= 0;
 		}
 		elsif ($dims[1] < $dims[2]){
-			my $temp = PDL::new_from_specification('PDL::Complex',$m->type,2,$dims[2],$dims[2]);
+			my $temp = PDL::Complex->new_from_specification($m->type,2,$dims[2],$dims[2]);
 			$temp .= 0;
 			$temp(,-$min:, :) .= $m->xchg(1,2);
 			$r = PDL::zeroes($temp);
@@ -3720,7 +3720,7 @@ sub PDL::Complex::mrq {
 			$r = $r(,-$min:, :)->sever;
 		}
 		else{
-			$r = PDL::new_from_specification('PDL::Complex',$m->type, 2,$min, $min);
+			$r = PDL::Complex->new_from_specification($m->type, 2,$min, $min);
 			$r .= 0;
 			$m->xchg(1,2)->(,($dims[1] - $dims[2]):, :)->ctricpy(0,$r);
 		}
@@ -3829,7 +3829,7 @@ sub PDL::Complex::mql{
 	}
 	else{
 		if ($dims[1] < $dims[2] && $full){
-			$q = PDL::new_from_specification('PDL::Complex', $m->type, 2, $dims[2],$dims[2]);
+			$q = PDL::Complex->new_from_specification($m->type, 2, $dims[2],$dims[2]);
 			$q .= 0;
 			$q(,:, -$dims[1]:) .= $m;
 		}
@@ -3844,13 +3844,13 @@ sub PDL::Complex::mql{
 		return $q->xchg(1,2)->sever unless wantarray;
 
 		if ($dims[1] < $dims[2] && $full){
-			$l = PDL::new_from_specification('PDL::Complex', $m->type, 2, $dims[1], $dims[2]);
+			$l = PDL::Complex->new_from_specification($m->type, 2, $dims[1], $dims[2]);
 			$l .= 0;
 			$m->xchg(1,2)->ctricpy(1,$l);
 			$l(,:($min-1),:($min-1))->diagonal(1,2) .= 0;
 		}
 		elsif ($dims[1] > $dims[2]){
-			my $temp = PDL::new_from_specification('PDL::Complex',$m->type,2,$dims[1],$dims[1]);
+			my $temp = PDL::Complex->new_from_specification($m->type,2,$dims[1],$dims[1]);
 			$temp .= 0;
 			$temp(,, -$dims[2]:) .= $m->xchg(1,2);
 			$l = PDL::zeroes($temp);
@@ -3858,7 +3858,7 @@ sub PDL::Complex::mql{
 			$l = $l(,, -$dims[2]:)->sever;
 		}
 		else{
-			$l = PDL::new_from_specification('PDL::Complex',$m->type, 2, $min, $min);
+			$l = PDL::Complex->new_from_specification($m->type, 2, $min, $min);
 			$l .= 0;
 			$m->xchg(1,2)->(,,($dims[2]-$min):)->ctricpy(1,$l);
 		}
@@ -3957,7 +3957,7 @@ sub PDL::Complex::mlq{
 	}
 	else{
 		if ($dims[1] > $dims[2] && $full){
-			$q = PDL::new_from_specification('PDL::Complex',$m->type, 2, $dims[1],$dims[1]);
+			$q = PDL::Complex->new_from_specification($m->type, 2, $dims[1],$dims[1]);
 			$q .= 0;
 			$q(,:($min -1),:) .= $m;
 		}
@@ -3972,12 +3972,12 @@ sub PDL::Complex::mlq{
 		return $q->xchg(1,2)->sever unless wantarray;
 
 		if ($dims[1] > $dims[2] && !$full){
-			$l = PDL::new_from_specification('PDL::Complex',$m->type, 2, $dims[2], $dims[2]);
+			$l = PDL::Complex->new_from_specification($m->type, 2, $dims[2], $dims[2]);
 			$l .= 0;
 			$m->xchg(1,2)->(,:($min-1))->ctricpy(1,$l);
 		}
 		else{
-			$l = PDL::new_from_specification('PDL::Complex',$m->type, 2, $dims[1], $dims[2]);
+			$l = PDL::Complex->new_from_specification($m->type, 2, $dims[1], $dims[2]);
 			$l .= 0;
 			$m->xchg(1,2)->ctricpy(1,$l);
 		}
@@ -4757,11 +4757,11 @@ sub PDL::mlls {
 	$type = $a->type;
 	if ( $adims[-1] < $adims[-2]){
 		if (@adims == 3){
-			$x = PDL::new_from_specification('PDL::Complex', $type, 2,$adims[1], $bdims[1]);
+			$x = PDL::Complex->new_from_specification($type, 2,$adims[1], $bdims[1]);
 			$x(, :($bdims[2]-1), :($bdims[1]-1)) .= $b->xchg(1,2);
 		}
 		else{
-			$x = PDL::new_from_specification('PDL', $type, $adims[0], $bdims[0]);
+			$x = PDL->new_from_specification($type, $adims[0], $bdims[0]);
 			$x(:($bdims[1]-1), :($bdims[0]-1)) .= $b->xchg(0,1);
 		}
 	}
@@ -4845,11 +4845,11 @@ sub PDL::mllsy {
 
 	if ( $adims[1] < $adims[0]){
 		if (@adims == 3){
-			$x = PDL::new_from_specification('PDL::Complex', $type, 2, $adims[1], $bdims[1]);
+			$x = PDL::Complex->new_from_specification($type, 2, $adims[1], $bdims[1]);
 			$x(, :($bdims[2]-1), :($bdims[1]-1)) .= $b->xchg(1,2);
 		}
 		else{
-			$x = PDL::new_from_specification('PDL', $type, $adims[0], $bdims[0]);
+			$x = PDL->new_from_specification($type, $adims[0], $bdims[0]);
 			$x(:($bdims[1]-1), :($bdims[0]-1)) .= $b->xchg(0,1);
 		}
 
@@ -4938,11 +4938,11 @@ sub PDL::mllss {
 
 	if ($adims[1] < $adims[0]){
 		if (@adims == 3){
-			$x = PDL::new_from_specification('PDL::Complex', $type, 2, $adims[1], $bdims[1]);
+			$x = PDL::Complex->new_from_specification($type, 2, $adims[1], $bdims[1]);
 			$x(, :($bdims[2]-1), :($bdims[1]-1)) .= $b->xchg(1,2);
 		}
 		else{
-			$x = PDL::new_from_specification('PDL', $type, $adims[0], $bdims[0]);
+			$x = PDL->new_from_specification($type, $adims[0], $bdims[0]);
 			$x(:($bdims[1]-1), :($bdims[0]-1)) .= $b->xchg(0,1);
 		}
 
@@ -5212,9 +5212,9 @@ sub PDL::meigen {
 	$wr = null;
 	$wi = null;
 
-	$vl = $jobvl ? PDL::new_from_specification('PDL', $type, @dims) :
+	$vl = $jobvl ? PDL->new_from_specification($type, @dims) :
 				pdl($type,0);
-	$vr = $jobvr ? PDL::new_from_specification('PDL', $type, @dims) :
+	$vr = $jobvr ? PDL->new_from_specification($type, @dims) :
 				pdl($type,0);
 	$m->xchg(0,1)->geev( $jobvl,$jobvr, $wr, $wi, $vl, $vr, $info);
 	if ($jobvl){
@@ -5251,10 +5251,10 @@ sub PDL::Complex::meigen {
        	$info = null;
 
 	$w = PDL::Complex->null;
-	#PDL::new_from_specification('PDL::Complex', $type, 2, $dims[1]);
-	$vl = $jobvl ? PDL::new_from_specification('PDL::Complex', $type, @dims) :
+	#PDL::Complex->new_from_specification($type, 2, $dims[1]);
+	$vl = $jobvl ? PDL::Complex->new_from_specification($type, @dims) :
 				pdl($type,[0,0]);
-	$vr = $jobvr ? PDL::new_from_specification('PDL::Complex', $type, @dims) :
+	$vr = $jobvr ? PDL::Complex->new_from_specification($type, @dims) :
 				pdl($type,[0,0]);
 	$m->xchg(1,2)->cgeev( $jobvl,$jobvr, $w, $vl, $vr, $info);
 
@@ -5362,14 +5362,14 @@ sub PDL::meigenx {
 
 	if (@dims == 3){
 		$m = $m->copy;
-		$w = PDL::new_from_specification('PDL::Complex', $type, 2, $dims[1]);
-		$scale  =  PDL::new_from_specification('PDL', $type, $dims[1]);
+		$w = PDL::Complex->new_from_specification($type, 2, $dims[1]);
+		$scale  =  PDL->new_from_specification($type, $dims[1]);
 
 		if ($opt{'vector'} eq 'left' ||
 			$opt{'vector'} eq 'all' ||
 			$opt{'rcondition'} ){
 			$jobvl = 1;
-			$vl = PDL::new_from_specification('PDL::Complex', $type, 2, $dims[1], $dims[1]);
+			$vl = PDL::Complex->new_from_specification($type, 2, $dims[1], $dims[1]);
 		}
 		else{
 			$jobvl = 0;
@@ -5380,7 +5380,7 @@ sub PDL::meigenx {
 			$opt{'vector'} eq 'all' ||
 			$opt{'rcondition'} ){
 			$jobvr = 1;
-			$vr = PDL::new_from_specification('PDL::Complex', $type, 2, $dims[1], $dims[1]);
+			$vr = PDL::Complex->new_from_specification($type, 2, $dims[1], $dims[1]);
 		}
 		else{
 			$jobvr = 0;
@@ -5389,18 +5389,18 @@ sub PDL::meigenx {
 
 		if ( $opt{'rcondition'} eq 'value'){
 			$sense = 1;
-			$rconde = PDL::new_from_specification('PDL', $type, $dims[1]);
+			$rconde = PDL->new_from_specification($type, $dims[1]);
 			$rcondv = pdl($type,0);
 		}
 		elsif( $opt{'rcondition'} eq 'vector'){
 			$sense = 2;
-			$rcondv = PDL::new_from_specification('PDL', $type, $dims[1]);
+			$rcondv = PDL->new_from_specification($type, $dims[1]);
 			$rconde = pdl($type,0);
 		}
 		elsif( $opt{'rcondition'} eq 'all' ){
 			$sense = 3;
-			$rcondv = PDL::new_from_specification('PDL', $type, $dims[1]);
-			$rconde = PDL::new_from_specification('PDL', $type, $dims[1]);
+			$rcondv = PDL->new_from_specification($type, $dims[1]);
+			$rconde = PDL->new_from_specification($type, $dims[1]);
 		}
 		else{
 			$sense = 0;
@@ -5413,15 +5413,15 @@ sub PDL::meigenx {
 	else{
 		my ($wr, $wi);
 		$m = $m->copy;
-		$wr = PDL::new_from_specification('PDL', $type, $dims[0]);
-		$wi = PDL::new_from_specification('PDL', $type, $dims[0]);
-		$scale  =  PDL::new_from_specification('PDL', $type, $dims[0]);
+		$wr = PDL->new_from_specification($type, $dims[0]);
+		$wi = PDL->new_from_specification($type, $dims[0]);
+		$scale  =  PDL->new_from_specification($type, $dims[0]);
 
 		if ($opt{'vector'} eq 'left' ||
 			$opt{'vector'} eq 'all' ||
 			$opt{'rcondition'} ){
 			$jobvl = 1;
-			$vl = PDL::new_from_specification('PDL', $type, $dims[0], $dims[0]);
+			$vl = PDL->new_from_specification($type, $dims[0], $dims[0]);
 		}
 		else{
 			$jobvl = 0;
@@ -5432,7 +5432,7 @@ sub PDL::meigenx {
 			$opt{'vector'} eq 'all' ||
 			$opt{'rcondition'} ){
 			$jobvr = 1;
-			$vr = PDL::new_from_specification('PDL', $type, $dims[0], $dims[0]);
+			$vr = PDL->new_from_specification($type, $dims[0], $dims[0]);
 		}
 		else{
 			$jobvr = 0;
@@ -5441,18 +5441,18 @@ sub PDL::meigenx {
 
 		if ( $opt{'rcondition'} eq 'value'){
 			$sense = 1;
-			$rconde = PDL::new_from_specification('PDL', $type, $dims[0]);
+			$rconde = PDL->new_from_specification($type, $dims[0]);
 			$rcondv = pdl($type, 0);
 		}
 		elsif( $opt{'rcondition'} eq 'vector'){
 			$sense = 2;
-			$rcondv = PDL::new_from_specification('PDL', $type, $dims[0]);
+			$rcondv = PDL->new_from_specification($type, $dims[0]);
 			$rconde = pdl($type, 0);
 		}
 		elsif( $opt{'rcondition'} eq 'all' ){
 			$sense = 3;
-			$rcondv = PDL::new_from_specification('PDL', $type, $dims[0]);
-			$rconde = PDL::new_from_specification('PDL', $type, $dims[0]);
+			$rcondv = PDL->new_from_specification($type, $dims[0]);
+			$rconde = PDL->new_from_specification($type, $dims[0]);
 		}
 		else{
 			$sense = 0;
@@ -5928,7 +5928,7 @@ sub PDL::Complex::msymeigen {
 
 	my ($w, $v, $info);
        	$info = null;
-	$w =  null; #PDL::new_from_specification('PDL', $m->type, $dims[1]);
+	$w =  null; #PDL->new_from_specification($m->type, $dims[1]);
 	$m = $m->copy unless ($m->is_inplace(0) and $jobv);
 
 	$method = 'cheevd' unless defined $method;
@@ -6025,7 +6025,7 @@ sub PDL::msymeigenx {
 	elsif ($range == 1){
 		barf "msymeigenx: Interval limits must be differents" unless ($opt{range}->(0) !=  $opt{range}->(1));
 	}
-	$w =  PDL::new_from_specification('PDL', $type, $dims[1]);
+	$w =  PDL->new_from_specification($type, $dims[1]);
 	$n = null;
        	$info = pdl(long,0);
 
@@ -6050,7 +6050,7 @@ sub PDL::msymeigenx {
 	if (@dims == 3){
 		$upper = $upper ? pdl(long,1) : pdl(long,0);
 		$m = $m->xchg(1,2)->copy;
-		$z = $jobv ? PDL::new_from_specification('PDL::Complex', $type, 2, $dims[1], $dims[1]) :
+		$z = $jobv ? PDL::Complex->new_from_specification($type, 2, $dims[1], $dims[1]) :
 					pdl($type,[0,0]);
 	 	$m->$method($jobv, $range, $upper, $opt{range}->(0), $opt{range}->(1),$opt{range}->(0),$opt{range}->(1),
 	 						 $opt{'abstol'}, $n, $w, $z , $support, $info);
@@ -6058,7 +6058,7 @@ sub PDL::msymeigenx {
 	else{
 		$upper = $upper ? pdl(long,0) : pdl(long,1);
 		$m = $m->copy;
-		$z = $jobv ? PDL::new_from_specification('PDL', $type, $dims[1], $dims[1]) :
+		$z = $jobv ? PDL->new_from_specification($type, $dims[1], $dims[1]) :
 					pdl($type,0);
 	 	$m->$method($jobv, $range, $upper, $opt{range}->(0), $opt{range}->(1),$opt{range}->(0),$opt{range}->(1),
 	 						 $opt{'abstol'}, $n, $w, $z ,$support, $info);
@@ -6292,7 +6292,7 @@ sub PDL::msymgeigenx {
 
 	}
 	$opt{type} = 1 unless (defined $opt{type});
-       	$w = PDL::new_from_specification('PDL', $type, $adims[1]);
+	$w = PDL->new_from_specification($type, $adims[1]);
 	$n = pdl(long,0);
        	$info = pdl(long,0);
 
@@ -6304,7 +6304,7 @@ sub PDL::msymgeigenx {
 		$opt{'abstol'} = $unfl + $unfl;
 	}
 	$support =  zeroes(long, $adims[1]) if $jobv;
-	$w = PDL::new_from_specification('PDL', $type, $adims[1]);
+	$w = PDL->new_from_specification($type, $adims[1]);
 	$z = PDL::zeroes $a;
 	if (@adims ==3){
 		$upper = $upper ? pdl(long,1) : pdl(long,0);
@@ -6400,16 +6400,16 @@ sub PDL::mdsvd {
 
 	if ($job){
 		if ($job == 2){
-			$u = PDL::new_from_specification('PDL', $type, $min, $dims[1],@dims[2..$#dims]);
-			$v = PDL::new_from_specification('PDL', $type, $dims[0],$min,@dims[2..$#dims]);
+			$u = PDL->new_from_specification($type, $min, $dims[1],@dims[2..$#dims]);
+			$v = PDL->new_from_specification($type, $dims[0],$min,@dims[2..$#dims]);
 		}
 		else{
-			$u = PDL::new_from_specification('PDL', $type, $dims[1],$dims[1],@dims[2..$#dims]);
-			$v = PDL::new_from_specification('PDL', $type, $dims[0],$dims[0],@dims[2..$#dims]);
+			$u = PDL->new_from_specification($type, $dims[1],$dims[1],@dims[2..$#dims]);
+			$v = PDL->new_from_specification($type, $dims[0],$dims[0],@dims[2..$#dims]);
 		}
 	}else{
-		$u = PDL::new_from_specification('PDL', $type, 1,1);
-		$v = PDL::new_from_specification('PDL', $type, 1,1);
+		$u = PDL->new_from_specification($type, 1,1);
+		$v = PDL->new_from_specification($type, 1,1);
 	}
 	$m->gesdd($job, $s, $v, $u, $info);
 	if($info->max > 0 && $_laerror) {
@@ -6444,16 +6444,16 @@ sub PDL::Complex::mdsvd {
 
 	if ($job){
 		if ($job == 2){
-			$u = PDL::new_from_specification('PDL::Complex', $type, 2,$min, $dims[2],@dims[3..$#dims]);
-			$v = PDL::new_from_specification('PDL::Complex', $type, 2,$dims[1],$min,@dims[3..$#dims]);
+			$u = PDL::Complex->new_from_specification($type, 2,$min, $dims[2],@dims[3..$#dims]);
+			$v = PDL::Complex->new_from_specification($type, 2,$dims[1],$min,@dims[3..$#dims]);
 		}
 		else{
-			$u = PDL::new_from_specification('PDL::Complex', $type, 2,$dims[2],$dims[2],@dims[3..$#dims]);
-			$v = PDL::new_from_specification('PDL::Complex', $type, 2,$dims[1],$dims[1],@dims[3..$#dims]);
+			$u = PDL::Complex->new_from_specification($type, 2,$dims[2],$dims[2],@dims[3..$#dims]);
+			$v = PDL::Complex->new_from_specification($type, 2,$dims[1],$dims[1],@dims[3..$#dims]);
 		}
 	}else{
-		$u = PDL::new_from_specification('PDL', $type, 2,1,1);
-		$v = PDL::new_from_specification('PDL', $type, 2,1,1);
+		$u = PDL->new_from_specification($type, 2,1,1);
+		$v = PDL->new_from_specification($type, 2,1,1);
 	}
 	$m->cgesdd($job, $s, $v, $u, $info);
 	if($info->max > 0 && $_laerror) {
@@ -6527,14 +6527,14 @@ sub PDL::msvd {
         $info = null;
 
 	if ($jobv){
-		$v = ($jobv == 1) ? PDL::new_from_specification('PDL', $type, $dims[0],$dims[0],@dims[2..$#dims]):
-					PDL::new_from_specification('PDL', $type, $dims[0],$min,@dims[2..$#dims]);
-	}else {$v = PDL::new_from_specification('PDL', $type, 1,1);}
+		$v = ($jobv == 1) ? PDL->new_from_specification($type, $dims[0],$dims[0],@dims[2..$#dims]):
+					PDL->new_from_specification($type, $dims[0],$min,@dims[2..$#dims]);
+	}else {$v = PDL->new_from_specification($type, 1,1);}
 	if ($jobu){
-		$u = ($jobu == 1) ? PDL::new_from_specification('PDL', $type, $dims[1],$dims[1],@dims[2..$#dims]):
-					PDL::new_from_specification('PDL', $type, $min, $dims[1],@dims[2..$#dims]);
+		$u = ($jobu == 1) ? PDL->new_from_specification($type, $dims[1],$dims[1],@dims[2..$#dims]):
+					PDL->new_from_specification($type, $min, $dims[1],@dims[2..$#dims]);
 
-	}else {$u = PDL::new_from_specification('PDL', $type, 1,1);}
+	}else {$u = PDL->new_from_specification($type, 1,1);}
 	$m->gesvd($jobv, $jobu,$s, $v, $u, $info);
 
 	if($info->max > 0 && $_laerror) {
@@ -6576,14 +6576,14 @@ sub PDL::Complex::msvd{
         $info = null;
 
 	if ($jobv){
-		$v = ($jobv == 1) ? PDL::new_from_specification('PDL::Complex', $type, 2, $dims[1],$dims[1],@dims[3..$#dims]):
-					PDL::new_from_specification('PDL::Complex', $type, 2, $dims[1],$min,@dims[3..$#dims]);
-	}else {$v = PDL::new_from_specification('PDL', $type, 2,1,1);}
+		$v = ($jobv == 1) ? PDL::Complex->new_from_specification($type, 2, $dims[1],$dims[1],@dims[3..$#dims]):
+					PDL::Complex->new_from_specification($type, 2, $dims[1],$min,@dims[3..$#dims]);
+	}else {$v = PDL->new_from_specification($type, 2,1,1);}
 	if ($jobu){
-		$u = ($jobu == 1) ? PDL::new_from_specification('PDL::Complex', $type, 2, $dims[2],$dims[2],@dims[3..$#dims]):
-					PDL::new_from_specification('PDL::Complex', $type, 2, $min, $dims[2],@dims[3..$#dims]);
+		$u = ($jobu == 1) ? PDL::Complex->new_from_specification($type, 2, $dims[2],$dims[2],@dims[3..$#dims]):
+					PDL::Complex->new_from_specification($type, 2, $min, $dims[2],@dims[3..$#dims]);
 
-	}else {$u = PDL::new_from_specification('PDL', $type, 2,1,1);}
+	}else {$u = PDL->new_from_specification($type, 2,1,1);}
 	$m->cgesvd($jobv, $jobu,$s, $v, $u, $info);
 
 	if($info->max > 0 && $_laerror) {
@@ -6774,9 +6774,9 @@ sub PDL::Complex::mgsvd {
 	$alpha = zeroes($type, $adims[1]);
 	$beta = zeroes($type, $adims[1]);
 
-	$U = $opt{U} ? PDL::new_from_specification('PDL::Complex', $type, 2,$adims[2], $adims[2]) : zeroes($type,1,1);
-	$V = $opt{V} ? PDL::new_from_specification('PDL::Complex', $b->type, 2,$bdims[2], $bdims[2]) : zeroes($b->type,1,1);
-	$Q = $jobqx ? PDL::new_from_specification('PDL::Complex', $type, 2,$adims[1], $adims[1]) : zeroes($type,1,1);
+	$U = $opt{U} ? PDL::Complex->new_from_specification($type, 2,$adims[2], $adims[2]) : zeroes($type,1,1);
+	$V = $opt{V} ? PDL::Complex->new_from_specification($b->type, 2,$bdims[2], $bdims[2]) : zeroes($b->type,1,1);
+	$Q = $jobqx ? PDL::Complex->new_from_specification($type, 2,$adims[1], $adims[1]) : zeroes($type,1,1);
 	$iwork = zeroes(long, $adims[1]);
 	$info = null;
 	$a->xchg(1,2)->cggsvd($opt{U}, $opt{V}, $jobqx, $b, $k, $l, $alpha, $beta, $U, $V, $Q, $iwork, $info);
@@ -6834,7 +6834,7 @@ sub PDL::Complex::mgsvd {
 			$ret{R} = $work if $opt{R};
 			if ($opt{X}){
 				# $X = #zeroes($type, 2, $adims[1], $adims[1]);
-				$X = PDL::new_from_specification('PDL::Complex', $type, 2, $adims[1], $adims[1]);
+				$X = PDL::Complex->new_from_specification($type, 2, $adims[1], $adims[1]);
 				$X .= 0;
 				$X->diagonal(1,2)->(0,) .= 1 if ($adims[1] > ($k + $l));
 				$X ( ,-($k + $l): , -($k + $l): )  .=  mtriinv($work);
