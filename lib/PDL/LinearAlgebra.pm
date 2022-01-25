@@ -822,62 +822,29 @@ Supports threading.
 
 =cut
 
-sub mcond {shift->mcond(@_)}
-
+sub mcond {
+  barf("mcond: Require 2D array(s)")
+    unless $_[0]->dims >= UNIVERSAL::isa($_[0], 'PDL::Complex') ? 3 : 2;
+  shift->mcond(@_);
+}
+*PDL::Complex::mcond = *PDL::mcond;
 sub PDL::mcond {
 	my $m = shift;
 	my @dims = $m->dims;
-
-	barf("mcond: Require 2D array(s)")
-		unless( @dims >= 2 );
-
-	my ($sv, $info, $err, $ret, $temp);
-	$err = setlaerror(NO);
-	($sv, $info) = $m->msvd(0, 0);
+	my $err = setlaerror(NO);
+	my ($sv, $info) = $m->msvd(0, 0);
 	setlaerror($err);
 	if($info->max > 0) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
+		my $index = which($info > 0)+1;
+		my @list = $index->list;
 		barf("mcond: Algorithm did not converge for matrix (PDL(s) @list): \$info = $info");
 	}
-
-	$temp = $sv->slice('(0)');
-        $ret = $temp/$sv->((-1));
-
-	$info = $ret->flat->index(which($temp == 0));
-	$info .= posinf unless $info->isempty;
-	return $ret;
-
-}
-
-sub PDL::Complex::mcond {
-	my $m = shift;
-	my @dims = $m->dims;
-
-	barf("mcond: Require 2D array(s)")
-		unless( @dims >= 3);
-
-	my ($sv, $info, $err, $ret, $temp) ;
-	$err = setlaerror(NO);
-	($sv, $info) = $m->msvd(0, 0);
-	setlaerror($err);
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("mcond: Algorithm did not converge for matrix (PDL(s) @list): \$info = $info");
-	}
-
-	$temp = $sv->slice('(0)');
-        $ret = $temp/$sv->((-1));
-
+	my $temp = $sv->slice('(0)');
+        my $ret = $temp/$sv->((-1));
 	$info = $ret->flat->index(which($temp == 0));
 	$info .= posinf unless $info->isempty;
 	return $ret;
 }
-
-
 
 =head2 mrcond
 
@@ -966,10 +933,6 @@ sub PDL::Complex::mrcond {
 	return wantarray ? ($rcond, $info) : $rcond;
 
 }
-
-
-
-
 
 =head2 morth
 
