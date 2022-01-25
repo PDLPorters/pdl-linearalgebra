@@ -1965,41 +1965,6 @@ sub PDL::mfun {
 	}
 }
 
-#*mspfun = \&PDL::mspfun;
-
-#sub PDL::mspfun {
-#	my ($m, $method, $tol)  = @_;
-#	my @dims = $m->dims;
-#	barf("mspfun requires a 2-D square matrix")
-#		unless( ((@dims == 2) || (@dims == 3)) && $dims[-1] == $dims[-2] );
-
-#	my ($T, $Z, $F, $p, $i, $j, $sden, $s );
-#	($T, undef, $Z) = $m->r2C->mschur(1);
- 	
-#	$F = $T->diagonal(1,2)->$method->diag;
-#	for $p (1..($dims[-1] - 1 )){
-#		for $i (0..($dims[-1]-$p-1)){
-#			$j = $i + $p;
-#			$s = $T(,($j),($i))->Cmul($F(,($j),($j))->Csub($F(,($i),($i))));
-#			if ($i < ($j-1)){
-#				$s = $s + $T(,$i+1:$j-1,($i))->cdot(1, $F(,($j), $i+1:$j-1),1)->Csub($F(,$i+1:$j-1,($i))->cdot(1,$T(,($j), $i+1:$j-1),1));
-#			}
-#			$sden = $T(,($j),($j))->Csub($T(,($i),($i)));
-#			if ($sden != 0){
-#	                	$s = $s / $sden;
-#  			}
-#                       else{
-#				barf "Illegal division by zero occured\n";
-#                       }
-#			$F(,($j),($i)) .= $s;
-#        	}
-#	}
-#	print $F;
-#	$m = $Z x $F x $Z->t(1);
-#	return (@dims ==3) ? $m : toreal($m, $tol);
-#
-#}
-
 =head1 TODO
 
 Improve error return and check singularity.
