@@ -1614,7 +1614,7 @@ Computes Schur form, works inplace.
 Supports threading for unordered eigenvalues.
 Uses L<gees|PDL::LinearAlgebra::Real/gees> or L<cgees|PDL::LinearAlgebra::Complex/cgees>
 from Lapack and returns schur(T) in scalar context.
-Works on tranposed array(s).
+Works on transposed array(s).
 
 =for usage
 
@@ -2082,7 +2082,7 @@ sub PDL::mschurx{
 	my($m, $jobv, $jobvl, $jobvr, $select_func, $sense, $mult,$norm) = @_;
 	my(@dims) = $m->dims;
 
-	barf("mschur: Require a square matrix")
+	barf("mschurx: Require a square matrix")
 		unless( ( (@dims == 2)|| (@dims == 3) )&& $dims[-1] == $dims[-2]);
 
        	my ($w, $v, $info, $type, $select, $sdim, $rconde, $rcondv, %ret, $mm, $vl, $vr);
@@ -5424,15 +5424,11 @@ sub PDL::mgeigen {
 	my($a, $b,$jobvl,$jobvr) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
-
-
 	barf("mgeigen: Require 2 square matrices of same order")
 		unless( @adims >= 2 && $adims[0] == $adims[1] &&
 		 @bdims >= 2 && $bdims[0] == $bdims[1] && $adims[0] == $bdims[0]);
 	barf("mgeigen: Require matrices with equal number of dimensions")
 		if( @adims != @bdims);
-
-
        	my ($vl, $vr, $info, $beta, $type, $wtmp);
        	$type = $a->type;
 
