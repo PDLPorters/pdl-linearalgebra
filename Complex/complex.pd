@@ -3367,8 +3367,8 @@ EOF
 	Pars => '[phys]A(2,n,n); int norm(); [phys]anorm(); [o,phys]rcond();int [o,phys]info()',
 	Code => generate_code '
              char pnorm = \'I\';
-		$GENERIC() *work = ($GENERIC() *) malloc(($SIZE(n) * 4) *  sizeof($GENERIC()));
-		$GENERIC() *rwork = ($GENERIC() *) malloc(($SIZE(n) * 2)*  sizeof(integer));
+		$GENERIC() *work = ($GENERIC() *) malloc(($SIZE(n) * 4) * sizeof($GENERIC()));
+		$GENERIC() *rwork = ($GENERIC() *) malloc(($SIZE(n) * 2) * sizeof($GENERIC()));
 
 		if($norm())
 			pnorm = \'O\';
@@ -3465,7 +3465,7 @@ EOF
 	Code => generate_code '
              char puplo = \'U\';
 		$GENERIC() *work = ($GENERIC() *) malloc(($SIZE(n) * 4) *  sizeof($GENERIC()));
-		$GENERIC() *rwork = ($GENERIC() *) malloc($SIZE(n) *  sizeof(integer));
+		$GENERIC() *rwork = ($GENERIC() *) malloc($SIZE(n) * sizeof($GENERIC()));
 
 		if($uplo())
 			puplo = \'L\';
@@ -3504,7 +3504,7 @@ EOF
              char pdiag = \'N\';
              char pnorm = \'I\';
 		$GENERIC() *work = ($GENERIC() *) malloc(($SIZE(n) * 4) *  sizeof($GENERIC()));
-		$GENERIC() *rwork = ($GENERIC() *) malloc($SIZE(n) *  sizeof(integer));
+		$GENERIC() *rwork = ($GENERIC() *) malloc($SIZE(n) *  sizeof($GENERIC()));
 
 		if($uplo())
 			puplo = \'L\';
@@ -5386,4 +5386,3 @@ in this distribution.
 EOD
 
 pp_done();  # you will need this to finish pp processing
-
