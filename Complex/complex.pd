@@ -749,7 +749,8 @@ EOF
        HandleBad => 0,
 	Pars => '[io,phys]A(2,n,n);int balanc();int jobvl();int jobvr();int sense();[io,phys]B(2,n,n);[o,phys]alpha(2,n);[o,phys]beta(2,n);[o,phys]VL(2,m,m);[o,phys]VR(2,p,p);int [o,phys]ilo();int [o,phys]ihi();[o,phys]lscale(n);[o,phys]rscale(n);[o,phys]abnrm();[o,phys]bbnrm();[o,phys]rconde(r);[o,phys]rcondv(s);int [o,phys]info()',
 	Code => generate_code '
-		integer lwork = -1, *iwork, *bwork;
+		integer lwork = -1, *iwork;
+		logical *bwork;
 		char pjobvl = \'N\', pjobvr = \'N\';
 		char pbalanc, psens;
 
@@ -773,15 +774,15 @@ EOF
 		switch ($sense())
 		{
 			case 1: psens = \'E\';
-				bwork = (integer *)malloc($SIZE(n) *  sizeof(integer));
+				bwork = (logical *)malloc($SIZE(n) *  sizeof(logical));
 				break;
 			case 2: psens = \'V\';
 				iwork = (integer *)malloc(($SIZE(n) + 2) *  sizeof(integer));
-				bwork = (integer *)malloc($SIZE(n) *  sizeof(integer));
+				bwork = (logical *)malloc($SIZE(n) *  sizeof(logical));
 				break;
 			case 3: psens = \'B\';
 				iwork = (integer *)malloc(($SIZE(n) + 2) *  sizeof(integer));
-				bwork = (integer *)malloc($SIZE(n) *  sizeof(integer));
+				bwork = (logical *)malloc($SIZE(n) *  sizeof(logical));
 				break;
 			default: psens = \'N\';
 				iwork = (integer *)malloc(($SIZE(n) + 2) *  sizeof(integer));
@@ -874,7 +875,7 @@ pp_defc("gees",
 		extern int $TFD(c,z)gees_(char *jobvs, char *sort, L_fp select, integer *n,
 		$GENERIC() *a, integer *lda, integer *sdim, $GENERIC() *w,
 		$GENERIC() *vs, integer *ldvs, $GENERIC() *work,
-		integer *lwork, $GENERIC() *rwork, integer *bwork, integer *info);
+		integer *lwork, $GENERIC() *rwork, logical *bwork, integer *info);
 EOF
        HandleBad => 0,
 	Pars => '[io,phys]A(2,n,n);  int jobvs(); int sort(); [o,phys]w(2,n); [o,phys]vs(2,p,p); int [o,phys]sdim(); int [o,phys]info()',
@@ -882,7 +883,7 @@ EOF
 	Code => generate_code '
 		char jvs = \'N\';
 		char psort = \'N\';
-		integer *bwork;
+		logical *bwork;
 		integer lwork = -1;
 
 		$GENERIC() tmp_work[2];
@@ -894,7 +895,7 @@ EOF
 			jvs = \'V\';
 		if ($sort()){
 			psort = \'S\';
-			bwork  = (integer * ) malloc ($SIZE(n) * sizeof (integer));
+			bwork  = (logical * ) malloc ($SIZE(n) * sizeof (logical));
 		}
              $TFD(c,z)gees_(
 		&jvs,
@@ -966,7 +967,7 @@ pp_defc("geesx",
 		integer *n, $GENERIC() *a, integer *lda, integer *sdim, $GENERIC() *w,
 		$GENERIC() *vs, integer *ldvs, $GENERIC() *rconde, $GENERIC() *rcondv,
 		$GENERIC() *work, integer *lwork, $GENERIC() *rwork,
-		integer *bwork, integer *info);
+		logical *bwork, integer *info);
 EOF
        HandleBad => 0,
 	Pars => '[io,phys]A(2,n,n);  int jobvs(); int sort(); int sense(); [o,phys]w(2,n);[o,phys]vs(2,p,p); int [o,phys]sdim(); [o,phys]rconde();[o,phys]rcondv(); int [o,phys]info()',
@@ -974,7 +975,7 @@ EOF
 	Code => generate_code '
 		char jvs = \'N\';
 		char psort = \'N\';
-		integer *bwork;
+		logical *bwork;
 		integer lwork = 0;
 		char sens;
 
@@ -987,7 +988,7 @@ EOF
 			jvs = \'V\';
 		if ($sort()){
 			psort = \'S\';
-			bwork  = (integer * )  malloc ($SIZE(n) * sizeof (integer));
+			bwork  = (logical * )  malloc ($SIZE(n) * sizeof (logical));
 		}
 
 		switch ($sense())
@@ -1076,7 +1077,7 @@ EOF
 	Code => generate_code '
 		integer lwork = -1;
 		char pjobvsl = \'N\', pjobvsr = \'N\', psort = \'N\';
-		integer *bwork;
+		logical *bwork;
 
 		$GENERIC() tmp_work[2], *rwork;
 		$TFD(f,d)gselect_func_set($COMP(select_func));
@@ -1087,7 +1088,7 @@ EOF
 			pjobvsr = \'V\';
 		if ($sort()){
 			psort = \'S\';
-			bwork = (integer *)malloc($SIZE(n) *  sizeof(integer));
+			bwork = (logical *)malloc($SIZE(n) *  sizeof(logical));
 		}
 		$TFD(c,z)gges_(
 		&pjobvsl,
@@ -1190,7 +1191,7 @@ EOF
 		char pjobvsr = \'N\';
 		char psort = \'N\';
 		char psens = \'N\';
-		integer *bwork;
+		logical *bwork;
 		integer *iwork;
 		$GENERIC() *rwork = ($GENERIC() *)malloc(8 * $SIZE(n) *  sizeof($GENERIC()));	
 		$TFD(f,d)gselect_func_set($COMP(select_func));
@@ -1199,7 +1200,7 @@ EOF
 
 		if ($sort()){
 			psort = \'S\';
-			bwork = (integer *)malloc($SIZE(n) *  sizeof(integer));
+			bwork = (logical *)malloc($SIZE(n) *  sizeof(logical));
 		}
 
 		switch ($sense())
