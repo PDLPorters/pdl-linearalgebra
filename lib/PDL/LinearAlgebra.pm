@@ -1087,13 +1087,14 @@ sub mposinv {shift->mposinv(@_)}
 
 sub PDL::mposinv {
 	&_square;
+	my $di = $_[0]->dims_internal;
 	my $m = shift;
 	my $upper = @_ ? (1 - shift)  : pdl (long,1);
 	my(@dims) = $m->dims;
 	$m = $m->copy() unless $m->is_inplace(0);
-	@dims = @dims[2..$#dims];
+	@dims = @dims[2+$di..$#dims];
 	my $info = @dims ? zeroes(long,@dims) : pdl(long,0);
-	$m->potrf($upper, $info);
+	$m->_call_method('potrf', $upper, $info);
 	if($info->max > 0 && $_laerror) {
 		my ($index,@list);
 		$index = which($info > 0)+1;
@@ -1101,28 +1102,7 @@ sub PDL::mposinv {
 		laerror("mposinv: matrix (PDL(s) @list) is/are not positive definite(s) (after potrf factorization): \$info = $info");
 	}
 	else{
-		$m->potri($upper, $info);
-	}
-	return wantarray ? ($m, $info) : $m;
-}
-
-sub PDL::Complex::mposinv {
-	&_square;
-	my $m = shift;
-	my $upper = @_ ? (1 - shift)  : pdl (long,1);
-	my(@dims) = $m->dims;
-	$m = $m->copy() unless $m->is_inplace(0);
-	@dims = @dims[3..$#dims];
-	my $info = @dims ? zeroes(long,@dims) : pdl(long,0);
-	$m->cpotrf($upper, $info);
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("mposinv: matrix (PDL(s) @list) is/are not positive definite(s) (after cpotrf factorization): \$info = $info");
-	}
-	else{
-		$m->cpotri($upper, $info);
+		$m->_call_method('potri', $upper, $info);
 	}
 	return wantarray ? ($m, $info) : $m;
 }
