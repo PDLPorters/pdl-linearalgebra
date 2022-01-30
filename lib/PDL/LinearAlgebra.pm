@@ -42,7 +42,6 @@ BEGIN { $neginf = -1/pdl(0) }
 sub neginf() { $neginf->copy };
 
 {
-
 package # hide from CPAN indexer
   PDL::Complex;
 
@@ -51,7 +50,6 @@ use PDL::Types;
 use vars qw($sep $sep2);
 our $floatformat  = "%4.4g";    # Default print format for long numbers
 our $doubleformat = "%6.6g";
-
 
 *r2p = \&PDL::Complex::Cr2p;
 *p2r = \&PDL::Complex::Cp2r;
@@ -87,13 +85,10 @@ sub ecplx {
   bless $_[0]->slice('');
 }
 
-
 sub sumover {
 	my $c = shift;
 	return dims($c) > 1 ? PDL::Ufunc::sumover($c->xchg(0,1)) : $c;
 }
-
-
 
 sub norm {
 	my ($m, $real, $trans) = @_;
@@ -115,8 +110,6 @@ sub norm {
 	return $trans ? PDL::Complex::Cscale($m->xchg(1,2),1/$ret->dummy(0)->xchg(0,1))->reshape(-1) :
 		PDL::Complex::Cscale($m,1/$ret->dummy(0))->reshape(-1);
 }
-
-
 }
 ########################################################################
 
@@ -145,9 +138,7 @@ L<PDL::LinearAlgebra::Complex|PDL::LinearAlgebra::Complex>. It's planned to "por
 that transpositions will not be necessary, the major problem is that two new modules need to be created PDL::Matrix::Real
 and PDL::Matrix::Complex.
 
-
 =cut
-
 
 =head1 FUNCTIONS
 
@@ -227,7 +218,6 @@ sub PDL::t {
 }
 sub PDL::Complex::t {
 	my ($m, $conj) = @_;
-	$conj = 1 unless defined($conj);
 	$conj ? PDL::Complex::Cconj($m->xchg(1,2)) : $m->xchg(1,2);
 }
 
@@ -403,35 +393,27 @@ sub tritosym {shift->tritosym(@_)}
 sub PDL::tritosym {
 	my ($m, $upper) = @_;
 	my @dims = $m->dims;
-
 	barf("tritosym: Require square array(s)")
 		unless( $dims[0] == $dims[1] );
-
 	my $b = $m->is_inplace ? $m : ref($m)->new_from_specification($m->type,@dims);
 	$m->tricpy($upper, $b) unless $m->is_inplace(0);
-	$m->tricpy($upper, $b->xchg(0,1));
+	$m->tricpy($upper, $b->t);
 	$b;
-
 }
 
 sub PDL::Complex::tritosym {
 	my ($m, $upper, $conj) = @_;
 	my @dims = $m->dims;
-
 	barf("tritosym: Require square array(s)")
 		if( $dims[1] != $dims[2] );
-
 	my $b = $m->is_inplace ? $m : ref($m)->new_from_specification($m->type,@dims);
 	$conj = 1 unless defined($conj);
-	$conj ? PDL::Complex::Cconj($m)->ctricpy($upper, $b->xchg(1,2)) :
-			$m->ctricpy($upper, $b->xchg(1,2));
-	# ...
+	$conj ? PDL::Complex::Cconj($m)->ctricpy($upper, $b->t) :
+			$m->ctricpy($upper, $b->t);
 	$m->ctricpy($upper, $b) unless (!$conj && $m->is_inplace(0));
 	$b((1),)->diagonal(0,1) .= 0 if $conj;
 	$b;
-
 }
-
 
 =head2 positivise
 

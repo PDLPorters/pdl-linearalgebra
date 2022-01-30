@@ -1,4 +1,5 @@
 - now 64-bit safe
+- t method for complex now defaults to not conjugate
 
 0.26 2021-11-14
 - Reversible now called TwoWay
