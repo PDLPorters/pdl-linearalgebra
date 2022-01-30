@@ -1912,21 +1912,15 @@ sub PDL::mschurx{
 }
 
 # scale by max(abs(real)+abs(imag))
-sub magn_norm{
+sub magn_norm {
 	my ($m, $trans) = @_;
-
-	# If trans == true => transpose output matrice
-
-
+	# If trans == true => transpose output matrix
 	my $ret = PDL::abs($m);
 	bless $ret,'PDL';
-	$ret = PDL::sumover($ret)->maximum;
-	return $trans ? PDL::Complex::Cscale($m->t,1/$ret->dummy(0)->t)->reshape(-1) :
-		PDL::Complex::Cscale($m,1/$ret->dummy(0))->reshape(-1);
+	$ret = PDL::sumover($ret)->maximum->dummy(0);
+	$m = $m->t, $ret = $ret->t if $trans;
+	PDL::Complex::Cscale($m,1/$ret)->reshape(-1);
 }
-
-
-
 
 #TODO: inplace ?
 
@@ -5622,8 +5616,6 @@ sub PDL::Complex::mgsvd {
 	}
 	$ret{rank} ? return ($alpha($k:($k+$l-1))->sever, $beta($k:($k+$l-1))->sever, %ret ) : (undef, undef, %ret);
 }
-
-
 
 #TODO
 
