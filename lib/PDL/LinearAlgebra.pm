@@ -729,8 +729,7 @@ sub PDL::Complex::mdet {
 		$m->re->flat->index($info) .= 0;
 		$m->im->flat->index($info) .= 0;
 	}
-	$m;
-
+	$m->complex;
 }
 
 
