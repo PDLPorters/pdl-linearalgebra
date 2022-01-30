@@ -435,12 +435,9 @@ EOF
 		char pjobv = \'N\';		
 		char pjobq = \'N\';
 
-		$GENERIC() *work, *rwork, twork[1];
-		//integer lwork = ($SIZE (m) < $SIZE (n)) ? $SIZE (n): $SIZE (m);
+		$GENERIC() *work, *rwork, twork[2];
 		integer lwork = -1;
 
-		//if ($SIZE (p) > lwork)
-		//	lwork = $SIZE (p);
 		if ($jobu())
 			pjobu = \'U\';
 		if ($jobv())
