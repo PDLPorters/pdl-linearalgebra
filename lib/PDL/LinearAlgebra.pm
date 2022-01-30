@@ -545,44 +545,22 @@ Supports threading.
 
 =cut
 
+my %norms = (inf=>0, one=>1, two=>2, fro=>3);
+my %norm2arg = (0=>1, 1=>2, 3=>3);
 sub mnorm {shift->mnorm(@_)}
 sub PDL::mnorm {
 	my ($m, $ord) = @_;
-	$ord = 2 unless (defined $ord);
-	if ($ord eq 'inf'){
-		$ord = 0;
+	$ord //= 2;
+	$ord = $norms{$ord//''} if exists $norms{$ord};
+	return $m->_call_method('lange', $norm2arg{$ord}) if exists $norm2arg{$ord};
+	my $err = setlaerror(NO);
+	my ($sv, $info) = $m->msvd(0, 0);
+	setlaerror($err);
+	if($info->max > 0 && $_laerror) {
+		my @list = (which($info > 0)+1)->list;
+		laerror("mnorm: SVD algorithm did not converge for matrix (PDL(s) @list): \$info = $info");
 	}
-	elsif ($ord eq 'one'){
-		$ord = 1;
-	}
-	elsif($ord eq 'two'){
-		$ord = 2;
-	}
-	elsif($ord eq 'fro'){
-		$ord = 3;
-	}
-	if ($ord == 0){
-		$m->_call_method('lange', 1);
-	}
-	elsif($ord == 1){
-		$m->_call_method('lange', 2);
-	}
-	elsif($ord == 3){
-		$m->_call_method('lange', 3);
-	}
-	else{
-		my ($sv, $info, $err);
-		$err = setlaerror(NO);
-		($sv, $info) = $m->msvd(0, 0);
-		setlaerror($err);
-		if($info->max > 0 && $_laerror) {
-			my ($index,@list);
-			$index = which($info > 0)+1;
-			@list = $index->list;
-			laerror("mnorm: SVD algorithm did not converge for matrix (PDL(s) @list): \$info = $info");
-		}
-		$sv->slice('(0)')->reshape(-1)->sever;
-	}
+	$sv->slice('(0)')->reshape(-1)->sever;
 }
 
 =head2 mdet
