@@ -1718,33 +1718,20 @@ sub PDL::mschurx{
 	&_square;
 	my($m, $jobv, $jobvl, $jobvr, $select_func, $sense, $mult,$norm) = @_;
 	my(@dims) = $m->dims;
-
-       	my ($w, $v, $info, $type, $select, $sdim, $rconde, $rcondv, %ret, $mm, $vl, $vr);
-
-	$mult = 1 unless defined($mult);
-	$norm = 1 unless defined($norm);
-       	$jobv = $jobvl = $jobvr = 0 unless wantarray;
-	$type = $m->type;
-	if ($select_func){
-       		$select =  pdl(long 1);
-       	}
-       	else{
-		$select =  pdl(long,0);
-		$sense = pdl(long,0);
-	}
-
-	$info = null;
-	$sdim = null;
-	$rconde = null;
-	$rcondv = null;
-	$mm = $m->is_inplace ? $m->t : $m->t->copy;
-
+	my ($w, $v, %ret, $vl, $vr);
+	$mult //= 1;
+	$norm //= 1;
+	$jobv = $jobvl = $jobvr = 0 unless wantarray;
+	my $type = $m->type;
+	my $select = long($select_func ? 1 : 0);
+	$sense = pdl(long,0) if !$select_func;
+	my ($info, $sdim, $rconde, $rcondv) = map null, 1..4;
+	my $mm = $m->is_inplace ? $m->t : $m->t->copy;
 	if (@dims == 3){
 		$w = PDL::Complex->null;
 		$v = $jobv ? PDL::Complex->new_from_specification($type, 2, $dims[1], $dims[1]) :
 					pdl($type,[0,0]);
 		$mm->cgeesx( $jobv, $select, $sense, $w, $v, $sdim, $rconde, $rcondv,$info, $select_func);
-
 		if ($info){
 			if ($info < $dims[1]){
 				laerror("mschurx: The QR algorithm failed to converge");
@@ -1757,7 +1744,6 @@ sub PDL::mschurx{
 			warn("mschurx: The Schur form no longer satisfy select_func = 1\n because of roundoff or underflow\n")
 					if ($info > ($dims[1] + 1) and $_laerror);
 		}
-
 		if ($select_func){
 			if(!$sdim){
 				if ($jobvl == 2){
@@ -1829,16 +1815,12 @@ sub PDL::mschurx{
 				}
 				else{
 					$vr = PDL::Complex->new_from_specification($type, 2, $dims[1], $dims[1]) if $jobvr;
-					$vl = PDL::Complex->new_from_specification($type, $dims[1], 2, $dims[1]) if $jobvl;
+					$vl = PDL::Complex->new_from_specification($type, 2, $dims[1], $dims[1]) if $jobvl;
 					$mult = 0;
 				}
 				$mm->ctrevc($job, $mult, $sel, $vl, $vr, $sdim, my $infos=null);
-				if ($jobvl){
-					$ret{VL} = $norm ? $vl->norm(1,1) : $vl->t->sever;
-				}
-				if ($jobvr){
-					$ret{VR} = $norm ? $vr->norm(1,1) : $vr->t->sever;
-				}
+				$ret{VL} = $norm ? $vl->norm(1,1) : $vl->t->sever if $jobvl;
+				$ret{VR} = $norm ? $vr->norm(1,1) : $vr->t->sever if $jobvr;
 			}
 		}
 		if ($jobv == 2 && $select_func) {
@@ -1847,18 +1829,13 @@ sub PDL::mschurx{
 		elsif($jobv){
 			$v =  $v->t->sever;
 		}
-
 	}
 	else{
-		my ($select_f, $wi, $wtmp);
-		if ($select_func){
+		my ($wi, $wtmp) = map null, 1..2;
+		my $select_f = $select_func ? sub {
 			no strict 'refs';
-		 	$select_f= sub{
-				&$select_func(PDL::Complex::complex(pdl($type,$_[0],$_[1])));
-			};
-		}
-		$wi = null;
-	       	$wtmp = null;
+			&$select_func(PDL::Complex::complex(pdl($type,@_[0,1])));
+		} : undef;
 		$v = $jobv ? PDL->new_from_specification($type, $dims[1], $dims[1]) :
 					pdl($type,0);
 		$mm->geesx( $jobv, $select, $sense, $wtmp, $wi, $v, $sdim, $rconde, $rcondv,$info, $select_f);
@@ -1874,7 +1851,6 @@ sub PDL::mschurx{
 			warn("mschurx: The Schur form no longer satisfy select_func = 1\n because of roundoff or underflow\n")
 					if ($info > ($dims[0] + 1) and $_laerror);
 		}
-
 		if ($select_func){
 			if(!$sdim){
 				if ($jobvl == 2){
@@ -1906,28 +1882,23 @@ sub PDL::mschurx{
 						$mult = 0;
 					}
 					$mm->trevc($job, $mult, $sel, $vl, $vr, $sdims, my $infos=null);
-
 					if ($jobvr){
+						(undef,$vr) = $wtmp->cplx_eigen($wi,$norm?($vr,1):($vr->t,0));
+						bless $vr, 'PDL::Complex';
 						if($norm){
-							(undef,$vr) = $wtmp->cplx_eigen($wi,$vr,1);
-							bless $vr, 'PDL::Complex';
 							$ret{VR} = $jobvr == 2 ? $vr(,,:($sdim-1))->norm(1,1) : $vr->norm(1,1);
 						}
 						else{
-							(undef,$vr) = $wtmp->cplx_eigen($wi,$vr->t,0);
-							bless $vr, 'PDL::Complex';
 							$ret{VR} = $jobvr == 2 ? $vr(,:($sdim-1))->sever : $vr;
 						}
 					}
 					if ($jobvl){
+						(undef,$vl) = $wtmp->cplx_eigen($wi,$norm?($vl,1):($vl->t,0));
+						bless $vl, 'PDL::Complex';
 						if($norm){
-							(undef,$vl) = $wtmp->cplx_eigen($wi,$vl,1);
-							bless $vl, 'PDL::Complex';
 							$ret{VL}= $jobvl == 2 ? $vl(,,:($sdim-1))->norm(1,1) : $vl->norm(1,1);
 						}
 						else{
-							(undef,$vl) = $wtmp->cplx_eigen($wi,$vl->t,0);
-							bless $vl, 'PDL::Complex';
 							$ret{VL}= $jobvl == 2 ? $vl(,:($sdim-1))->sever : $vl;
 						}
 					}
@@ -1940,30 +1911,15 @@ sub PDL::mschurx{
 					$mm->trevc($job, 2, $sel, $vl, $vr, $sdim, my $infos = null);
 					$wtmpr = $wtmp(:($sdim-1));
 					$wtmpi = $wi(:($sdim-1));
-
 					if ($jobvr){
-						if ($norm){
-							(undef,$vr) = $wtmpr->cplx_eigen($wtmpi,$vr,1);
-							bless $vr, 'PDL::Complex';
-							$ret{VR} = $vr->norm(1,1);
-						}
-						else{
-							(undef,$vr) = $wtmpr->cplx_eigen($wtmpi,$vr->t,0);
-							bless $vr, 'PDL::Complex';
-							$ret{VR} =  $vr;
-						}
+						(undef,$vr) = $wtmpr->cplx_eigen($wtmpi,$norm?($vr,1):($vr->t,0));
+						bless $vr, 'PDL::Complex';
+						$ret{VR} = $norm?$vr->norm(1,1):$vr;
 					}
 					if ($jobvl){
-						if ($norm){
-							(undef,$vl) = $wtmpr->cplx_eigen($wtmpi,$vl,1);
-							bless $vl, 'PDL::Complex';
-							$ret{VL} = $vl->norm(1,1);
-						}
-						else{
-							(undef,$vl) = $wtmpr->cplx_eigen($wtmpi,$vl->t,0);
-							bless $vl, 'PDL::Complex';
-							$ret{VL} = $vl;
-						}
+						(undef,$vl) = $wtmpr->cplx_eigen($wtmpi,$norm?($vl,1):($vl->t,0));
+						bless $vl, 'PDL::Complex';
+						$ret{VL} = $norm?$vl->norm(1,1):$vl;
 					}
 				}
 			}
@@ -1979,43 +1935,25 @@ sub PDL::mschurx{
 				}
 				$mm->trevc($job, $mult, $sel, $vl, $vr, $sdim, my $infos=null);
 				if ($jobvr){
-					if ($norm){
-						(undef,$vr) = $wtmp->cplx_eigen($wi,$vr,1);
-						bless $vr, 'PDL::Complex';
-						$ret{VR} = $vr->norm(1,1);
-					}
-					else{
-						(undef,$vr) = $wtmp->cplx_eigen($wi,$vr->t,0);
-						bless $vr, 'PDL::Complex';
-						$ret{VR} = $vr;
-					}
+					(undef,$vr) = $wtmp->cplx_eigen($wi,$norm?($vr,1):($vr->t,0));
+					bless $vr, 'PDL::Complex';
+					$ret{VR} = $norm?$vr->norm(1,1):$vr;
 				}
 				if ($jobvl){
-					if ($norm){
-						(undef,$vl) = $wtmp->cplx_eigen($wi,$vl,1);
-						bless $vl, 'PDL::Complex';
-						$ret{VL} = $vl->norm(1,1);
-					}
-					else{
-						(undef,$vl) = $wtmp->cplx_eigen($wi,$vl->t,0);
-						bless $vl, 'PDL::Complex';
-						$ret{VL} = $vl;
-					}
+					(undef,$vl) = $wtmp->cplx_eigen($wi,$norm?($vl,1):($vl->t,0));
+					bless $vl, 'PDL::Complex';
+					$ret{VL} = $norm?$vl->norm(1,1):$vl;
 				}
 			}
 		}
 		$w = PDL::Complex::ecplx ($wtmp, $wi);
-
 		if ($jobv == 2 && $select_func) {
 			$v = $sdim > 0 ? $v->t->(:($sdim-1),) ->sever : null;
 		}
 		elsif($jobv){
 			$v =  $v->t->sever;
 		}
-
 	}
-
-
 	$ret{info} = $info;
 	if ($sense){
 		if ($sense == 3){
@@ -2032,7 +1970,6 @@ sub PDL::mschurx{
 				($m, $w, %ret) :
 			$m;
 }
-
 
 # scale by max(abs(real)+abs(imag))
 sub magn_norm{
@@ -2237,28 +2174,24 @@ sub PDL::mgschur{
 
 				$mm->tgevc($job, $mult, $pp, $sel, $vl, $vr, $sdims, my $infos=null);
 				if ($jobvr){
+					(undef,$vr) = $wtmp->cplx_eigen($wi,$norm?($vr,1):($vr->t,0));
+					bless $vr, 'PDL::Complex';
 					if($norm){
-						(undef,$vr) = $wtmp->cplx_eigen($wi,$vr,1);
-						bless $vr, 'PDL::Complex';
 						$ret{VR} =  $jobvr == 2 ? magn_norm($vr(,,:($sdim-1)),1) : magn_norm($vr,1);
 
 					}
 					else{
-						(undef,$vr) = $wtmp->cplx_eigen($wi,$vr->t,0);
-						bless $vr, 'PDL::Complex';
 						$ret{VR} =  $jobvr == 2 ? $vr(,:($sdim-1))->sever : $vr;
 					}
 				}
 				if ($jobvl){
+					(undef,$vl) = $wtmp->cplx_eigen($wi,$norm?($vl,1):($vl->t,0));
+					bless $vl, 'PDL::Complex';
 					if ($norm){
-						(undef,$vl) = $wtmp->cplx_eigen($wi,$vl,1);
-						bless $vl, 'PDL::Complex';
 						$ret{VL} = $jobvl == 2 ? magn_norm($vl(,,:($sdim-1)),1) : magn_norm($vl,1);
 
 					}
 					else{
-						(undef,$vl) = $wtmp->cplx_eigen($wi,$vl->t,0);
-						bless $vl, 'PDL::Complex';
 						$ret{VL} = $jobvl == 2 ? $vl(,:($sdim-1))->sever : $vl;
 					}
 				}
@@ -2272,29 +2205,14 @@ sub PDL::mgschur{
 				$wtmpr = $wtmp(:($sdim-1));
 				$wtmpi = $wi(:($sdim-1));
 				if ($jobvr){
-					if ($norm){
-						(undef,$vr) = $wtmpr->cplx_eigen($wtmpi,$vr,1);
-						bless $vr, 'PDL::Complex';
-						$ret{VR} = magn_norm($vr,1);
-					}
-					else{
-						(undef,$vr) = $wtmpr->cplx_eigen($wtmpi,$vr->t,0);
-						bless $vr, 'PDL::Complex';
-						$ret{VR} = $vr;
-					}
+					(undef,$vr) = $wtmpr->cplx_eigen($wtmpi,$norm?($vr,1):($vr->t,0));
+					bless $vr, 'PDL::Complex';
+					$ret{VR} = $norm?magn_norm($vr,1):$vr;
 				}
 				if ($jobvl){
-					if ($norm){
-						(undef,$vl) = $wtmpr->cplx_eigen($wtmpi,$vl,1);
-						bless $vl, 'PDL::Complex';
-						$ret{VL} = magn_norm($vl,1);
-
-					}
-					else{
-						(undef,$vl) = $wtmpr->cplx_eigen($wtmpi,$vl->t,0);
-						bless $vl, 'PDL::Complex';
-						$ret{VL} = $vl;
-					}
+					(undef,$vl) = $wtmpr->cplx_eigen($wtmpi,$norm?($vl,1):($vl->t,0));
+					bless $vl, 'PDL::Complex';
+					$ret{VL} = $norm?magn_norm($vl,1):$vl;
 				}
 			}
 		}
@@ -2320,28 +2238,14 @@ sub PDL::mgschur{
 
 			$mm->tgevc($job, $mult, $pp, $sel, $vl, $vr, $sdim, my $infos=null);
 			if ($jobvl){
-				if ($norm){
-					(undef,$vl) = $wtmp->cplx_eigen($wi,$vl,1);
-					bless $vl, 'PDL::Complex';
-					$ret{VL} = magn_norm($vl,1);
-				}
-				else{
-					(undef,$vl) = $wtmp->cplx_eigen($wi,$vl->t,0);
-					bless $vl, 'PDL::Complex';
-					$ret{VL} = $vl;
-				}
+				(undef,$vl) = $wtmp->cplx_eigen($wi,$norm?($vl,1):($vl->t,0));
+				bless $vl, 'PDL::Complex';
+				$ret{VL} = $norm?magn_norm($vl,1):$vl;
 			}
 			if ($jobvr){
-				if ($norm){
-					(undef,$vr) = $wtmp->cplx_eigen($wi,$vr,1);
-					bless $vr, 'PDL::Complex';
-					$ret{VR} = magn_norm($vr,1);
-				}
-				else{
-					(undef,$vr) = $wtmp->cplx_eigen($wi,$vr->t,0);
-					bless $vr, 'PDL::Complex';
-					$ret{VR} = $vr;
-				}
+				(undef,$vr) = $wtmp->cplx_eigen($wi,$norm?($vr,1):($vr->t,0));
+				bless $vr, 'PDL::Complex';
+				$ret{VR} = $norm?magn_norm($vr,1):$vr;
 			}
 		}
 	}
@@ -2368,7 +2272,6 @@ sub PDL::mgschur{
 	$m = $mm->t->sever unless $m->is_inplace(0);
 	$p = $pp->t->sever unless $p->is_inplace(0);
 	return ($m, $p, $w, $beta, %ret);
-
 }
 
 
@@ -2887,26 +2790,22 @@ sub PDL::mgschurx{
 
 					$mm->tgevc($job, $mult, $pp, $sel, $vl, $vr, $sdims, my $infos=null);
 					if ($jobvr){
+						(undef,$vr) = $wtmp->cplx_eigen($wi,$norm?($vr,1):($vr->t,0));
+						bless $vr, 'PDL::Complex';
 						if($norm){
-							(undef,$vr) = $wtmp->cplx_eigen($wi,$vr,1);
-							bless $vr, 'PDL::Complex';
 							$ret{VR} =  $jobvr == 2 ? magn_norm($vr(,,:($sdim-1)),1) : magn_norm($vr,1);
 						}
 						else{
-							(undef,$vr) = $wtmp->cplx_eigen($wi,$vr->t,0);
-							bless $vr, 'PDL::Complex';
 							$ret{VR} =  $jobvr == 2 ? $vr(,:($sdim-1))->sever : $vr;
 						}
 					}
 					if ($jobvl){
+						(undef,$vl) = $wtmp->cplx_eigen($wi,$norm?($vl,1):($vl->t,0));
+						bless $vl, 'PDL::Complex';
 						if ($norm){
-							(undef,$vl) = $wtmp->cplx_eigen($wi,$vl,1);
-							bless $vl, 'PDL::Complex';
 							$ret{VL} = $jobvl == 2 ? magn_norm($vl(,,:($sdim-1)),1) : magn_norm($vl,1);
 						}
 						else{
-							(undef,$vl) = $wtmp->cplx_eigen($wi,$vl->t,0);
-							bless $vl, 'PDL::Complex';
 							$ret{VL} = $jobvl == 2 ? $vl(,:($sdim-1))->sever : $vl;
 						}
 					}
@@ -2920,28 +2819,14 @@ sub PDL::mgschurx{
 					$wtmpr = $wtmp(:($sdim-1));
 					$wtmpi = $wi(:($sdim-1));
 					if ($jobvr){
-						if ($norm){
-							(undef,$vr) = $wtmpr->cplx_eigen($wtmpi,$vr,1);
-							bless $vr, 'PDL::Complex';
-							$ret{VR} = magn_norm($vr,1);
-						}
-						else{
-							(undef,$vr) = $wtmpr->cplx_eigen($wtmpi,$vr->t,0);
-							bless $vr, 'PDL::Complex';
-							$ret{VR} = $vr;
-						}
+						(undef,$vr) = $wtmpr->cplx_eigen($wtmpi,$norm?($vr,1):($vr->t,0));
+						bless $vr, 'PDL::Complex';
+						$ret{VR} = $norm?magn_norm($vr,1):$vr;
 					}
 					if ($jobvl){
-						if ($norm){
-							(undef,$vl) = $wtmpr->cplx_eigen($wtmpi,$vl,1);
-							bless $vl, 'PDL::Complex';
-							$ret{VL} = magn_norm($vl,1);
-						}
-						else{
-							(undef,$vl) = $wtmpr->cplx_eigen($wtmpi,$vl->t,0);
-							bless $vl, 'PDL::Complex';
-							$ret{VL} = $vl;
-						}
+						(undef,$vl) = $wtmpr->cplx_eigen($wtmpi,$norm?($vl,1):($vl->t,0));
+						bless $vl, 'PDL::Complex';
+						$ret{VL} = $norm?magn_norm($vl,1):$vl;
 					}
 				}
 			}
@@ -2967,28 +2852,14 @@ sub PDL::mgschurx{
 
 				$mm->tgevc($job, $mult, $pp, $sel, $vl, $vr, $sdim, my $infos=null);
 				if ($jobvl){
-					if ($norm){
-						(undef,$vl) = $wtmp->cplx_eigen($wi,$vl,1);
-						bless $vl, 'PDL::Complex';
-						$ret{VL} = magn_norm($vl,1);
-					}
-					else{
-						(undef,$vl) = $wtmp->cplx_eigen($wi,$vl->t,0);
-						bless $vl, 'PDL::Complex';
-						$ret{VL} = $vl;
-					}
+					(undef,$vl) = $wtmp->cplx_eigen($wi,$norm?($vl,1):($vl->t,0));
+					bless $vl, 'PDL::Complex';
+					$ret{VL} = $norm?magn_norm($vl,1):$vl;
 				}
 				if ($jobvr){
-					if ($norm){
-						(undef,$vr) = $wtmp->cplx_eigen($wi,$vr,1);
-						bless $vr, 'PDL::Complex';
-						$ret{VR} = magn_norm($vr,1);
-					}
-					else{
-						(undef,$vr) = $wtmp->cplx_eigen($wi,$vr->t,0);
-						bless $vr, 'PDL::Complex';
-						$ret{VR} = $vr;
-					}
+					(undef,$vr) = $wtmp->cplx_eigen($wi,$norm?($vr,1):($vr->t,0));
+					bless $vr, 'PDL::Complex';
+					$ret{VR} = $norm?magn_norm($vr,1):$vr;
 				}
 			}
 		}
