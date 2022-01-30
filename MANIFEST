@@ -15,6 +15,7 @@ lib/PDL/LinearAlgebra/Special.pm
 t/1.t
 t/cgtsv.t
 t/gtsv.t
+t/legacy.t
 Trans/Makefile.PL
 Trans/selectfunc.c
 Trans/trans.pd
