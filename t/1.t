@@ -15,8 +15,12 @@ sub fapprox {
 sub runtest {
   local $Test::Builder::Level = $Test::Builder::Level + 1;
   my ($in, $method, $expected, $extra) = @_;
+  ($expected, my $expected_cplx) = ref($expected) eq 'ARRAY' ? @$expected : ($expected, $expected);
   my ($got) = $in->$method(@{$extra||[]});
   ok fapprox($got, $expected), $method or diag "got: $got";
+  $_ = PDL::Complex::r2C($_) for $in, $expected_cplx;
+  ($got) = $in->$method(map ref() ? PDL::Complex::r2C($_) : $_, @{$extra||[]});
+  ok fapprox($got, $expected_cplx), "PDL::Complex $method" or diag "got: $got";
 }
 
 my $a = pdl([[1.7,3.2],[9.2,7.3]]);
@@ -36,8 +40,10 @@ runtest(pdl([1,2],[1,0]), 'mrcond', 1/3);
 runtest($x, 'mtriinv', pdl([2.3255814,-0.096899225],[0.75,1.3888889]));
 runtest($x, 'msyminv', pdl([2.3323615,-0.09718173],[-0.09718173,1.3929381]));
 runtest($x->crossprod($x), 'mchol', pdl([0.86452299,0.63954343],[0,0.33209065]));
-runtest($x, 'mgschur', pdl([-0.35099581,-0.68880032],[0,0.81795847]), [sequence(2,2)]);
-runtest($x, 'mgschurx', pdl([-0.35099581,-0.68880032],[0,0.81795847]), [sequence(2,2)]);
+my @mgschur_exp = (pdl([-0.35099581,-0.68880032],[0,0.81795847]),
+  pdl([1.026674, -0.366662], [0, -0.279640]));
+runtest($x, 'mgschur', \@mgschur_exp, [sequence(2,2)]);
+runtest($x, 'mgschurx', \@mgschur_exp, [sequence(2,2)]);
 runtest($x, 'mqr', pdl([-0.49738411,-0.86753043],[-0.86753043,0.49738411]));
 runtest($x, 'mrq', pdl([0.27614707,-0.3309725],[0,-1.0396634]));
 runtest($x, 'mql', pdl([0.99913307,-0.041630545],[-0.041630545,-0.99913307]));
@@ -48,7 +54,7 @@ runtest($x, 'msymsolve', pdl([5.9311981,6.0498221],[-3.4005536,-2.1352313]), [1,
 runtest(pdl([2,-1,0],[-1,2,-1],[0,-1,2]), 'mpossolve', pdl([3,4.5,6],[6,8,10],[6,7.5,9]), [1,sequence(3,3)]);
 runtest($x, 'mglm', pdl([-0.10449321,1.497736],[30.95841,-44.976237]), [sequence(2,2),sequence(2,2)]);
 runtest($x, 'meigen', pdl([0.366373539549749,0.783626460450251]));
-runtest($x, 'mgeigen', pdl([-0.350995814331646,0.817958472088009]), [sequence(2,2)]);
+runtest($x, 'mgeigen', [pdl([-0.350995,0.817958]), pdl([1.026674,-0.279640])], [sequence(2,2)]);
 runtest($x, 'msymeigen', pdl([0.42692907,0.72307093]));
 runtest($x, 'mdsvd', pdl([0.32189374,0.9467758],[0.9467758,-0.32189374]));
 runtest($x, 'mgsvd', pdl(0.16914549,0.64159379), [sequence(2,2)]);
