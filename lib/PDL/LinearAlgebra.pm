@@ -4701,55 +4701,22 @@ sub mglm {shift->mglm(@_)}
 
 sub PDL::mglm{
 	my($a, $b, $d) = @_;
+	my $di = $_[0]->dims_internal;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my(@ddims) = $d->dims;
-	my($x, $y, $info);
-
 	barf("mglm: Require arrays with equal number of rows")
-		unless( @adims >= 2 && @bdims >= 2 && $adims[1] == $bdims[1]);
-
+		unless( @adims >= 2+$di && @bdims >= 2+$di && $adims[1+$di] == $bdims[1+$di]);
 	barf "mglm: Require that column(A) <= row(A) <= column(A) + column(B)" unless
-		( ($adims[0] <= $adims[1] ) && ($adims[1] <= ($adims[0] + $bdims[0])) );
-
+		( ($adims[0+$di] <= $adims[1+$di] ) && ($adims[1+$di] <= ($adims[0+$di] + $bdims[0+$di])) );
 	barf("mglm: Require vector(s) with size equal to number of rows of A")
-		unless( @ddims >= 1  && $adims[1] == $ddims[0]);
-
+		unless( @ddims >= 1+$di  && $adims[1+$di] == $ddims[0+$di]);
 	$a = $a->t->copy;
 	$b = $b->t->copy;
 	$d = $d->copy;
-
-	($x, $y, $info) = $a->ggglm($b, $d);
+	my ($x, $y, $info) = $a->_call_method('ggglm', $b, $d);
 	$x, $y;
-
 }
-
-sub PDL::Complex::mglm {
-	my($a, $b, $d) = @_;
-	my(@adims) = $a->dims;
-	my(@bdims) = $b->dims;
-	my(@ddims) = $d->dims;
-	my($x, $y, $info);
-
-	barf("mglm: Require arrays with equal number of rows")
-		unless( @adims >= 3 && @bdims >= 3 && $adims[2] == $bdims[2]);
-
-	barf "mglm: Require that column(A) <= row(A) <= column(A) + column(B)" unless
-		( ($adims[2] <= $adims[2] ) && ($adims[2] <= ($adims[1] + $bdims[1])) );
-
-	barf("mglm: Require vector(s) with size equal to number of rows of A")
-		unless( @ddims >= 2  && $adims[2] == $ddims[1]);
-
-
-	$a = $a->t->copy;
-	$b = $b->t->copy;
-	$d = $d->copy;
-
-	($x, $y, $info) = $a->cggglm($b, $d);
-	$x, $y;
-
-}
-
 
 =head2 mlse
 
