@@ -5134,37 +5134,15 @@ sub PDL::msymgeigen {
 	&_square_same;
 	&_same_dims;
 	my($a, $b, $upper, $jobv, $type, $method) = @_;
-	$type = 1 unless $type;
-	my ($w, $v, $info);
-	$method = 'PDL::LinearAlgebra::Real::sygvd' unless defined $method;
+	$type ||= 1;
+	$method //= ($a->isa('PDL::Complex') || !$a->type->real) ? 'chegvd' :'sygvd';
        	$upper = 1-$upper;
 	$a = $a->copy;
 	$b = $b->copy;
-       	$w = null;
-	$info = null;
-	$a->$method($type, $jobv, $upper, $b, $w, $info);
+	$a->$method($type, $jobv, $upper, $b, my $w = null, my $info = null);
 	_error($info, "msymgeigen: Can't compute eigenvalues/vectors: matrix (PDL(s) %s) is/are not positive definite(s) or the algorithm failed to converge");
 	return $jobv ? ($w , $a->t->sever, $info) : wantarray ? ($w, $info) : $w;
 }
-
-sub PDL::Complex::msymgeigen {
-	&_square_same;
-	&_same_dims;
-	my($a, $b, $upper, $jobv, $type, $method) = @_;
-	$type = 1 unless $type;
-	my ($w, $v, $info);
-	$method = 'PDL::LinearAlgebra::Complex::chegvd' unless defined $method;
-	$a = $a->t->copy;
-	$b = $b->t->copy;
-       	$w = null;
-	$info = null;
-	# TODO bug in chegv ???
-	$a->$method($type, $jobv, $upper, $b, $w, $info);
-	_error($info, "msymgeigen: Can't compute eigenvalues/vectors: matrix (PDL(s) %s) is/are not positive definite(s) or the algorithm failed to converge");
-	return $jobv ? ($w , $a->t->sever, $info) : wantarray ? ($w, $info) : $w;
-}
-
-
 
 =head2 msymgeigenx
 
