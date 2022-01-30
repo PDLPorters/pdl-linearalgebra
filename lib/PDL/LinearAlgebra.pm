@@ -207,7 +207,7 @@ sub laerror{
 =for usage
 
  PDL = t(PDL, SCALAR(conj))
- conj : Conjugate Transpose = 1 | Transpose = 0, default = 1;
+ conj : Conjugate Transpose = 1 | Transpose = 0, default = 0;
 
 =for ref
 
@@ -241,10 +241,16 @@ Supports threading.
 
 =cut
 
-sub _square {
+sub _2d_array {
   my @dims = $_[0]->dims;
   my $d = $_[0]->dims_internal;
-  barf("Require square array(s)") unless @dims >= 2+$d && $dims[$d] == $dims[$d+1];
+  barf("Require 2D array(s)") unless @dims >= 2+$d;
+}
+sub _square {
+  &_2d_array;
+  my @dims = $_[0]->dims;
+  my $d = $_[0]->dims_internal;
+  barf("Require square array(s)") unless $dims[$d] == $dims[$d+1];
 }
 sub _square_same {
   my $d = $_[0]->dims_internal;
@@ -453,29 +459,18 @@ Uses L<crossprod|PDL::LinearAlgebra::Real/crossprod> or L<ccrossprod|PDL::Linear
 =cut
 
 sub mcrossprod {shift->mcrossprod(@_)}
-
 sub PDL::mcrossprod {
+	&_2d_array;
 	my($a, $b) = @_;
-	my(@dims) = $a->dims;
-
-	barf("mcrossprod: Require 2D array(s)")
-		unless( @dims >= 2 );
-
 	$b = $a unless defined $b;
 	$a->crossprod($b);
 }
-
 sub PDL::Complex::mcrossprod {
+	&_2d_array;
 	my($a, $b) = @_;
-	my(@dims) = $a->dims;
-
-	barf("mcrossprod: Require 2D array(s)")
-		unless( @dims >= 3);
-
 	$b = $a unless defined $b;
 	$a->ccrossprod($b);
 }
-
 
 =head2 mrank
 
@@ -499,12 +494,9 @@ from Lapack.
 *mrank = \&PDL::mrank;
 
 sub PDL::mrank {
+	&_2d_array;
 	my($m, $tol) = @_;
 	my(@dims) = $m->dims;
-
-	barf("mrank: Require a 2D matrix")
-		unless( @dims == 2 or @dims == 3 );
-
 	my ($sv, $info, $err);
 
 	$err = setlaerror(NO);
@@ -768,13 +760,9 @@ Supports threading.
 
 =cut
 
-sub mcond {
-  barf("mcond: Require 2D array(s)")
-    unless $_[0]->dims >= UNIVERSAL::isa($_[0], 'PDL::Complex') ? 3 : 2;
-  shift->mcond(@_);
-}
-*PDL::Complex::mcond = *PDL::mcond;
+sub mcond {shift->mcond(@_)}
 sub PDL::mcond {
+	&_2d_array;
 	my $m = shift;
 	my @dims = $m->dims;
 	my $err = setlaerror(NO);
@@ -890,11 +878,9 @@ Returns an orthonormal basis of the range space of matrix A.
 *morth = \&PDL::morth;
 
 sub PDL::morth {
+	&_2d_array;
 	my ($m, $tol) = @_;
 	my @dims = $m->dims;
-	barf("morth: Require a matrix")
-		unless( (@dims == 2)  || (@dims == 3));
-
 	my ($u, $s, $rank, $info, $err);
 	$tol =  (defined $tol) ? $tol  : ($m->type == double) ? 1e-8 : 1e-5;
 
@@ -934,11 +920,9 @@ Works on transposed array.
 *mnull = \&PDL::mnull;
 
 sub PDL::mnull {
+	&_2d_array;
 	my ($m, $tol) = @_;
 	my @dims = $m->dims;
-	barf("mnull: Require a matrix")
-		unless( (@dims == 2)  || (@dims == 3));
-
 	my ($v, $s, $rank, $info, $err);
 	$tol =  (defined $tol) ? $tol  : ($m->type == double) ? 1e-8 : 1e-5;
 
@@ -1239,11 +1223,9 @@ Works on transposed array.
 *mpinv = \&PDL::mpinv;
 
 sub PDL::mpinv{
+	&_2d_array;
 	my ($m, $tol) = @_;
 	my @dims = $m->dims;
-	barf("mpinv: Require a matrix")
-		unless( @dims == 2 or @dims == 3 );
-
 	my ($ind, $cind, $u, $s, $v, $info, $err);
 
 	$err = setlaerror(NO);
@@ -1292,10 +1274,9 @@ Works on transposed array.
 *mlu = \&PDL::mlu;
 
 sub PDL::mlu {
+	&_2d_array;
 	my $m = shift;
 	my(@dims) = $m->dims;
-	barf("mlu: Require a matrix")
-		unless((@dims == 2) || (@dims == 3));
 	my ($ipiv, $info, $l, $u);
 
         $m = $m->copy;
@@ -1451,13 +1432,10 @@ Works on transposed array.
 *mhessen = \&PDL::mhessen;
 
 sub PDL::mhessen {
+	&_square;
 	my $m = shift;
 	my(@dims) = $m->dims;
-	barf("mhessen: Require a square matrix")
-		unless( ((@dims == 2) || (@dims == 3)) && $dims[-1] == $dims[-2] );
-
 	my ($info, $tau, $h, $q);
-
 	$m = $m->t->copy;
 	$info = pdl(long, 0);
 	if(@dims == 3){
@@ -1485,7 +1463,6 @@ sub PDL::mhessen {
 	}
 	wantarray ? return ($h, $q->t->sever) : $h;
 }
-
 
 =head2 mschur
 
@@ -1959,11 +1936,9 @@ Works on transposed array.
 *mschurx = \&PDL::mschurx;
 
 sub PDL::mschurx{
+	&_square;
 	my($m, $jobv, $jobvl, $jobvr, $select_func, $sense, $mult,$norm) = @_;
 	my(@dims) = $m->dims;
-
-	barf("mschurx: Require a square matrix")
-		unless( ( (@dims == 2)|| (@dims == 3) )&& $dims[-1] == $dims[-2]);
 
        	my ($w, $v, $info, $type, $select, $sdim, $rconde, $rcondv, %ret, $mm, $vl, $vr);
 
@@ -3306,11 +3281,10 @@ from Lapack and returns C<Q> in scalar context. Works on transposed array.
 sub mqr {shift->mqr(@_)}
 
 sub PDL::mqr {
+	&_2d_array;
 	my($m, $full) = @_;
 	my(@dims) = $m->dims;
 	my ($q, $r);
-	barf("mqr: Require a matrix") unless @dims == 2;
-
         $m = $m->t->copy;
 	my $min = $dims[0] < $dims[1] ?  $dims[0] : $dims[1];
 
@@ -3340,11 +3314,10 @@ sub PDL::mqr {
 }
 
 sub PDL::Complex::mqr {
+	&_2d_array;
 	my($m, $full) = @_;
 	my(@dims) = $m->dims;
 	my ($q, $r);
-	barf("mqr: Require a matrix") unless @dims == 3;
-
         $m = $m->t->copy;
 	my $min = $dims[1] < $dims[2] ?  $dims[1] : $dims[2];
 
@@ -3403,12 +3376,10 @@ from Lapack and returns C<Q> in scalar context. Works on transposed array.
 sub mrq {shift->mrq(@_)}
 
 sub PDL::mrq {
+	&_2d_array;
 	my($m, $full) = @_;
 	my(@dims) = $m->dims;
 	my ($q, $r);
-
-
-	barf("mrq: Require a matrix") unless @dims == 2;
         $m = $m->t->copy;
 	my $min = $dims[0] < $dims[1] ?  $dims[0] : $dims[1];
 
@@ -3455,12 +3426,10 @@ sub PDL::mrq {
 }
 
 sub PDL::Complex::mrq {
+	&_2d_array;
 	my($m, $full) = @_;
 	my(@dims) = $m->dims;
 	my ($q, $r);
-
-
-	barf("mrq: Require a matrix") unless @dims == 3;
         $m = $m->t->copy;
 	my $min = $dims[1] < $dims[2] ?  $dims[1] : $dims[2];
 
@@ -3538,12 +3507,10 @@ from Lapack and returns C<Q> in scalar context. Works on transposed array.
 sub mql {shift->mql(@_)}
 
 sub PDL::mql {
+	&_2d_array;
 	my($m, $full) = @_;
 	my(@dims) = $m->dims;
 	my ($q, $l);
-
-
-	barf("mql: Require a matrix") unless @dims == 2;
         $m = $m->t->copy;
 	my $min = $dims[0] < $dims[1] ?  $dims[0] : $dims[1];
 
@@ -3590,12 +3557,10 @@ sub PDL::mql {
 }
 
 sub PDL::Complex::mql{
+	&_2d_array;
 	my($m, $full) = @_;
 	my(@dims) = $m->dims;
 	my ($q, $l);
-
-
-	barf("mql: Require a matrix") unless @dims == 3;
         $m = $m->t->copy;
 	my $min = $dims[1] < $dims[2] ?  $dims[1] : $dims[2];
 
@@ -3673,11 +3638,10 @@ from Lapack and returns C<Q> in scalar context. Works on transposed array.
 sub mlq {shift->mlq(@_)}
 
 sub PDL::mlq {
+	&_2d_array;
 	my($m, $full) = @_;
 	my(@dims) = $m->dims;
 	my ($q, $l);
-
-	barf("mlq: Require a matrix") unless @dims == 2;
         $m = $m->t->copy;
 	my $min = $dims[0] < $dims[1] ?  $dims[0] : $dims[1];
 
@@ -3716,11 +3680,10 @@ sub PDL::mlq {
 }
 
 sub PDL::Complex::mlq{
+	&_2d_array;
 	my($m, $full) = @_;
 	my(@dims) = $m->dims;
 	my ($q, $l);
-
-	barf("mlq: Require a matrix") unless @dims == 3;
         $m = $m->t->copy;
 	my $min = $dims[1] < $dims[2] ?  $dims[1] : $dims[2];
 
@@ -3917,13 +3880,11 @@ Works on transposed arrays.
 *msolvex = \&PDL::msolvex;
 
 sub PDL::msolvex {
+	&_square;
 	my($a, $b, %opt) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ( $af, $x, $ipiv, $info, $equilibrate, $berr, $ferr, $rcond, $equed, %result, $r, $c ,$rpvgrw);
-
-	barf("msolvex: Require a square coefficient matrix")
-		unless( ((@adims == 2) || (@adims == 3)) && $adims[-1] == $adims[-2] );
 	barf("msolvex: Require a right hand side matrix B with number".
 			 " of row equal to order of A")
 		unless( ((@bdims == 2) || (@bdims == 3))&& $bdims[-1] == $adims[-2]);
@@ -4210,17 +4171,14 @@ from Lapack. Works on transposed array.
 *msymsolvex = \&PDL::msymsolvex;
 
 sub PDL::msymsolvex {
+	&_square;
 	my($a, $uplo, $b, $d) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ( $af, $x, $ipiv, $info, $berr, $ferr, $rcond, %result);
-
-	barf("msymsolvex: Require a square coefficient matrix")
-		unless( ((@adims == 2) || (@adims == 3)) && $adims[-1] == $adims[-2] );
 	barf("msymsolvex: Require a right hand side matrix B with number".
 			 " of row equal to order of A")
 		unless( ((@bdims == 2) || (@bdims == 3))&& $bdims[-1] == $adims[-2]);
-
 
 	$uplo = 1 - $uplo;
 	$b = $b->t;
@@ -4404,17 +4362,14 @@ Works on transposed array(s).
 *mpossolvex = \&PDL::mpossolvex;
 
 sub PDL::mpossolvex {
+	&_square;
 	my($a, $uplo, $b, %opt) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ( $af, $x, $info, $equilibrate, $berr, $ferr, $rcond, $equed, %result, $s);
-
-	barf("mpossolvex: Require a square coefficient matrix")
-		unless( ((@adims == 2) || (@adims == 3)) && $adims[-1] == $adims[-2] );
 	barf("mpossolvex: Require a 2D right hand side matrix B with number".
 			 " of row equal to order of A")
 		unless( ((@bdims == 2) || (@bdims == 3))&& $bdims[-1] == $adims[-2]);
-
 
 	$uplo = $uplo ? pdl(long, 0): pdl(long, 1);
 	$equilibrate = $opt{'equilibrate'} ? pdl(long, 2): pdl(long,1);
@@ -4487,13 +4442,11 @@ Works on transposed arrays.
 *mlls = \&PDL::mlls;
 
 sub PDL::mlls {
+	&_2d_array;
 	my($a, $b, $trans) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ($info, $x, $type);
-
-	barf("mlls: Require a matrix")
-		unless( @adims == 2 ||  @adims == 3);
 	barf("mlls: Require a 2D right hand side matrix B with number".
 			 " of rows equal to number of rows of A")
 		unless( (@bdims == 2 || @bdims == 3)&& $bdims[-1] == $adims[-1]);
@@ -4571,13 +4524,11 @@ from Lapack. Works on tranposed arrays.
 *mllsy = \&PDL::mllsy;
 
 sub PDL::mllsy {
+	&_2d_array;
 	my($a, $b) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ($info, $x, $rcond, $rank, $jpvt, $type);
-
-	barf("mllsy: Require a matrix")
-		unless( @adims == 2 || @adims == 3);
 	barf("mllsy: Require a 2D right hand side matrix B with number".
 			 " of rows equal to number of rows of A")
 		unless( (@bdims == 2 || @bdims == 3)&& $bdims[-1] == $adims[-1]);
@@ -4662,17 +4613,14 @@ Works on transposed arrays.
 *mllss = \&PDL::mllss;
 
 sub PDL::mllss {
+	&_2d_array;
 	my($a, $b, $method) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ($info, $x, $rcond, $rank, $s, $min, $type);
-
-	barf("mllss: Require a matrix")
-		unless( @adims == 2 || @adims == 3);
 	barf("mllss: Require a 2D right hand side matrix B with number".
 			 " of rows equal to number of rows of A")
 		unless( (@bdims == 2 || @bdims == 3)&& $bdims[-1] == $adims[-1]);
-
 
 	$type = $a->type;
 	#TODO: Add this in option
@@ -4891,8 +4839,6 @@ sub PDL::mlse {
 	barf "mlse: Require that row(B) <= column(A) <= row(A) + row(B)" unless
 		( ($bdims[-1] <= $adims[-2] ) && ($adims[-2] <= ($adims[-1]+ $bdims[-1])) );
 
-
-
 	$a = $a->t->copy;
 	$b = $b->t->copy;
 	$c = $c->copy;
@@ -5076,12 +5022,9 @@ Works on transposed arrays.
 *meigenx = \&PDL::meigenx;
 
 sub PDL::meigenx {
+	&_square;
 	my($m, %opt) = @_;
 	my(@dims) = $m->dims;
-	barf("meigenx: Require a square matrix")
-		unless( ( (@dims == 2)|| (@dims == 3) )&& $dims[-1] == $dims[-2]);
-
-
 	my (%result, $jobvl, $jobvr, $sense, $balanc, $vr, $vl, $rconde, $rcondv,
 	$w, $info, $ilo, $ihi, $scale, $abnrm, $type);
 
@@ -5702,12 +5645,9 @@ or L<cheevr|PDL::LinearAlgebra::Complex/cheevr> for complex. Works on transposed
 *msymeigenx = \&PDL::msymeigenx;
 
 sub PDL::msymeigenx {
+	&_square;
 	my($m, $upper, $jobv, %opt) = @_;
 	my(@dims) = $m->dims;
-
-	barf("msymeigenx: Require a square matrix")
-		unless( ( (@dims == 2)|| (@dims == 3) )&& $dims[-1] == $dims[-2]);
-
        	my ($w, $v, $info, $n, $support, $z, $range, $method, $type);
 
 	$type = $m->type;
