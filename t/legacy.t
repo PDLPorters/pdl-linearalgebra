@@ -26,6 +26,8 @@ my $a = pdl([[1.7,3.2],[9.2,7.3]]);
 my $aa = cplx random(2,2,2);
 runtest($aa, 't', $aa->xchg(1,2));
 
+runtest(sequence(2,2), 'issym', 0);
+
 my $x = pdl([0.43,0.03],[0.75,0.72]);
 runtest($x, 'mschur', pdl([0.36637354,-0.72],[0,0.78362646]));
 runtest(sequence(2,2), 'diag', pdl(0,3));

@@ -29,8 +29,7 @@ runtest($a, 't', $a->xchg(0,1));
 my $aa = cplx random(2,2,2);
 runtest($aa, 't', $aa->xchg(1,2), [0]);
 
-my $got = sequence(2,2)->issym;
-ok !$got, 'issym';
+runtest(sequence(2,2), 'issym', 0);
 
 my $x = pdl([0.43,0.03],[0.75,0.72]);
 runtest($x, 'mschur', pdl([0.36637354,-0.72],[0,0.78362646]));
@@ -77,7 +76,7 @@ getrf(my $lu=$A->copy, my $ipiv=null, my $info=null);
 # if don't transpose the $B input, get memory crashes
 getrs($lu, 1, $x=$B->xchg(0,1)->copy, $ipiv, $info=null);
 $x = $x->inplace->xchg(0,1);
-$got = $A x $x;
+my $got = $A x $x;
 ok fapprox($got, $B) or diag "got: $got";
 
 $A=pdl cdouble, <<'EOF';
