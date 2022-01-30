@@ -259,6 +259,14 @@ sub _square_same {
   barf("Require square matrices of same order")
     unless( $adims[$d] == $adims[$d+1] && $bdims[$d] == $bdims[$d+1] && $adims[$d] == $bdims[$d]);
 }
+sub _matrices_match {
+  my $d = $_[0]->dims_internal;
+  my @adims = $_[0]->dims;
+  my @bdims = $_[1]->dims;
+  barf("Require right hand side array(s) B with number".
+    " of row equal to number of columns of A")
+    unless @adims >= 2+$d && @bdims >= 2+$d && $bdims[1+$d] == $adims[$d];
+}
 
 sub issym {shift->issym(@_)}
 
@@ -3754,13 +3762,11 @@ sub msolve {shift->msolve(@_)}
 
 sub PDL::msolve {
 	&_square;
+	&_matrices_match;
 	my($a, $b) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ($ipiv, $info, $c);
-	barf("msolve: Require right hand side array(s) B with number".
-			 " of row equal to number of columns of A")
-		unless( (@bdims >= 2) && $bdims[1] == $adims[0]);
 	barf("msolve: Require arrays with equal number of dimensions")
 		if( @adims != @bdims);
 
@@ -3784,13 +3790,11 @@ sub PDL::msolve {
 
 sub PDL::Complex::msolve {
 	&_square;
+	&_matrices_match;
 	my($a, $b) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ($ipiv, $info, $c);
-	barf("msolve: Require right hand side array(s) B with number".
-			 " of row equal to order of A")
-		unless( (@bdims >= 3) && $bdims[2] == $adims[1]);
 	barf("msolve: Require arrays with equal number of dimensions")
 		if( @adims != @bdims);
 
@@ -3881,15 +3885,11 @@ Works on transposed arrays.
 
 sub PDL::msolvex {
 	&_square;
+	&_matrices_match;
 	my($a, $b, %opt) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ( $af, $x, $ipiv, $info, $equilibrate, $berr, $ferr, $rcond, $equed, %result, $r, $c ,$rpvgrw);
-	barf("msolvex: Require a right hand side matrix B with number".
-			 " of row equal to order of A")
-		unless( ((@bdims == 2) || (@bdims == 3))&& $bdims[-1] == $adims[-2]);
-
-
 	$equilibrate = $opt{'equilibrate'} ? pdl(long, 2): pdl(long,1);
 	$a = $a->t->copy;
 	$b = $b->t->copy;
@@ -3973,13 +3973,12 @@ sub mtrisolve {shift->mtrisolve(@_)}
 
 sub PDL::mtrisolve{
 	&_square;
-	my($a, $uplo, $b, $trans, $diag) = @_;
+	my $uplo = splice @_, 1, 1;
+	&_matrices_match;
+	my($a, $b, $trans, $diag) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ($info, $c);
-	barf("mtrisolve: Require 2D right hand side array(s) B with number".
-			 " of row equal to order of A")
-		unless( (@bdims >= 2) && $bdims[1] == $adims[0]);
 	barf("mtrisolve: Require arrays with equal number of dimensions")
 		if( @adims != @bdims);
 
@@ -4002,13 +4001,12 @@ sub PDL::mtrisolve{
 
 sub PDL::Complex::mtrisolve{
 	&_square;
-	my($a, $uplo, $b, $trans, $diag) = @_;
+	my $uplo = splice @_, 1, 1;
+	&_matrices_match;
+	my($a, $b, $trans, $diag) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ($info, $c);
-	barf("mtrisolve: Require 2D right hand side array(s) B with number".
-			 " of row equal to order of A")
-		unless( (@bdims >= 3) && $bdims[2] == $adims[1]);
 	barf("mtrisolve: Require arrays with equal number of dimensions")
 		if( @adims != @bdims);
 
@@ -4061,13 +4059,12 @@ sub msymsolve {shift->msymsolve(@_)}
 
 sub PDL::msymsolve {
 	&_square;
-	my($a, $uplo, $b) = @_;
+	my $uplo = splice @_, 1, 1;
+	&_matrices_match;
+	my($a, $b) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ($ipiv, $info, $c);
-	barf("msymsolve: Require 2D right hand side array(s) B with number".
-			 " of row equal to order of A")
-		unless( (@bdims >= 2)&& $bdims[1] == $adims[0]);
 	barf("msymsolve: Require array(s) with equal number of dimensions")
 		if( @adims != @bdims);
 
@@ -4094,13 +4091,12 @@ sub PDL::msymsolve {
 
 sub PDL::Complex::msymsolve {
 	&_square;
-	my($a, $uplo, $b) = @_;
+	my $uplo = splice @_, 1, 1;
+	&_matrices_match;
+	my($a, $b) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ($ipiv, $info, $c);
-	barf("msymsolve: Require 2D right hand side array(s) B with number".
-			 " of row equal to order of A")
-		unless( (@bdims >= 3)&& $bdims[2] == $adims[1]);
 	barf("msymsolve: Require arrays with equal number of dimensions")
 		if( @adims != @bdims);
 
@@ -4172,14 +4168,12 @@ from Lapack. Works on transposed array.
 
 sub PDL::msymsolvex {
 	&_square;
-	my($a, $uplo, $b, $d) = @_;
+	my $uplo = splice @_, 1, 1;
+	&_matrices_match;
+	my($a, $b, $d) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ( $af, $x, $ipiv, $info, $berr, $ferr, $rcond, %result);
-	barf("msymsolvex: Require a right hand side matrix B with number".
-			 " of row equal to order of A")
-		unless( ((@bdims == 2) || (@bdims == 3))&& $bdims[-1] == $adims[-2]);
-
 	$uplo = 1 - $uplo;
 	$b = $b->t;
 	$x = PDL::zeroes $b;
@@ -4248,13 +4242,12 @@ sub mpossolve {shift->mpossolve(@_)}
 
 sub PDL::mpossolve {
 	&_square;
-	my($a, $uplo, $b) = @_;
+	my $uplo = splice @_, 1, 1;
+	&_matrices_match;
+	my($a, $b) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ($info, $c);
-	barf("mpossolve: Require right hand side array(s) B with number".
-			 " of row equal to order of A")
-		unless( (@bdims >= 2)&& $bdims[1] == $adims[0]);
 	barf("mpossolve: Require arrays with equal number of dimensions")
 		if( @adims != @bdims);
 
@@ -4275,13 +4268,12 @@ sub PDL::mpossolve {
 
 sub PDL::Complex::mpossolve {
 	&_square;
-	my($a, $uplo, $b) = @_;
+	my $uplo = splice @_, 1, 1;
+	&_matrices_match;
+	my($a, $b) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ($info, $c);
-	barf("mpossolve: Require right hand side array(s) B with number".
-			 " of row equal to order of A")
-		unless( (@bdims >= 3)&& $bdims[2] == $adims[1]);
 	barf("mpossolve: Require arrays with equal number of dimensions")
 		if( @adims != @bdims);
 
@@ -4363,14 +4355,12 @@ Works on transposed array(s).
 
 sub PDL::mpossolvex {
 	&_square;
-	my($a, $uplo, $b, %opt) = @_;
+	my $uplo = splice @_, 1, 1;
+	&_matrices_match;
+	my($a, $b, %opt) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ( $af, $x, $info, $equilibrate, $berr, $ferr, $rcond, $equed, %result, $s);
-	barf("mpossolvex: Require a 2D right hand side matrix B with number".
-			 " of row equal to order of A")
-		unless( ((@bdims == 2) || (@bdims == 3))&& $bdims[-1] == $adims[-2]);
-
 	$uplo = $uplo ? pdl(long, 0): pdl(long, 1);
 	$equilibrate = $opt{'equilibrate'} ? pdl(long, 2): pdl(long,1);
 	$a = $a->copy;
@@ -4443,14 +4433,11 @@ Works on transposed arrays.
 
 sub PDL::mlls {
 	&_2d_array;
+	&_matrices_match;
 	my($a, $b, $trans) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ($info, $x, $type);
-	barf("mlls: Require a 2D right hand side matrix B with number".
-			 " of rows equal to number of rows of A")
-		unless( (@bdims == 2 || @bdims == 3)&& $bdims[-1] == $adims[-1]);
-
 	$a = $a->copy;
 	$type = $a->type;
 	if ( $adims[-1] < $adims[-2]){
@@ -4525,14 +4512,11 @@ from Lapack. Works on tranposed arrays.
 
 sub PDL::mllsy {
 	&_2d_array;
+	&_matrices_match;
 	my($a, $b) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ($info, $x, $rcond, $rank, $jpvt, $type);
-	barf("mllsy: Require a 2D right hand side matrix B with number".
-			 " of rows equal to number of rows of A")
-		unless( (@bdims == 2 || @bdims == 3)&& $bdims[-1] == $adims[-1]);
-
 	$type = $a->type;
 	$rcond = lamch(pdl($type,0));
 	$rcond = $rcond->sqrt - ($rcond->sqrt - $rcond) / 2;
@@ -4614,14 +4598,11 @@ Works on transposed arrays.
 
 sub PDL::mllss {
 	&_2d_array;
+	&_matrices_match;
 	my($a, $b, $method) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ($info, $x, $rcond, $rank, $s, $min, $type);
-	barf("mllss: Require a 2D right hand side matrix B with number".
-			 " of rows equal to number of rows of A")
-		unless( (@bdims == 2 || @bdims == 3)&& $bdims[-1] == $adims[-1]);
-
 	$type = $a->type;
 	#TODO: Add this in option
 	$rcond = lamch(pdl($type,0));
@@ -5213,12 +5194,10 @@ Works on transposed arrays.
 sub mgeigen {shift->mgeigen(@_)}
 
 sub PDL::mgeigen {
+	&_square_same;
 	my($a, $b,$jobvl,$jobvr) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
-	barf("mgeigen: Require 2 square matrices of same order")
-		unless( @adims >= 2 && $adims[0] == $adims[1] &&
-		 @bdims >= 2 && $bdims[0] == $bdims[1] && $adims[0] == $bdims[0]);
 	barf("mgeigen: Require matrices with equal number of dimensions")
 		if( @adims != @bdims);
        	my ($vl, $vr, $info, $beta, $type, $wtmp);
@@ -5255,20 +5234,14 @@ sub PDL::mgeigen {
 }
 
 sub PDL::Complex::mgeigen {
+	&_square_same;
 	my($a, $b,$jobvl,$jobvr) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
-
        	my ($vl, $vr, $info, $beta, $type, $eigens);
-
        	$type = $a->type;
-
-	barf("mgeigen: Require 2 square matrices of same order")
-		unless( @adims >= 3 && $adims[1] == $adims[2] &&
-		 @bdims >= 3 && $bdims[1] == $bdims[2] && $adims[1] == $bdims[1]);
 	barf("mgeigen: Require matrices with equal number of dimensions")
 		if( @adims != @bdims);
-
 	$b = $b->t;
 	$eigens = PDL::Complex->null;
 	$beta = PDL::Complex->null;
@@ -5362,6 +5335,7 @@ Works on transposed arrays.
 *mgeigenx = \&PDL::mgeigenx;
 
 sub PDL::mgeigenx {
+	&_square_same;
 	my($a, $b,%opt) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
@@ -5369,25 +5343,14 @@ sub PDL::mgeigenx {
 	$wr, $wi, $beta, $info, $ilo, $ihi, $rscale, $lscale, $abnrm, $bbnrm, $type, $eigens);
 
 	if (@adims ==3){
-		barf("mgeigenx: Require 2 square matrices of same order")
-			unless( @adims == 3 && $adims[1] == $adims[2] &&
-			 @bdims == 3 && $bdims[1] == $bdims[2] && $adims[1] == $bdims[1]);
-
 		$a = $a->copy;
 		$b = $b->t->copy;
-
 		$eigens = PDL::Complex->null;
 		$beta = PDL::Complex->null;
-
 	}
 	else{
-		barf("mgeigenx: Require 2 square matrices of same order")
-			unless( @adims == 2 && $adims[0] == $adims[1] &&
-			 @bdims == 2 && $bdims[0] == $bdims[1] && $adims[0] == $bdims[0]);
-
 		$a = $a->copy;
 		$b = $b->t->copy;
-
 		$wr = null;
 		$wi = null;
 		$beta= null;
@@ -5808,13 +5771,10 @@ sub PDL::msymgeigen {
 }
 
 sub PDL::Complex::msymgeigen {
+	&_square_same;
 	my($a, $b, $upper, $jobv, $type, $method) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
-
-	barf("msymgeigen: Require 2 square matrices of same order")
-		unless( @adims >= 3 &&  @bdims >= 3  && $adims[1] == $adims[2] &&
-		 $bdims[1] == $bdims[2] && $adims[1] == $bdims[1]);
 	barf("msymgeigen: Require matrices with equal number of dimensions")
 		if( @adims != @bdims);
 
@@ -5899,28 +5859,14 @@ from Lapack. Works on transposed arrays.
 *msymgeigenx = \&PDL::msymgeigenx;
 
 sub PDL::msymgeigenx {
+	&_square_same;
 	my($a, $b, $upper, $jobv, %opt) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
-
-	if(@adims == 3){
-		barf("msymgeigenx: Require 2 square matrices of same order")
-			unless( @bdims == 3  && $adims[1] == $adims[2] &&
-			 $bdims[1] == $bdims[2] && $adims[1] == $bdims[1]);
-	}
-	else{
-		barf("msymgeigenx: Require 2 square matrices of same order")
-			unless( @adims == 2 && @bdims == 2  && $adims[0] == $adims[1] &&
-			$bdims[0] == $bdims[1] && $adims[0] == $bdims[0]);
-	}
-
 	my ($w, $info, $n, $support, $z, $range, $type);
-
 	$type = $a->type;
-
 	$range = ($opt{'range_type'} eq 'interval') ? pdl(long, 1) :
 		($opt{'range_type'} eq 'indice')? pdl(long, 2) : pdl(long, 0);
-
 	if (UNIVERSAL::isa($opt{range},'PDL')){
 		$opt{range} = pdl($type,[0,0]);
 		$range = pdl(long, 0);
