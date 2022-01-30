@@ -546,11 +546,9 @@ Supports threading.
 =cut
 
 sub mnorm {shift->mnorm(@_)}
-
 sub PDL::mnorm {
 	my ($m, $ord) = @_;
 	$ord = 2 unless (defined $ord);
-
 	if ($ord eq 'inf'){
 		$ord = 0;
 	}
@@ -563,15 +561,14 @@ sub PDL::mnorm {
 	elsif($ord eq 'fro'){
 		$ord = 3;
 	}
-
 	if ($ord == 0){
-		$m->lange(1);
+		$m->_call_method('lange', 1);
 	}
 	elsif($ord == 1){
-		$m->lange(2);
+		$m->_call_method('lange', 2);
 	}
 	elsif($ord == 3){
-		$m->lange(3);
+		$m->_call_method('lange', 3);
 	}
 	else{
 		my ($sv, $info, $err);
@@ -586,53 +583,7 @@ sub PDL::mnorm {
 		}
 		$sv->slice('(0)')->reshape(-1)->sever;
 	}
-
 }
-
-
-sub PDL::Complex::mnorm {
-	my ($m, $ord) = @_;
-	$ord = 2 unless (defined $ord);
-
-	if ($ord eq 'inf'){
-		$ord = 0;
-	}
-	elsif ($ord eq 'one'){
-		$ord = 1;
-	}
-	elsif($ord eq 'two'){
-		$ord = 2;
-	}
-	elsif($ord eq 'fro'){
-		$ord = 3;
-	}
-
-	if ($ord == 0){
-		return bless $m->clange(1),'PDL';
-	}
-	elsif($ord == 1){
-		return bless $m->clange(2),'PDL';
-	}
-	elsif($ord == 3){
-		return bless  $m->clange(3),'PDL';
-	}
-	else{
-		my ($sv, $info, $err) ;
-		$err = setlaerror(NO);
-		($sv, $info) = $m->msvd(0, 0);
-		setlaerror($err);
-		if($info->max > 0 && $_laerror) {
-			my ($index,@list);
-			$index = which($info > 0)+1;
-			@list = $index->list;
-			laerror("mnorm: SVD algorithm did not converge for matrix (PDL(s) @list): \$info = $info");
-		}
-		$sv->slice('(0)')->reshape(-1)->sever;
-	}
-
-}
-
-
 
 =head2 mdet
 
