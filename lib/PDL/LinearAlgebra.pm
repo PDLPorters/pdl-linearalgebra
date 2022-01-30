@@ -273,6 +273,12 @@ sub _same_dims {
   my @bdims = $_[1]->dims;
   barf("Require arrays with equal number of dimensions") if @adims != @bdims;
 }
+sub _error {
+  my ($info, $msg) = @_;
+  return unless $info->max > 0 && $_laerror;
+  my @list = (which($info > 0)+1)->list;
+  laerror(sprintf $msg . ": \$info = $info", "@list");
+}
 
 sub issym {shift->issym(@_)}
 
@@ -556,10 +562,7 @@ sub PDL::mnorm {
 	my $err = setlaerror(NO);
 	my ($sv, $info) = $m->msvd(0, 0);
 	setlaerror($err);
-	if($info->max > 0 && $_laerror) {
-		my @list = (which($info > 0)+1)->list;
-		laerror("mnorm: SVD algorithm did not converge for matrix (PDL(s) @list): \$info = $info");
-	}
+	_error($info, "mnorm: SVD algorithm did not converge for matrix (PDL(s) %s");
 	$sv->slice('(0)')->reshape(-1)->sever;
 }
 
@@ -627,12 +630,7 @@ sub PDL::mposdet {
 	my ($m, $upper) = @_;
 	$m = $m->copy;
 	$m->_call_method('potrf', $upper, my $info = null);
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("mposdet: Matrix (PDL(s) @list) is/are not positive definite(s) (after potrf factorization): \$info = $info");
-	}
+	_error($info, "mposdet: Matrix (PDL(s) %s) is/are not positive definite(s) (after potrf factorization)");
 	$m = $m->re if $di>0 or !$m->type->real;
 	$m = $m->diagonal(0,1)->prodover->pow(2);
 	return wantarray ? ($m, $info) : $m;
@@ -724,15 +722,8 @@ sub PDL::mrcond {
 	$info = PDL->null;
 	$rcond = PDL->null;
 	$m->_call_method('getrf', $ipiv, $info);
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("mrcond: Factor(s) U (PDL(s) @list) is/are singular(s) (after getrf factorization): \$info = $info");
-	}
-	else{
-		$m->_call_method('gecon',$anorm,$norm,$rcond,$info);
-	}
+	_error($info, "mrcond: Factor(s) U (PDL(s) %s) is/are singular(s) (after getrf factorization)");
+	$m->_call_method('gecon',$anorm,$norm,$rcond,$info);
 	return wantarray ? ($rcond, $info) : $rcond;
 }
 
@@ -851,12 +842,7 @@ sub PDL::minv {
 	$ipiv = PDL->null;
 	$info = PDL->null;
 	$m->_call_method('getrf', $ipiv, $info);
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("minv: Factor(s) U (PDL(s) @list) is/are singular(s) (after getrf factorization): \$info = $info");
-	}
+	_error($info, "minv: Factor(s) U (PDL(s) %s) is/are singular(s) (after getrf factorization)");
 	$m->_call_method('getri', $ipiv, $info);
 	return wantarray ? ($m, $info) : $m;
 }
@@ -892,12 +878,7 @@ sub PDL::mtriinv{
 	$m = $m->copy() unless $m->is_inplace(0);
 	my $info = PDL->null;
 	$m->_call_method('trtri', $upper, $diag, $info);
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("mtriinv: Matrix (PDL(s) @list) is/are singular(s): \$info = $info");
-	}
+	_error($info, "mtriinv: Matrix (PDL(s) %s) is/are singular(s)");
 	return wantarray ? ($m, $info) : $m;
 }
 
@@ -938,16 +919,9 @@ sub PDL::msyminv {
 	@dims = @dims[2+$di..$#dims];
 	$info = @dims ? zeroes(long,@dims) : pdl(long,0);
 	$m->_call_method('sytrf', $upper, $ipiv, $info);
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("msyminv: Block diagonal matrix D (PDL(s) @list) is/are singular(s) (after sytrf factorization): \$info = $info");
-	}
-	else{
-		$m->_call_method('sytri',$upper,$ipiv,$info);
-                $m = $m->t->tritosym($upper, 0);
-	}
+	_error($info, "msyminv: Block diagonal matrix D (PDL(s) %s) is/are singular(s) (after sytrf factorization)");
+	$m->_call_method('sytri',$upper,$ipiv,$info);
+	$m = $m->t->tritosym($upper, 0);
 	return wantarray ? ($m, $info) : $m;
 }
 
@@ -987,15 +961,8 @@ sub PDL::mposinv {
 	@dims = @dims[2+$di..$#dims];
 	my $info = @dims ? zeroes(long,@dims) : pdl(long,0);
 	$m->_call_method('potrf', $upper, $info);
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("mposinv: matrix (PDL(s) @list) is/are not positive definite(s) (after potrf factorization): \$info = $info");
-	}
-	else{
-		$m->_call_method('potri', $upper, $info);
-	}
+	_error($info, "mposinv: matrix (PDL(s) %s) is/are not positive definite(s) (after potrf factorization)");
+	$m->_call_method('potri', $upper, $info);
 	return wantarray ? ($m, $info) : $m;
 }
 
@@ -1030,12 +997,10 @@ sub PDL::mpinv{
 	#TODO: don't transpose
 	($u, $s, $v, $info) = $m->mdsvd(2);
 	setlaerror($err);
-	laerror("mpinv: SVD algorithm did not converge\n") if $info;
-
+	_error($info, "mpinv: SVD algorithm did not converge (PDL %s)");
 	unless (defined $tol){
 		$tol =  ($dims[-1] > $dims[-2] ? $dims[-1] : $dims[-2]) * $s((0)) * lamch(pdl($m->type,3));
 	}
-
 
 	($ind, $cind) = which_both( $s > $tol );
 	$s->index($cind) .= 0 if defined $cind;
@@ -1168,12 +1133,7 @@ sub PDL::mchol {
 	$info = @dims ? zeroes(long,@dims) : pdl(long,0);
 	$uplo =  1 - $upper;
 	$m->_call_method('potrf',$uplo,$info);
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("mchol: matrix (PDL(s) @list) is/are not positive definite(s) (after potrf factorization): \$info = $info");
-	}
+	_error($info, "mchol: matrix (PDL(s) %s) is/are not positive definite(s) (after potrf factorization)");
 	return wantarray ? ($m, $info) : $m;
 }
 
@@ -1333,11 +1293,7 @@ sub PDL::mschur{
 	if ($info->max > 0 && $_laerror){
 		my ($index, @list);
 		$index = which((($info > 0)+($info <=$dims[0]))==2);
-		unless ($index->isempty){
-			@list = $index->list;
-			laerror("mschur: The QR algorithm failed to converge for matrix (PDL(s) @list): \$info = $info");
-			print ("Returning converged eigenvalues\n");
-		}
+		_error($info, "mschur: The QR algorithm failed to converge for matrix (PDL(s) %s)");
 		if ($select_func){
 			$index = which((($info > 0)+($info == ($dims[0]+1) ))==2);
 			unless ($index->isempty){
@@ -3387,12 +3343,7 @@ sub PDL::msolve {
 	$info = @adims ? zeroes(long,@adims) : pdl(long,0);
 	$a->gesv($c, $ipiv, $info);
 
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("msolve: Can't solve system of linear equations (after getrf factorization): matrix (PDL(s)  @list) is/are singular(s): \$info = $info");
-	}
+	_error($info, "msolve: Can't solve system of linear equations (after getrf factorization): matrix (PDL(s) %s) is/are singular(s)");
 	return wantarray ? $b->is_inplace(0) ? ($b, $a->t->sever, $ipiv, $info) : ($c->t->sever , $a->t->sever, $ipiv, $info) :
 			$b->is_inplace(0) ? $b : $c->t->sever;
 
@@ -3413,12 +3364,7 @@ sub PDL::Complex::msolve {
 	$info = @adims ? zeroes(long,@adims) : pdl(long,0);
 	$a->cgesv($c, $ipiv, $info);
 
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("msolve: Can't solve system of linear equations (after cgetrf factorization): matrix (PDL(s) @list) is/are singular(s): \$info = $info");
-	}
+	_error($info, "msolve: Can't solve system of linear equations (after cgetrf factorization): matrix (PDL(s) %s) is/are singular(s)");
 	return wantarray ? $b->is_inplace(0) ? ($b, $a->t->sever, $ipiv, $info) : ($c->t->sever , $a->t->sever, $ipiv, $info):
 			$b->is_inplace(0) ? $b : $c->t->sever;
 
@@ -3595,12 +3541,7 @@ sub PDL::mtrisolve{
 	$info = @adims ? zeroes(long,@adims) : pdl(long,0);
 	$a->trtrs($uplo, $trans, $diag, $c, $info);
 
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("mtrisolve: Can't solve system of linear equations: matrix (PDL(s) @list) is/are singular(s): \$info = $info");
-	}
+	_error($info, "mtrisolve: Can't solve system of linear equations: matrix (PDL(s) %s) is/are singular(s)");
 	return wantarray  ? $b->is_inplace(0) ? ($b, $info) : ($c->t->sever, $info) :
 				$b->is_inplace(0) ? $b : $c->t->sever;
 }
@@ -3621,12 +3562,7 @@ sub PDL::Complex::mtrisolve{
 	$info = @adims ? zeroes(long,@adims) : pdl(long,0);
 	$a->ctrtrs($uplo, $trans, $diag, $c, $info);
 
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("mtrisolve: Can't solve system of linear equations: matrix (PDL(s) @list) is/are singular(s): \$info = $info");
-	}
+	_error($info, "mtrisolve: Can't solve system of linear equations: matrix (PDL(s) %s) is/are singular(s)");
 	return wantarray  ? $b->is_inplace(0) ? ($b, $info) : ($c->t->sever, $info) :
 				$b->is_inplace(0) ? $b : $c->t->sever;
 }
@@ -3676,16 +3612,8 @@ sub PDL::msymsolve {
 	$ipiv = zeroes(long, @adims[1..$#adims]);
 	@adims = @adims[2..$#adims];
 	$info = @adims ? zeroes(long,@adims) : pdl(long,0);
-
 	$a->sysv($uplo, $c, $ipiv, $info);
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("msymsolve: Can't solve system of linear equations (after sytrf factorization): matrix (PDL(s) @list) is/are singular(s): \$info = $info");
-	}
-
-
+	_error($info, "msymsolve: Can't solve system of linear equations (after sytrf factorization): matrix (PDL(s) %s) is/are singular(s)");
 	wantarray ? (  ( $b->is_inplace(0) ? $b : $c->t->sever ), $a, $ipiv, $info):
 		$b->is_inplace(0) ? $b : $c->t->sever;
 
@@ -3706,19 +3634,10 @@ sub PDL::Complex::msymsolve {
 	$ipiv = zeroes(long, @adims[2..$#adims]);
 	@adims = @adims[3..$#adims];
 	$info = @adims ? zeroes(long,@adims) : pdl(long,0);
-
 	$a->csysv($uplo, $c, $ipiv, $info);
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("msymsolve: Can't solve system of linear equations (after csytrf factorization): matrix (PDL(s) @list) is/are singular(s): \$info = $info");
-	}
-
-
+	_error($info, "msymsolve: Can't solve system of linear equations (after sytrf factorization): matrix (PDL(s) %s) is/are singular(s)");
 	wantarray ? (  ( $b->is_inplace(0) ? $b : $c->t->sever ), $a, $ipiv, $info):
 		$b->is_inplace(0) ? $b : $c->t->sever;
-
 }
 
 =head2 msymsolvex
@@ -3855,12 +3774,7 @@ sub PDL::mpossolve {
 	@adims = @adims[2..$#adims];
 	$info = @adims ? zeroes(long,@adims) : pdl(long,0);
 	$a->posv($uplo, $c, $info);
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("mpossolve: Can't solve system of linear equations: matrix (PDL(s) @list) is/are not positive definite(s): \$info = $info");
-	}
+	_error($info, "mpossolve: Can't solve system of linear equations: matrix (PDL(s) %s) is/are not positive definite(s)");
 	wantarray ? $b->is_inplace(0) ? ($b, $a,$info) : ($c->t->sever , $a,$info) : $b->is_inplace(0) ? $b : $c->t->sever;
 }
 
@@ -3879,12 +3793,7 @@ sub PDL::Complex::mpossolve {
 	@adims = @adims[3..$#adims];
 	$info = @adims ? zeroes(long,@adims) : pdl(long,0);
 	$a->cposv($uplo, $c, $info);
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("mpossolve: Can't solve system of linear equations: matrix (PDL(s) @list) is/are not positive definite(s): \$info = $info");
-	}
+	_error($info, "mpossolve: Can't solve system of linear equations: matrix (PDL(s) %s) is/are not positive definite(s)");
 	wantarray ? $b->is_inplace(0) ? ($b, $a,$info) : ($c->t->sever , $a,$info) : $b->is_inplace(0) ? $b : $c->t->sever;
 }
 
@@ -4430,13 +4339,11 @@ sub PDL::meigen {
 	&_square;
 	my($m,$jobvl,$jobvr) = @_;
 	my(@dims) = $m->dims;
-       	my ($w, $vl, $vr, $info, $type, $wr, $wi);
-       	$type = $m->type;
-
-       	$info = null;
+	my ($w, $vl, $vr, $info, $type, $wr, $wi);
+	$type = $m->type;
+	$info = null;
 	$wr = null;
 	$wi = null;
-
 	$vl = $jobvl ? PDL->new_from_specification($type, @dims) :
 				pdl($type,0);
 	$vr = $jobvr ? PDL->new_from_specification($type, @dims) :
@@ -4449,29 +4356,18 @@ sub PDL::meigen {
 		($w, $vr) = cplx_eigen($wr, $wi, $vr, 1);
 	}
 	$w = PDL::Complex::ecplx( $wr, $wi ) unless $jobvr || $jobvl;
-
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("meigen: The QR algorithm failed to converge for PDL(s) @list: \$info = $info");
-		print ("Returning converged eigenvalues\n");
-	}
-
+	_error($info, "meigen: The QR algorithm failed to converge for PDL(s) %s");
 	$jobvl? $jobvr ? ($w, $vl->t->sever, $vr->t->sever, $info):($w, $vl->t->sever, $info) :
 					$jobvr? ($w, $vr->t->sever, $info) : wantarray ? ($w, $info) : $w;
-
 }
 
 sub PDL::Complex::meigen {
 	&_square;
 	my($m,$jobvl,$jobvr) = @_;
 	my(@dims) = $m->dims;
-       	my ($w, $vl, $vr, $info, $type);
-       	$type = $m->type;
-
-       	$info = null;
-
+	my ($w, $vl, $vr, $info, $type);
+	$type = $m->type;
+	$info = null;
 	$w = PDL::Complex->null;
 	#PDL::Complex->new_from_specification($type, 2, $dims[1]);
 	$vl = $jobvl ? PDL::Complex->new_from_specification($type, @dims) :
@@ -4479,18 +4375,9 @@ sub PDL::Complex::meigen {
 	$vr = $jobvr ? PDL::Complex->new_from_specification($type, @dims) :
 				pdl($type,[0,0]);
 	$m->t->cgeev( $jobvl,$jobvr, $w, $vl, $vr, $info);
-
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("meigen: The QR algorithm failed to converge for PDL(s) @list: \$info = $info");
-		print ("Returning converged eigenvalues\n");
-	}
-
+	_error($info, "meigen: The QR algorithm failed to converge for PDL(s) %s");
 	$jobvl? $jobvr ? ($w, $vl->t->sever, $vr->t->sever, $info):($w, $vl->t->sever, $info) :
 					$jobvr? ($w, $vr->t->sever, $info) : wantarray ? ($w, $info) : $w;
-
 }
 
 
@@ -4762,7 +4649,6 @@ sub PDL::mgeigen {
 	my($a, $b,$jobvl,$jobvr) = @_;
        	my ($vl, $vr, $info, $beta, $type, $wtmp);
        	$type = $a->type;
-
 	my ($w,$wi);
 	$b = $b->t;
 	$wtmp = null;
@@ -4771,16 +4657,8 @@ sub PDL::mgeigen {
 	$vl = $jobvl ? PDL::zeroes $a : pdl($type,0);
 	$vr = $jobvr ? PDL::zeroes $a : pdl($type,0);
 	$info = null;
-
 	$a->t->ggev($jobvl,$jobvr, $b, $wtmp, $wi, $beta, $vl, $vr, $info);
-
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("mgeigen: Can't compute eigenvalues/vectors for PDL(s) @list: \$info = $info");
-	}
-
+	_error($info, "mgeigen: Can't compute eigenvalues/vectors for PDL(s) %s");
 	$w = PDL::Complex::ecplx ($wtmp, $wi);
 	if ($jobvl){
 		(undef, $vl) = cplx_eigen($wtmp, $wi, $vl, 1);
@@ -4788,7 +4666,6 @@ sub PDL::mgeigen {
 	if ($jobvr){
 		(undef, $vr) = cplx_eigen($wtmp, $wi, $vr, 1);
 	}
-
 	$jobvl? $jobvr? ($w, $beta, $vl->t->sever, $vr->t->sever, $info):($w, $beta, $vl->t->sever, $info) :
 					$jobvr? ($w, $beta, $vr->t->sever, $info): ($w, $beta, $info);
 }
@@ -4805,16 +4682,8 @@ sub PDL::Complex::mgeigen {
 	$vl = $jobvl ? PDL::zeroes $a : pdl($type,[0,0]);
 	$vr = $jobvr ? PDL::zeroes $a : pdl($type,[0,0]);
        	$info = null;
-
 	$a->t->cggev($jobvl,$jobvr, $b, $eigens, $beta, $vl, $vr, $info);
-
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("mgeigen: Can't compute eigenvalues/vectors for PDL(s) @list: \$info = $info");
-	}
-
+	_error($info, "mgeigen: Can't compute eigenvalues/vectors for PDL(s) %s");
 	$jobvl? $jobvr? ($eigens, $beta, $vl->t->sever, $vr->t->sever, $info):($eigens, $beta, $vl->t->sever, $info) :
 					$jobvr? ($eigens, $beta, $vr->t->sever, $info): ($eigens, $beta, $info);
 }
@@ -5079,16 +4948,8 @@ sub PDL::msymeigen {
 	$w =  null;
 	$method = 'syevd' unless defined $method;
 	$m = $m->copy unless ($m->is_inplace(0) and $jobv);
-
 	$m->t->$method($jobv, $upper, $w, $info);
-
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("msymeigen: The algorithm failed to converge for PDL(s) @list: \$info = $info");
-	}
-
+	_error($info, "msymeigen: The algorithm failed to converge for PDL(s) %s");
 	$jobv ? wantarray ? ($w , $m, $info) : $w : wantarray ? ($w, $info) : $w;
 }
 
@@ -5101,12 +4962,7 @@ sub PDL::Complex::msymeigen {
 	$m = $m->copy unless ($m->is_inplace(0) and $jobv);
 	$method = 'cheevd' unless defined $method;
 	$m->t->$method($jobv, $upper, $w, $info);
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("msymeigen: The algorithm failed to converge for PDL(s) @list: \$info = $info");
-	}
+	_error($info, "msymeigen: The algorithm failed to converge for PDL(s) %s");
 	$jobv ? wantarray ? ($w , $m, $info) : $w : wantarray ? ($w, $info) : $w;
 }
 
@@ -5309,12 +5165,7 @@ sub PDL::msymgeigen {
        	$w = null;
 	$info = null;
 	$a->$method($type, $jobv, $upper, $b, $w, $info);
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("msymgeigen: Can't compute eigenvalues/vectors: matrix (PDL(s) @list) is/are not positive definite(s) or the algorithm failed to converge: \$info = $info");
-	}
+	_error($info, "msymgeigen: Can't compute eigenvalues/vectors: matrix (PDL(s) %s) is/are not positive definite(s) or the algorithm failed to converge");
 	return $jobv ? ($w , $a->t->sever, $info) : wantarray ? ($w, $info) : $w;
 }
 
@@ -5331,12 +5182,7 @@ sub PDL::Complex::msymgeigen {
 	$info = null;
 	# TODO bug in chegv ???
 	$a->$method($type, $jobv, $upper, $b, $w, $info);
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("msymgeigen: Can't compute eigenvalues/vectors: matrix (PDL(s) @list) is/are not positive definite(s) or the algorithm failed to converge: \$info = $info");
-	}
+	_error($info, "msymgeigen: Can't compute eigenvalues/vectors: matrix (PDL(s) %s) is/are not positive definite(s) or the algorithm failed to converge");
 	return $jobv ? ($w , $a->t->sever, $info) : wantarray ? ($w, $info) : $w;
 }
 
@@ -5526,13 +5372,7 @@ sub PDL::mdsvd {
 		$v = PDL->new_from_specification($type, 1,1);
 	}
 	$m->gesdd($job, $s, $v, $u, $info);
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("mdsvd: Matrix (PDL(s) @list) is/are singular(s): \$info = $info");
-	}
-
+	_error($info, "mdsvd: Matrix (PDL(s) %s) is/are singular(s)");
 	if ($job){
 		return ($u, $s, $v, $info);
 	}else{ return wantarray ? ($s, $info) : $s; }
@@ -5570,13 +5410,7 @@ sub PDL::Complex::mdsvd {
 		$v = PDL->new_from_specification($type, 2,1,1);
 	}
 	$m->cgesdd($job, $s, $v, $u, $info);
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("mdsvd: Matrix (PDL(s) @list) is/are singular(s): \$info = $info");
-	}
-
+	_error($info, "mdsvd: Matrix (PDL(s) %s) is/are singular(s)");
 	if ($job){
 		return ($u, $s, $v, $info);
 	}else{ return wantarray ? ($s, $info) : $s; }
@@ -5646,14 +5480,7 @@ sub PDL::msvd {
 
 	}else {$u = PDL->new_from_specification($type, 1,1);}
 	$m->gesvd($jobv, $jobu,$s, $v, $u, $info);
-
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("msvd: Matrix (PDL(s) @list) is/are singular(s): \$info = $info");
-	}
-
+	_error($info, "msvd: Matrix (PDL(s) %s) is/are singular(s)");
 	if ($jobu){
 		if ($jobv){
 			return ($u, $s, $v, $info);
@@ -5695,14 +5522,7 @@ sub PDL::Complex::msvd{
 
 	}else {$u = PDL->new_from_specification($type, 2,1,1);}
 	$m->cgesvd($jobv, $jobu,$s, $v, $u, $info);
-
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("msvd: Matrix (PDL(s) @list) is/are singular(s): \$info = $info");
-	}
-
+	_error($info, "msvd: Matrix (PDL(s) %s) is/are singular(s)");
 	if ($jobu){
 		if ($jobv){
 			return ($u, $s, $v, $info);
