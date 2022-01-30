@@ -241,14 +241,24 @@ Supports threading.
 
 =cut
 
+sub _square {
+  my @dims = $_[0]->dims;
+  my $d = $_[0]->dims_internal;
+  barf("Require square array(s)") unless @dims >= 2+$d && $dims[$d] == $dims[$d+1];
+}
+sub _square_same {
+  my $d = $_[0]->dims_internal;
+  my @adims = $_[0]->dims;
+  my @bdims = $_[1]->dims;
+  barf("Require square matrices of same order")
+    unless( $adims[$d] == $adims[$d+1] && $bdims[$d] == $bdims[$d+1] && $adims[$d] == $bdims[$d]);
+}
+
 sub issym {shift->issym(@_)}
 
 sub PDL::issym {
+	&_square;
 	my ($m, $tol, $conj) = @_;
-	my @dims = $m->dims;
-	my $d = $_[0]->dims_internal;
-	barf("issym: Require square array(s)")
-		if( $dims[$d] != $dims[$d+1] );
 	$conj //= !$m->type->real || $m->isa('PDL::Complex');
 	$tol //= ($m->type >= double) ? 1e-8 : 1e-5;
 	$m = $m - $m->t($conj);
@@ -373,22 +383,18 @@ Uses L<tricpy|PDL::LinearAlgebra::Real/tricpy> or L<ctricpy|PDL::LinearAlgebra::
 sub tritosym {shift->tritosym(@_)}
 
 sub PDL::tritosym {
+	&_square;
 	my ($m, $upper) = @_;
-	my @dims = $m->dims;
-	barf("tritosym: Require square array(s)")
-		unless( $dims[0] == $dims[1] );
-	my $b = $m->is_inplace ? $m : ref($m)->new_from_specification($m->type,@dims);
+	my $b = $m->is_inplace ? $m : ref($m)->new_from_specification($m->type,$m->dims);
 	$m->tricpy($upper, $b) unless $m->is_inplace(0);
 	$m->tricpy($upper, $b->t);
 	$b;
 }
 
 sub PDL::Complex::tritosym {
+	&_square;
 	my ($m, $upper, $conj) = @_;
-	my @dims = $m->dims;
-	barf("tritosym: Require square array(s)")
-		if( $dims[1] != $dims[2] );
-	my $b = $m->is_inplace ? $m : ref($m)->new_from_specification($m->type,@dims);
+	my $b = $m->is_inplace ? $m : ref($m)->new_from_specification($m->type,$m->dims);
 	$conj = 1 unless defined($conj);
 	$conj ? PDL::Complex::Cconj($m)->ctricpy($upper, $b->t) :
 			$m->ctricpy($upper, $b->t);
@@ -653,12 +659,8 @@ sub mdet{
 
 
 sub PDL::mdet {
+	&_square;
 	my $m = shift;
-	my @dims = $m->dims;
-
-	barf("mdet: Require square array(s)")
-		unless( $dims[0] == $dims[1]  && @dims >= 2);
-
 	my ($info, $ipiv);
 	$m = $m->copy();
 	$info = null;
@@ -671,23 +673,16 @@ sub PDL::mdet {
 	$m;
 }
 
-
 sub PDL::Complex::mdet {
+	&_square;
 	my $m = shift;
-	my @dims = $m->dims;
-
-	barf("mdet: Require square array(s)")
-		unless( @dims >= 3 && $dims[1] == $dims[2] );
-
 	my ($info, $ipiv);
 	$m = $m->copy();
 	$info = null;
 	$ipiv = null;
-
 	$m->cgetrf($ipiv, $info);
 	$m = PDL::Complex::Cprodover($m->diagonal(1,2));
 	$m = $m *  ((PDL::Ufunc::sumover(sequence($ipiv->dim(0))->plus(1,0) != $ipiv)%2)*(-2)+1) ;
-
 	$info = which($info != 0 );
 	unless ($info->isempty){
 		$m->re->flat->index($info) .= 0;
@@ -695,7 +690,6 @@ sub PDL::Complex::mdet {
 	}
 	$m->complex;
 }
-
 
 =head2 mposdet
 
@@ -720,14 +714,9 @@ Uses L<potrf|PDL::LinearAlgebra::Real/potrf> or L<cpotrf|PDL::LinearAlgebra::Com
 sub mposdet {shift->mposdet(@_)}
 
 sub PDL::mposdet {
+	&_square;
 	my ($m, $upper)  = @_;
-	my @dims = $m->dims;
-
-	barf("mposdet: Require square array(s)")
-		unless( @dims >= 2 && $dims[0] == $dims[1] );
-
 	$m = $m->copy();
-
 	$m->potrf($upper, (my $info=null));
 	if($info->max > 0 && $_laerror) {
 		my ($index,@list);
@@ -740,14 +729,9 @@ sub PDL::mposdet {
 }
 
 sub PDL::Complex::mposdet {
+	&_square;
 	my ($m, $upper)  = @_;
-	my @dims = $m->dims;
-
-	barf("mposdet: Require square array(s)")
-		unless( @dims >= 3 && $dims[1] == $dims[2] );
-
 	$m = $m->copy();
-
 	$m->cpotrf($upper, (my $info=null));
 	if($info->max > 0 && $_laerror) {
 		my ($index,@list);
@@ -755,7 +739,6 @@ sub PDL::Complex::mposdet {
 		@list = $index->list;
 		laerror("mposdet: Matrix (PDL(s) @list) is/are not positive definite(s) (after cpotrf factorization): \$info = $info");
 	}
-
 	$m = PDL::Complex::re($m)->diagonal(0,1)->prodover->pow(2);
 	return wantarray ? ($m, $info) : $m;
 }
@@ -841,20 +824,15 @@ Works on transposed array(s)
 sub mrcond {shift->mrcond(@_)}
 
 sub PDL::mrcond {
+	&_square;
 	my ($m,$anorm) = @_;
 	$anorm = 0 unless defined $anorm;
-	my @dims = $m->dims;
-
-	barf("mrcond: Require square array")
-		unless ( $dims[0] == $dims[1] );
-
 	my ($ipiv, $info,$rcond,$norm);
 	$norm = $m->mnorm($anorm);
 	$m = $m->t->copy();
 	$ipiv = PDL->null;
 	$info = PDL->null;
 	$rcond = PDL->null;
-
 	$m->getrf($ipiv, $info);
 	if($info->max > 0 && $_laerror) {
 		my ($index,@list);
@@ -869,20 +847,15 @@ sub PDL::mrcond {
 }
 
 sub PDL::Complex::mrcond {
+	&_square;
 	my ($m, $anorm) = @_;
 	$anorm = 0 unless defined $anorm;
-	my @dims = $m->dims;
-
-	barf("mrcond: Require square array(s)")
-		unless ( $dims[1] == $dims[2] );
-
 	my ($ipiv, $info,$rcond,$norm);
 	$norm = $m->mnorm($anorm);
 	$m = $m->t->copy();
 	$ipiv = PDL->null;
 	$info = PDL->null;
 	$rcond = PDL->null;
-
 	$m->cgetrf($ipiv, $info);
 	if($info->max > 0 && $_laerror) {
 		my ($index,@list);
@@ -894,7 +867,6 @@ sub PDL::Complex::mrcond {
 		$m->cgecon($anorm,$norm,$rcond,$info);
 	}
 	return wantarray ? ($rcond, $info) : $rcond;
-
 }
 
 =head2 morth
@@ -1007,21 +979,14 @@ from Lapack and returns C<inverse, info> in array context.
 
 =cut
 
-sub minv($) {
-	$_[0]->minv;
-}
+sub minv {shift->minv(@_)}
 sub PDL::minv {
+	&_square;
 	my $m = shift;
-	my @dims = $m->dims;
 	my ($ipiv, $info);
-
-	barf("minv: Require square array(s)")
-		if( $dims[0] != $dims[1] );
-
 	$m = $m->copy() unless $m->is_inplace(0);
 	$ipiv = PDL->null;
 	$info = PDL->null;
-
 	$m->getrf($ipiv, $info);
 	if($info->max > 0 && $_laerror) {
 		my ($index,@list);
@@ -1033,17 +998,12 @@ sub PDL::minv {
 	return wantarray ? ($m, $info) : $m;
 }
 sub PDL::Complex::minv {
+	&_square;
 	my $m = shift;
-	my @dims = $m->dims;
 	my ($ipiv, $info);
-
-	barf("minv: Require square array(s)")
-		if( $dims[1] != $dims[2] );
-
 	$m = $m->copy() unless $m->is_inplace(0);
 	$ipiv = PDL->null;
 	$info = PDL->null;
-
 	$m->cgetrf($ipiv, $info);
 	if($info->max > 0 && $_laerror) {
 		my ($index,@list);
@@ -1083,15 +1043,10 @@ Returns C<inverse, info> in array context.
 sub mtriinv {shift->mtriinv(@_)}
 
 sub PDL::mtriinv{
+	&_square;
 	my $m = shift;
 	my $upper = @_ ? (1 - shift)  : pdl (long,1);
 	my $diag = shift;
-
-	my(@dims) = $m->dims;
-
-	barf("mtriinv: Require square array(s)")
-		if( $dims[0] != $dims[1] );
-
 	$m = $m->copy() unless $m->is_inplace(0);
 	my $info = PDL->null;
 	$m->trtri($upper, $diag, $info);
@@ -1105,15 +1060,10 @@ sub PDL::mtriinv{
 }
 
 sub PDL::Complex::mtriinv{
+	&_square;
 	my $m = shift;
 	my $upper = @_ ? (1 - shift) : pdl (long,1);
 	my $diag = shift;
-
-	my(@dims) = $m->dims;
-
-	barf("mtriinv: Require square array(s)")
-		if( $dims[1] != $dims[2] );
-
 	$m = $m->copy() unless $m->is_inplace(0);
 	my $info = PDL->null;
 	$m->ctrtri($upper, $diag, $info);
@@ -1152,20 +1102,15 @@ from Lapack and returns C<inverse, info> in array context.
 sub msyminv {shift->msyminv(@_)}
 
 sub PDL::msyminv {
+	&_square;
 	my $m = shift;
 	my $upper = @_ ? (1 - shift)  : pdl (long,1);
 	my ($ipiv , $info);
 	my(@dims) = $m->dims;
-
-	barf("msyminv: Require square array(s)")
-		if( $dims[0] != $dims[1] );
-
 	$m = $m->copy() unless $m->is_inplace(0);
-
 	$ipiv = zeroes(long, @dims[1..$#dims]);
 	@dims = @dims[2..$#dims];
 	$info = @dims ? zeroes(long,@dims) : pdl(long,0);
-
 	$m->sytrf($upper, $ipiv, $info);
 	if($info->max > 0 && $_laerror) {
 		my ($index,@list);
@@ -1181,20 +1126,15 @@ sub PDL::msyminv {
 }
 
 sub PDL::Complex::msyminv {
+	&_square;
 	my $m = shift;
 	my $upper = @_ ? (1 - shift)  : pdl (long,1);
 	my ($ipiv , $info);
 	my(@dims) = $m->dims;
-
-	barf("msyminv: Require square array(s)")
-		if( $dims[1] != $dims[2] );
-
 	$m = $m->copy() unless $m->is_inplace(0);
-
 	$ipiv = zeroes(long, @dims[2..$#dims]);
 	@dims = @dims[3..$#dims];
 	$info = @dims ? zeroes(long,@dims) : pdl(long,0);
-
 	$m->csytrf($upper, $ipiv, $info);
 	if($info->max > 0 && $_laerror) {
 		my ($index,@list);
@@ -1236,17 +1176,13 @@ from Lapack and returns C<inverse, info> in array context.
 sub mposinv {shift->mposinv(@_)}
 
 sub PDL::mposinv {
+	&_square;
 	my $m = shift;
 	my $upper = @_ ? (1 - shift)  : pdl (long,1);
 	my(@dims) = $m->dims;
-
-	barf("mposinv: Require square array(s)")
-		unless( $dims[0] == $dims[1] );
-
 	$m = $m->copy() unless $m->is_inplace(0);
 	@dims = @dims[2..$#dims];
 	my $info = @dims ? zeroes(long,@dims) : pdl(long,0);
-
 	$m->potrf($upper, $info);
 	if($info->max > 0 && $_laerror) {
 		my ($index,@list);
@@ -1261,18 +1197,13 @@ sub PDL::mposinv {
 }
 
 sub PDL::Complex::mposinv {
+	&_square;
 	my $m = shift;
 	my $upper = @_ ? (1 - shift)  : pdl (long,1);
 	my(@dims) = $m->dims;
-
-
-	barf("mposinv: Require square array(s)")
-		unless( $dims[1] == $dims[2] );
-
 	$m = $m->copy() unless $m->is_inplace(0);
 	@dims = @dims[3..$#dims];
 	my $info = @dims ? zeroes(long,@dims) : pdl(long,0);
-
 	$m->cpotrf($upper, $info);
 	if($info->max > 0 && $_laerror) {
 		my ($index,@list);
@@ -1449,19 +1380,15 @@ Uses L<potrf|PDL::LinearAlgebra::Real/potrf> or L<cpotrf|PDL::LinearAlgebra::Com
 sub mchol {shift->mchol(@_)}
 
 sub PDL::mchol {
+	&_square;
 	my($m, $upper) = @_;
 	my(@dims) = $m->dims;
-	barf("mchol: Require square array(s)")
-		if ( $dims[0] != $dims[1] );
-
 	my ($uplo, $info);
-
 	$m = $m->mtri($upper) unless $m->is_inplace(0);
 	@dims = @dims[2..$#dims];
 	$info = @dims ? zeroes(long,@dims) : pdl(long,0);
 	$uplo =  1 - $upper;
 	$m->potrf($uplo,$info);
-
 	if($info->max > 0 && $_laerror) {
 		my ($index,@list);
 		$index = which($info > 0)+1;
@@ -1469,23 +1396,18 @@ sub PDL::mchol {
 		laerror("mchol: matrix (PDL(s) @list) is/are not positive definite(s) (after potrf factorization): \$info = $info");
 	}
 	return wantarray ? ($m, $info) : $m;
-
 }
 
 sub PDL::Complex::mchol {
+	&_square;
 	my($m, $upper) = @_;
 	my(@dims) = $m->dims;
-	barf("mchol: Require square array(s)")
-		if ( $dims[1] != $dims[2] );
-
 	my ($uplo, $info);
-
 	$m = $m->mtri($upper) unless $m->is_inplace(0);
 	@dims = @dims[3..$#dims];
 	$info = @dims ? zeroes(long,@dims) : pdl(long,0);
 	$uplo =  1 - $upper;
 	$m->cpotrf($uplo,$info);
-
 	if($info->max > 0 && $_laerror) {
 		my ($index,@list);
 		$index = which($info > 0)+1;
@@ -1493,7 +1415,6 @@ sub PDL::Complex::mchol {
 		laerror("mchol: matrix (PDL(s) @list) is/are not positive definite(s) (after cpotrf factorization): \$info = $info");
 	}
 	return wantarray ? ($m, $info) : $m;
-
 }
 
 =head2 mhessen
@@ -1624,11 +1545,9 @@ Works on transposed array(s).
 sub mschur {shift->mschur(@_)}
 
 sub PDL::mschur{
+	&_square;
 	my ($m, $jobv, $jobvl, $jobvr, $select_func, $mult,$norm) = @_;
 	my(@dims) = $m->dims;
-
-	barf("mschur: Require square array(s)")
-		unless($dims[0] == $dims[1]);
 	barf("mschur: thread doesn't supported for selected vectors")
 		if ($select_func && @dims > 2 && ($jobv == 2 || $jobvl == 2 || $jobvr == 2));
 
@@ -1826,11 +1745,9 @@ sub PDL::mschur{
 }
 
 sub PDL::Complex::mschur {
+	&_square;
 	my($m, $jobv, $jobvl, $jobvr, $select_func, $mult, $norm) = @_;
 	my(@dims) = $m->dims;
-
-	barf("mschur: Require square array(s)")
-		unless($dims[1] == $dims[2]);
 	barf("mschur: thread doesn't supported for selected vectors")
 		if ($select_func && @dims > 3 && ($jobv == 2 || $jobvl == 2 || $jobvr == 2));
 
@@ -2443,14 +2360,11 @@ Works on transposed array.
 
 
 sub mgschur {shift->mgschur(@_)}
-
 sub PDL::mgschur{
+	&_square_same;
 	my($m, $p, $jobvsl, $jobvsr, $jobvl, $jobvr, $select_func, $mult, $norm) = @_;
 	my @mdims  = $m->dims;
 	my @pdims  = $p->dims;
-
-	barf("mgschur: Require square matrices of same order")
-		unless( $mdims[0] == $mdims[1] && $pdims[0] == $pdims[1] && $mdims[0] == $pdims[0]);
 	barf("mgschur: thread doesn't supported for selected vectors")
 		if ($select_func && ((@mdims > 2) || (@pdims > 2)) &&
 			($jobvsl == 2 || $jobvsr == 2 || $jobvl == 2 || $jobvr == 2));
@@ -2705,12 +2619,10 @@ sub PDL::mgschur{
 
 
 sub PDL::Complex::mgschur{
+	&_square_same;
 	my($m, $p, $jobvsl, $jobvsr, $jobvl, $jobvr, $select_func, $mult, $norm) = @_;
 	my @mdims  = $m->dims;
 	my @pdims  = $p->dims;
-
-	barf("mgschur: Require square matrices of same order")
-		unless( $mdims[2] == $mdims[1] && $pdims[2] == $pdims[1] && $mdims[1] == $pdims[1]);
 	barf("mgschur: thread doesn't supported for selected vectors")
 		if ($select_func && ((@mdims > 2) || (@pdims > 2)) &&
 			($jobvsl == 2 || $jobvsr == 2 || $jobvl == 2 || $jobvr == 2));
@@ -2973,14 +2885,10 @@ from Lapack. Works on transposed array.
 *mgschurx = \&PDL::mgschurx;
 
 sub PDL::mgschurx{
+	&_square_same;
 	my($m, $p, $jobvsl, $jobvsr, $jobvl, $jobvr, $select_func, $sense, $mult, $norm) = @_;
 	my (@mdims) = $m->dims;
 	my (@pdims) = $p->dims;
-
-	barf("mgschurx: Require square matrices of same order")
-		unless( ( (@mdims == 2) || (@mdims == 3) )&& $mdims[-1] == $mdims[-2] && @mdims == @pdims &&
-			$pdims[-1] == $pdims[-2] && $mdims[1] == $pdims[1]);
-
        	my ($w, $vsl, $vsr, $info, $type, $select, $sdim, $rconde, $rcondv, %ret, $mm, $vl, $vr, $beta, $pp);
 
 	$mult = 1 unless defined($mult);
@@ -3882,13 +3790,11 @@ Works on transposed arrays.
 sub msolve {shift->msolve(@_)}
 
 sub PDL::msolve {
+	&_square;
 	my($a, $b) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ($ipiv, $info, $c);
-
-	barf("msolve: Require square coefficient array(s)")
-		unless( (@adims >= 2) && $adims[0] == $adims[1] );
 	barf("msolve: Require right hand side array(s) B with number".
 			 " of row equal to number of columns of A")
 		unless( (@bdims >= 2) && $bdims[1] == $adims[0]);
@@ -3914,13 +3820,11 @@ sub PDL::msolve {
 }
 
 sub PDL::Complex::msolve {
+	&_square;
 	my($a, $b) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ($ipiv, $info, $c);
-
-	barf("msolve: Require square coefficient array(s)")
-		unless( (@adims >= 3) && $adims[1] == $adims[2] );
 	barf("msolve: Require right hand side array(s) B with number".
 			 " of row equal to order of A")
 		unless( (@bdims >= 3) && $bdims[2] == $adims[1]);
@@ -4107,13 +4011,11 @@ Work on transposed array(s).
 sub mtrisolve {shift->mtrisolve(@_)}
 
 sub PDL::mtrisolve{
+	&_square;
 	my($a, $uplo, $b, $trans, $diag) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ($info, $c);
-
-	barf("mtrisolve: Require square coefficient array(s)")
-		unless( (@adims >= 2) && $adims[0] == $adims[1] );
 	barf("mtrisolve: Require 2D right hand side array(s) B with number".
 			 " of row equal to order of A")
 		unless( (@bdims >= 2) && $bdims[1] == $adims[0]);
@@ -4138,13 +4040,11 @@ sub PDL::mtrisolve{
 }
 
 sub PDL::Complex::mtrisolve{
+	&_square;
 	my($a, $uplo, $b, $trans, $diag) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ($info, $c);
-
-	barf("mtrisolve: Require square coefficient array(s)")
-		unless( (@adims >= 3) && $adims[1] == $adims[2] );
 	barf("mtrisolve: Require 2D right hand side array(s) B with number".
 			 " of row equal to order of A")
 		unless( (@bdims >= 3) && $bdims[2] == $adims[1]);
@@ -4199,13 +4099,11 @@ Works on transposed array(s).
 sub msymsolve {shift->msymsolve(@_)}
 
 sub PDL::msymsolve {
+	&_square;
 	my($a, $uplo, $b) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ($ipiv, $info, $c);
-
-	barf("msymsolve: Require square coefficient array(s)")
-		unless( (@adims >= 2) && $adims[0] == $adims[1] );
 	barf("msymsolve: Require 2D right hand side array(s) B with number".
 			 " of row equal to order of A")
 		unless( (@bdims >= 2)&& $bdims[1] == $adims[0]);
@@ -4234,13 +4132,11 @@ sub PDL::msymsolve {
 }
 
 sub PDL::Complex::msymsolve {
+	&_square;
 	my($a, $uplo, $b) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ($ipiv, $info, $c);
-
-	barf("msymsolve: Require square coefficient array(s)")
-		unless( (@adims >= 3) && $adims[1] == $adims[2] );
 	barf("msymsolve: Require 2D right hand side array(s) B with number".
 			 " of row equal to order of A")
 		unless( (@bdims >= 3)&& $bdims[2] == $adims[1]);
@@ -4393,13 +4289,11 @@ Works on transposed array(s).
 sub mpossolve {shift->mpossolve(@_)}
 
 sub PDL::mpossolve {
+	&_square;
 	my($a, $uplo, $b) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ($info, $c);
-
-	barf("mpossolve: Require square coefficient array(s)")
-		unless( (@adims >= 2) && $adims[0] == $adims[1] );
 	barf("mpossolve: Require right hand side array(s) B with number".
 			 " of row equal to order of A")
 		unless( (@bdims >= 2)&& $bdims[1] == $adims[0]);
@@ -4422,13 +4316,11 @@ sub PDL::mpossolve {
 }
 
 sub PDL::Complex::mpossolve {
+	&_square;
 	my($a, $uplo, $b) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ($info, $c);
-
-	barf("mpossolve: Require square coefficient array(s)")
-		unless( (@adims >= 3) && $adims[1] == $adims[2] );
 	barf("mpossolve: Require right hand side array(s) B with number".
 			 " of row equal to order of A")
 		unless( (@bdims >= 3)&& $bdims[2] == $adims[1]);
@@ -5045,12 +4937,9 @@ Works on transposed arrays.
 sub meigen {shift->meigen(@_)}
 
 sub PDL::meigen {
+	&_square;
 	my($m,$jobvl,$jobvr) = @_;
 	my(@dims) = $m->dims;
-
-	barf("meigen: Require square array(s)")
-		unless( @dims >= 2 && $dims[0] == $dims[1]);
-
        	my ($w, $vl, $vr, $info, $type, $wr, $wi);
        	$type = $m->type;
 
@@ -5085,12 +4974,9 @@ sub PDL::meigen {
 }
 
 sub PDL::Complex::meigen {
+	&_square;
 	my($m,$jobvl,$jobvr) = @_;
 	my(@dims) = $m->dims;
-
-	barf("meigen: Require square array(s)")
-		unless( @dims >= 3 && $dims[1] == $dims[2]);
-
        	my ($w, $vl, $vr, $info, $type);
        	$type = $m->type;
 
@@ -5723,12 +5609,8 @@ Works on transposed array(s).
 sub msymeigen {shift->msymeigen(@_)}
 
 sub PDL::msymeigen {
+	&_square;
 	my($m, $upper, $jobv, $method) = @_;
-	my(@dims) = $m->dims;
-
-	barf("msymeigen: Require square array(s)")
-		unless( @dims >= 2 && $dims[0] == $dims[1]);
-
 	my ($w, $v, $info);
        	$info = null;
 	$w =  null;
@@ -5748,30 +5630,22 @@ sub PDL::msymeigen {
 }
 
 sub PDL::Complex::msymeigen {
+	&_square;
 	my($m, $upper, $jobv, $method) = @_;
-	my(@dims) = $m->dims;
-
-	barf("msymeigen: Require square array(s)")
-		unless( @dims >= 3 && $dims[1] == $dims[2]);
-
 	my ($w, $v, $info);
        	$info = null;
-	$w =  null; #PDL->new_from_specification($m->type, $dims[1]);
+	$w =  null;
 	$m = $m->copy unless ($m->is_inplace(0) and $jobv);
-
 	$method = 'cheevd' unless defined $method;
 	$m->t->$method($jobv, $upper, $w, $info);
-
 	if($info->max > 0 && $_laerror) {
 		my ($index,@list);
 		$index = which($info > 0)+1;
 		@list = $index->list;
 		laerror("msymeigen: The algorithm failed to converge for PDL(s) @list: \$info = $info");
 	}
-
 	$jobv ? wantarray ? ($w , $m, $info) : $w : wantarray ? ($w, $info) : $w;
 }
-
 
 =head2 msymeigenx
 
@@ -5963,13 +5837,10 @@ Works on transposed array(s).
 sub msymgeigen {shift->msymgeigen(@_)}
 
 sub PDL::msymgeigen {
+	&_square_same;
 	my($a, $b, $upper, $jobv, $type, $method) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
-
-	barf("msymgeigen: Require square matrices of same order")
-		unless( @adims >= 2 && @bdims >= 2  && $adims[0] == $adims[1] &&
-		$bdims[0] == $bdims[1] && $adims[0] == $bdims[0]);
 	barf("msymgeigen: Require matrices with equal number of dimensions")
 		if( @adims != @bdims);
 
