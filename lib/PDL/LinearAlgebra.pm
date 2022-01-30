@@ -368,7 +368,7 @@ sub PDL::Complex::diag{
 	else{
 		$z = $a->diagonal(1,2);
 	}
-	$z;
+	$z->complex;
 }
 
 if ($^V and $^V ge v5.6.0){
