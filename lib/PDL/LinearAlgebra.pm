@@ -621,37 +621,22 @@ Uses L<potrf|PDL::LinearAlgebra::Real/potrf> or L<cpotrf|PDL::LinearAlgebra::Com
 =cut
 
 sub mposdet {shift->mposdet(@_)}
-
 sub PDL::mposdet {
 	&_square;
-	my ($m, $upper)  = @_;
-	$m = $m->copy();
-	$m->potrf($upper, (my $info=null));
+	my $di = $_[0]->dims_internal;
+	my ($m, $upper) = @_;
+	$m = $m->copy;
+	$m->_call_method('potrf', $upper, my $info = null);
 	if($info->max > 0 && $_laerror) {
 		my ($index,@list);
 		$index = which($info > 0)+1;
 		@list = $index->list;
 		laerror("mposdet: Matrix (PDL(s) @list) is/are not positive definite(s) (after potrf factorization): \$info = $info");
 	}
+	$m = $m->re if $di>0 or !$m->type->real;
 	$m = $m->diagonal(0,1)->prodover->pow(2);
 	return wantarray ? ($m, $info) : $m;
 }
-
-sub PDL::Complex::mposdet {
-	&_square;
-	my ($m, $upper)  = @_;
-	$m = $m->copy();
-	$m->cpotrf($upper, (my $info=null));
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("mposdet: Matrix (PDL(s) @list) is/are not positive definite(s) (after cpotrf factorization): \$info = $info");
-	}
-	$m = PDL::Complex::re($m)->diagonal(0,1)->prodover->pow(2);
-	return wantarray ? ($m, $info) : $m;
-}
-
 
 =head2 mcond
 
