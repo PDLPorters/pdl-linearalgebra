@@ -218,7 +218,9 @@ Supports threading.
 =cut
 
 sub PDL::dims_internal {0}
+sub PDL::dims_internal_values {()}
 sub PDL::Complex::dims_internal {1}
+sub PDL::Complex::dims_internal_values {(2)}
 
 sub t {shift->t(@_)}
 sub PDL::t {
@@ -5296,83 +5298,34 @@ Uses L<gesdd|PDL::LinearAlgebra::Real/gesdd> or L<cgesdd|PDL::LinearAlgebra::Com
 =cut
 
 sub mdsvd {shift->mdsvd(@_)}
-
 sub PDL::mdsvd {
+	my $di = $_[0]->dims_internal;
+	my @di_vals = $_[0]->dims_internal_values;
 	my($m, $job) = @_;
 	my(@dims) = $m->dims;
-
-	my ($u, $s, $v, $min, $info, $type);
-	$type = $m->type;
-	if (wantarray){
-		$job = 1 unless defined($job);
-	}
-	else{
-		$job = 0;
-	}
-	$min = $dims[0] > $dims[1] ? $dims[1]: $dims[0];
-	$info = null;
-	$s = null;
+	my $type = $m->type;
+	$job = !wantarray ? 0 : $job // 1;
+	my $min = $dims[$di] > $dims[1+$di] ? $dims[1+$di]: $dims[$di];
 	$m = $m->copy;
-
+	my ($u, $v);
 	if ($job){
 		if ($job == 2){
-			$u = PDL->new_from_specification($type, $min, $dims[1],@dims[2..$#dims]);
-			$v = PDL->new_from_specification($type, $dims[0],$min,@dims[2..$#dims]);
+			$u = ref($m)->new_from_specification($type, @di_vals, $min, $dims[1+$di],@dims[2+$di..$#dims]);
+			$v = ref($m)->new_from_specification($type, @di_vals, $dims[$di],$min,@dims[2+$di..$#dims]);
 		}
 		else{
-			$u = PDL->new_from_specification($type, $dims[1],$dims[1],@dims[2..$#dims]);
-			$v = PDL->new_from_specification($type, $dims[0],$dims[0],@dims[2..$#dims]);
+			$u = ref($m)->new_from_specification($type, @di_vals, $dims[1+$di],$dims[1+$di],@dims[2+$di..$#dims]);
+			$v = ref($m)->new_from_specification($type, @di_vals, $dims[$di],$dims[$di],@dims[2+$di..$#dims]);
 		}
 	}else{
-		$u = PDL->new_from_specification($type, 1,1);
-		$v = PDL->new_from_specification($type, 1,1);
+		$u = ref($m)->new_from_specification($type, @di_vals, 1,1);
+		$v = ref($m)->new_from_specification($type, @di_vals, 1,1);
 	}
-	$m->gesdd($job, $s, $v, $u, $info);
+	$m->_call_method('gesdd', $job, my $s = null, $v, $u, my $info = null);
 	_error($info, "mdsvd: Matrix (PDL(s) %s) is/are singular(s)");
-	if ($job){
-		return ($u, $s, $v, $info);
-	}else{ return wantarray ? ($s, $info) : $s; }
+	return ($u, $s, $v, $info) if $job;
+	wantarray ? ($s, $info) : $s;
 }
-
-#Humm... $a= cplx random(2,4,5)
-sub PDL::Complex::mdsvd {
-	my($m, $job) = @_;
-	my(@dims) = $m->dims;
-
-	my ($u, $s, $v, $min, $info, $type);
-	$type = $m->type;
-	if (wantarray){
-		$job = 1 unless defined($job);
-	}
-	else{
-		$job = 0;
-	}
-	$min = $dims[-2] > $dims[-1] ? $dims[-1]: $dims[-2];
-	$info=null;
-	$s = null;
-	$m = $m->copy;
-
-	if ($job){
-		if ($job == 2){
-			$u = PDL::Complex->new_from_specification($type, 2,$min, $dims[2],@dims[3..$#dims]);
-			$v = PDL::Complex->new_from_specification($type, 2,$dims[1],$min,@dims[3..$#dims]);
-		}
-		else{
-			$u = PDL::Complex->new_from_specification($type, 2,$dims[2],$dims[2],@dims[3..$#dims]);
-			$v = PDL::Complex->new_from_specification($type, 2,$dims[1],$dims[1],@dims[3..$#dims]);
-		}
-	}else{
-		$u = PDL->new_from_specification($type, 2,1,1);
-		$v = PDL->new_from_specification($type, 2,1,1);
-	}
-	$m->cgesdd($job, $s, $v, $u, $info);
-	_error($info, "mdsvd: Matrix (PDL(s) %s) is/are singular(s)");
-	if ($job){
-		return ($u, $s, $v, $info);
-	}else{ return wantarray ? ($s, $info) : $s; }
-}
-
-
 
 =head2 msvd
 
