@@ -991,9 +991,7 @@ Returns C<inverse, info> in array context.
 
 =cut
 
-
 sub mtriinv {shift->mtriinv(@_)}
-
 sub PDL::mtriinv{
 	&_square;
 	my $m = shift;
@@ -1001,24 +999,7 @@ sub PDL::mtriinv{
 	my $diag = shift;
 	$m = $m->copy() unless $m->is_inplace(0);
 	my $info = PDL->null;
-	$m->trtri($upper, $diag, $info);
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("mtriinv: Matrix (PDL(s) @list) is/are singular(s): \$info = $info");
-	}
-	return wantarray ? ($m, $info) : $m;
-}
-
-sub PDL::Complex::mtriinv{
-	&_square;
-	my $m = shift;
-	my $upper = @_ ? (1 - shift) : pdl (long,1);
-	my $diag = shift;
-	$m = $m->copy() unless $m->is_inplace(0);
-	my $info = PDL->null;
-	$m->ctrtri($upper, $diag, $info);
+	$m->_call_method('trtri', $upper, $diag, $info);
 	if($info->max > 0 && $_laerror) {
 		my ($index,@list);
 		$index = which($info > 0)+1;
