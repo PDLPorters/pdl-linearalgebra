@@ -267,6 +267,12 @@ sub _matrices_match {
     " of row equal to number of columns of A")
     unless @adims >= 2+$d && @bdims >= 2+$d && $bdims[1+$d] == $adims[$d];
 }
+sub _same_dims {
+  my $d = $_[0]->dims_internal;
+  my @adims = $_[0]->dims;
+  my @bdims = $_[1]->dims;
+  barf("Require arrays with equal number of dimensions") if @adims != @bdims;
+}
 
 sub issym {shift->issym(@_)}
 
@@ -3763,13 +3769,11 @@ sub msolve {shift->msolve(@_)}
 sub PDL::msolve {
 	&_square;
 	&_matrices_match;
+	&_same_dims;
 	my($a, $b) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ($ipiv, $info, $c);
-	barf("msolve: Require arrays with equal number of dimensions")
-		if( @adims != @bdims);
-
 	$a = $a->t->copy;
 	$c = $b->is_inplace ? $b->t : $b->t->copy;
 	$ipiv = zeroes(long, @adims[1..$#adims]);
@@ -3791,13 +3795,11 @@ sub PDL::msolve {
 sub PDL::Complex::msolve {
 	&_square;
 	&_matrices_match;
+	&_same_dims;
 	my($a, $b) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ($ipiv, $info, $c);
-	barf("msolve: Require arrays with equal number of dimensions")
-		if( @adims != @bdims);
-
 	$a = $a->t->copy;
 	$c = $b->is_inplace ?  $b->t : $b->t->copy;
 	$ipiv = zeroes(long, @adims[2..$#adims]);
@@ -3975,13 +3977,11 @@ sub PDL::mtrisolve{
 	&_square;
 	my $uplo = splice @_, 1, 1;
 	&_matrices_match;
+	&_same_dims;
 	my($a, $b, $trans, $diag) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ($info, $c);
-	barf("mtrisolve: Require arrays with equal number of dimensions")
-		if( @adims != @bdims);
-
        	$uplo = 1 - $uplo;
        	$trans = 1 - $trans;
 	$c = $b->is_inplace ? $b->t : $b->t->copy;
@@ -4003,13 +4003,11 @@ sub PDL::Complex::mtrisolve{
 	&_square;
 	my $uplo = splice @_, 1, 1;
 	&_matrices_match;
+	&_same_dims;
 	my($a, $b, $trans, $diag) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ($info, $c);
-	barf("mtrisolve: Require arrays with equal number of dimensions")
-		if( @adims != @bdims);
-
        	$uplo = 1 - $uplo;
        	$trans = 1 - $trans;
 	$c = $b->is_inplace ? $b->t : $b->t->copy;
@@ -4061,13 +4059,11 @@ sub PDL::msymsolve {
 	&_square;
 	my $uplo = splice @_, 1, 1;
 	&_matrices_match;
+	&_same_dims;
 	my($a, $b) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ($ipiv, $info, $c);
-	barf("msymsolve: Require array(s) with equal number of dimensions")
-		if( @adims != @bdims);
-
        	$uplo = 1 - $uplo;
 	$a = $a->copy;
 	$c =  $b->is_inplace ? $b->t : $b->t->copy;
@@ -4093,13 +4089,11 @@ sub PDL::Complex::msymsolve {
 	&_square;
 	my $uplo = splice @_, 1, 1;
 	&_matrices_match;
+	&_same_dims;
 	my($a, $b) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ($ipiv, $info, $c);
-	barf("msymsolve: Require arrays with equal number of dimensions")
-		if( @adims != @bdims);
-
        	$uplo = 1 - $uplo;
 	$a = $a->copy;
 	$c =  $b->is_inplace ? $b->t : $b->t->copy;
@@ -4244,13 +4238,11 @@ sub PDL::mpossolve {
 	&_square;
 	my $uplo = splice @_, 1, 1;
 	&_matrices_match;
+	&_same_dims;
 	my($a, $b) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ($info, $c);
-	barf("mpossolve: Require arrays with equal number of dimensions")
-		if( @adims != @bdims);
-
        	$uplo = 1 - $uplo;
 	$a = $a->copy;
 	$c = $b->is_inplace ? $b->t :  $b->t->copy;
@@ -4270,13 +4262,11 @@ sub PDL::Complex::mpossolve {
 	&_square;
 	my $uplo = splice @_, 1, 1;
 	&_matrices_match;
+	&_same_dims;
 	my($a, $b) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my ($info, $c);
-	barf("mpossolve: Require arrays with equal number of dimensions")
-		if( @adims != @bdims);
-
        	$uplo = 1 - $uplo;
 	$a = $a->copy;
 	$c = $b->is_inplace ? $b->t :  $b->t->copy;
@@ -5195,11 +5185,8 @@ sub mgeigen {shift->mgeigen(@_)}
 
 sub PDL::mgeigen {
 	&_square_same;
+	&_same_dims;
 	my($a, $b,$jobvl,$jobvr) = @_;
-	my(@adims) = $a->dims;
-	my(@bdims) = $b->dims;
-	barf("mgeigen: Require matrices with equal number of dimensions")
-		if( @adims != @bdims);
        	my ($vl, $vr, $info, $beta, $type, $wtmp);
        	$type = $a->type;
 
@@ -5235,13 +5222,10 @@ sub PDL::mgeigen {
 
 sub PDL::Complex::mgeigen {
 	&_square_same;
+	&_same_dims;
 	my($a, $b,$jobvl,$jobvr) = @_;
-	my(@adims) = $a->dims;
-	my(@bdims) = $b->dims;
        	my ($vl, $vr, $info, $beta, $type, $eigens);
        	$type = $a->type;
-	barf("mgeigen: Require matrices with equal number of dimensions")
-		if( @adims != @bdims);
 	$b = $b->t;
 	$eigens = PDL::Complex->null;
 	$beta = PDL::Complex->null;
@@ -5741,64 +5725,45 @@ sub msymgeigen {shift->msymgeigen(@_)}
 
 sub PDL::msymgeigen {
 	&_square_same;
+	&_same_dims;
 	my($a, $b, $upper, $jobv, $type, $method) = @_;
-	my(@adims) = $a->dims;
-	my(@bdims) = $b->dims;
-	barf("msymgeigen: Require matrices with equal number of dimensions")
-		if( @adims != @bdims);
-
 	$type = 1 unless $type;
 	my ($w, $v, $info);
 	$method = 'PDL::LinearAlgebra::Real::sygvd' unless defined $method;
-
-
        	$upper = 1-$upper;
 	$a = $a->copy;
 	$b = $b->copy;
        	$w = null;
 	$info = null;
-
 	$a->$method($type, $jobv, $upper, $b, $w, $info);
-
 	if($info->max > 0 && $_laerror) {
 		my ($index,@list);
 		$index = which($info > 0)+1;
 		@list = $index->list;
 		laerror("msymgeigen: Can't compute eigenvalues/vectors: matrix (PDL(s) @list) is/are not positive definite(s) or the algorithm failed to converge: \$info = $info");
 	}
-
 	return $jobv ? ($w , $a->t->sever, $info) : wantarray ? ($w, $info) : $w;
 }
 
 sub PDL::Complex::msymgeigen {
 	&_square_same;
+	&_same_dims;
 	my($a, $b, $upper, $jobv, $type, $method) = @_;
-	my(@adims) = $a->dims;
-	my(@bdims) = $b->dims;
-	barf("msymgeigen: Require matrices with equal number of dimensions")
-		if( @adims != @bdims);
-
-
 	$type = 1 unless $type;
 	my ($w, $v, $info);
 	$method = 'PDL::LinearAlgebra::Complex::chegvd' unless defined $method;
-
-
 	$a = $a->t->copy;
 	$b = $b->t->copy;
        	$w = null;
 	$info = null;
-
 	# TODO bug in chegv ???
 	$a->$method($type, $jobv, $upper, $b, $w, $info);
-
 	if($info->max > 0 && $_laerror) {
 		my ($index,@list);
 		$index = which($info > 0)+1;
 		@list = $index->list;
 		laerror("msymgeigen: Can't compute eigenvalues/vectors: matrix (PDL(s) @list) is/are not positive definite(s) or the algorithm failed to converge: \$info = $info");
 	}
-
 	return $jobv ? ($w , $a->t->sever, $info) : wantarray ? ($w, $info) : $w;
 }
 
