@@ -958,33 +958,14 @@ sub PDL::minv {
 	$m = $m->copy() unless $m->is_inplace(0);
 	$ipiv = PDL->null;
 	$info = PDL->null;
-	$m->getrf($ipiv, $info);
+	$m->_call_method('getrf', $ipiv, $info);
 	if($info->max > 0 && $_laerror) {
 		my ($index,@list);
 		$index = which($info > 0)+1;
 		@list = $index->list;
 		laerror("minv: Factor(s) U (PDL(s) @list) is/are singular(s) (after getrf factorization): \$info = $info");
 	}
-	$m->getri($ipiv,$info);
-	return wantarray ? ($m, $info) : $m;
-}
-sub PDL::Complex::minv {
-	&_square;
-	my $m = shift;
-	my ($ipiv, $info);
-	$m = $m->copy() unless $m->is_inplace(0);
-	$ipiv = PDL->null;
-	$info = PDL->null;
-	$m->cgetrf($ipiv, $info);
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("minv: Factor(s) U (PDL(s) @list) is/are singular(s) (after cgetrf factorization) : \$info = $info");
-	}
-	else{
-		$m->cgetri($ipiv,$info);
-	}
+	$m->_call_method('getri', $ipiv, $info);
 	return wantarray ? ($m, $info) : $m;
 }
 
