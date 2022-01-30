@@ -17,3 +17,7 @@ Trans/selectfunc.o*
 Trans/Trans.pm
 Trans/Trans.xs
 */pp-*.[co]*
+**/*.gcda
+**/*.gcno
+**/*.gcov
+cover_db/
