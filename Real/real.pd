@@ -10672,6 +10672,14 @@ pp_def(
 	  }
 
 	',
+	PMCode => <<'EOF',
+sub PDL::cplx_eigen {
+  my ($eigre, $eigim, $eigvec, $fortran, @outs) = @_;
+  my ($outval, $outvec) = @outs ? @outs : (null, null);
+  PDL::_cplx_eigen_int($eigre, $eigim, $eigvec, $fortran, $outval, $outvec);
+  map bless($_, 'PDL::Complex'), $outval, $outvec;
+}
+EOF
 	Doc => <<EOT
 =for ref
 
