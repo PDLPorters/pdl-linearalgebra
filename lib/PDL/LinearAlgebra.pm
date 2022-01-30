@@ -1157,41 +1157,22 @@ Uses L<potrf|PDL::LinearAlgebra::Real/potrf> or L<cpotrf|PDL::LinearAlgebra::Com
 =cut
 
 sub mchol {shift->mchol(@_)}
-
 sub PDL::mchol {
 	&_square;
+	my $di = $_[0]->dims_internal;
 	my($m, $upper) = @_;
 	my(@dims) = $m->dims;
 	my ($uplo, $info);
 	$m = $m->mtri($upper) unless $m->is_inplace(0);
-	@dims = @dims[2..$#dims];
+	@dims = @dims[2+$di..$#dims];
 	$info = @dims ? zeroes(long,@dims) : pdl(long,0);
 	$uplo =  1 - $upper;
-	$m->potrf($uplo,$info);
+	$m->_call_method('potrf',$uplo,$info);
 	if($info->max > 0 && $_laerror) {
 		my ($index,@list);
 		$index = which($info > 0)+1;
 		@list = $index->list;
 		laerror("mchol: matrix (PDL(s) @list) is/are not positive definite(s) (after potrf factorization): \$info = $info");
-	}
-	return wantarray ? ($m, $info) : $m;
-}
-
-sub PDL::Complex::mchol {
-	&_square;
-	my($m, $upper) = @_;
-	my(@dims) = $m->dims;
-	my ($uplo, $info);
-	$m = $m->mtri($upper) unless $m->is_inplace(0);
-	@dims = @dims[3..$#dims];
-	$info = @dims ? zeroes(long,@dims) : pdl(long,0);
-	$uplo =  1 - $upper;
-	$m->cpotrf($uplo,$info);
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("mchol: matrix (PDL(s) @list) is/are not positive definite(s) (after cpotrf factorization): \$info = $info");
 	}
 	return wantarray ? ($m, $info) : $m;
 }
