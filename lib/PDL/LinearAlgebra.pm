@@ -1036,15 +1036,16 @@ sub msyminv {shift->msyminv(@_)}
 
 sub PDL::msyminv {
 	&_square;
+	my $di = $_[0]->dims_internal;
 	my $m = shift;
 	my $upper = @_ ? (1 - shift)  : pdl (long,1);
 	my ($ipiv , $info);
 	my(@dims) = $m->dims;
 	$m = $m->copy() unless $m->is_inplace(0);
-	$ipiv = zeroes(long, @dims[1..$#dims]);
-	@dims = @dims[2..$#dims];
+	$ipiv = zeroes(long, @dims[1+$di..$#dims]);
+	@dims = @dims[2+$di..$#dims];
 	$info = @dims ? zeroes(long,@dims) : pdl(long,0);
-	$m->sytrf($upper, $ipiv, $info);
+	$m->_call_method('sytrf', $upper, $ipiv, $info);
 	if($info->max > 0 && $_laerror) {
 		my ($index,@list);
 		$index = which($info > 0)+1;
@@ -1052,31 +1053,7 @@ sub PDL::msyminv {
 		laerror("msyminv: Block diagonal matrix D (PDL(s) @list) is/are singular(s) (after sytrf factorization): \$info = $info");
 	}
 	else{
-		$m->sytri($upper,$ipiv,$info);
-                $m = $m->t->tritosym($upper);
-	}
-	return wantarray ? ($m, $info) : $m;
-}
-
-sub PDL::Complex::msyminv {
-	&_square;
-	my $m = shift;
-	my $upper = @_ ? (1 - shift)  : pdl (long,1);
-	my ($ipiv , $info);
-	my(@dims) = $m->dims;
-	$m = $m->copy() unless $m->is_inplace(0);
-	$ipiv = zeroes(long, @dims[2..$#dims]);
-	@dims = @dims[3..$#dims];
-	$info = @dims ? zeroes(long,@dims) : pdl(long,0);
-	$m->csytrf($upper, $ipiv, $info);
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("msyminv: Block diagonal matrix D (PDL(s) @list) is/are singular(s) (after csytrf factorization): \$info = $info");
-	}
-	else{
-		$m->csytri($upper,$ipiv,$info);
+		$m->_call_method('sytri',$upper,$ipiv,$info);
                 $m = $m->t->tritosym($upper, 0);
 	}
 	return wantarray ? ($m, $info) : $m;
