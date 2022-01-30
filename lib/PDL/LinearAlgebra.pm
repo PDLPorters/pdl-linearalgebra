@@ -322,9 +322,7 @@ sub PDL::diag{
 	my ($a,$i, $vec) = @_;
 	my ($diag, $dim, @dims, $z);
 	@dims = $a->dims;
-
 	$diag = ($i < 0) ? -$i : $i ;
-
 	if (@dims == 1 || $vec){
 		$dim = $dims[0];
 		my $zz = $dim + $diag;
@@ -348,10 +346,7 @@ sub PDL::Complex::diag{
 	my ($a,$i, $vec) = @_;
 	my ($diag, $dim, @dims, $z);
 	@dims = $a->dims;
-
 	$diag = ($i < 0) ? -$i : $i ;
-
-
 	if (@dims == 2 || $vec){
 		$dim = $dims[1];
 		my $zz = $dim + $diag;
@@ -444,13 +439,10 @@ sub PDL::positivise{
 	my $m = shift;
 	my $tmp;
 	$m = $m->copy unless $m->is_inplace(0);
-	$tmp = $m->dice('X', which((   $m->lt(0,0)->sumover > ($m->dim(0)/2))>0));
+	$tmp = $m->dice('X', which(($m->lt(0,0)->sumover > ($m->dim(0)/2))>0));
 	$tmp->inplace->mult(-1,0);# .= -$tmp;
 	$m;
 }
-
-
-
 
 =head2 mcrossprod
 
@@ -472,18 +464,22 @@ Uses L<crossprod|PDL::LinearAlgebra::Real/crossprod> or L<ccrossprod|PDL::Linear
 
 =cut
 
+sub PDL::_call_method {
+  my ($m, $method, @args) = @_;
+  $method = "c$method" if !$m->type->real;
+  $m->$method(@args);
+}
+sub PDL::Complex::_call_method {
+  my ($m, $method, @args) = @_;
+  $method = "c$method";
+  $m->$method(@args);
+}
 sub mcrossprod {shift->mcrossprod(@_)}
 sub PDL::mcrossprod {
 	&_2d_array;
 	my($a, $b) = @_;
 	$b = $a unless defined $b;
-	$a->crossprod($b);
-}
-sub PDL::Complex::mcrossprod {
-	&_2d_array;
-	my($a, $b) = @_;
-	$b = $a unless defined $b;
-	$a->ccrossprod($b);
+	$a->_call_method('crossprod', $b);
 }
 
 =head2 mrank
