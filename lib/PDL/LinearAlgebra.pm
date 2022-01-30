@@ -831,7 +831,7 @@ sub PDL::mrcond {
 	$ipiv = PDL->null;
 	$info = PDL->null;
 	$rcond = PDL->null;
-	$m->getrf($ipiv, $info);
+	$m->_call_method('getrf', $ipiv, $info);
 	if($info->max > 0 && $_laerror) {
 		my ($index,@list);
 		$index = which($info > 0)+1;
@@ -839,30 +839,7 @@ sub PDL::mrcond {
 		laerror("mrcond: Factor(s) U (PDL(s) @list) is/are singular(s) (after getrf factorization): \$info = $info");
 	}
 	else{
-		$m->gecon($anorm,$norm,$rcond,$info);
-	}
-	return wantarray ? ($rcond, $info) : $rcond;
-}
-
-sub PDL::Complex::mrcond {
-	&_square;
-	my ($m, $anorm) = @_;
-	$anorm = 0 unless defined $anorm;
-	my ($ipiv, $info,$rcond,$norm);
-	$norm = $m->mnorm($anorm);
-	$m = $m->t->copy();
-	$ipiv = PDL->null;
-	$info = PDL->null;
-	$rcond = PDL->null;
-	$m->cgetrf($ipiv, $info);
-	if($info->max > 0 && $_laerror) {
-		my ($index,@list);
-		$index = which($info > 0)+1;
-		@list = $index->list;
-		laerror("mrcond: Factor(s) U (PDL(s) @list) is/are singular(s) (after cgetrf factorization) : \$info = $info");
-	}
-	else{
-		$m->cgecon($anorm,$norm,$rcond,$info);
+		$m->_call_method('gecon',$anorm,$norm,$rcond,$info);
 	}
 	return wantarray ? ($rcond, $info) : $rcond;
 }
