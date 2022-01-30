@@ -110,6 +110,12 @@ sub norm {
 	return $trans ? PDL::Complex::Cscale($m->t,1/$ret->dummy(0)->xchg(0,1))->reshape(-1) :
 		PDL::Complex::Cscale($m,1/$ret->dummy(0))->reshape(-1);
 }
+
+sub t {
+  my ($m, $conj) = @_;
+  my $r = $m->SUPER::t;
+  $conj ? PDL::Complex::Cconj($r) : $r;
+}
 }
 ########################################################################
 
@@ -211,14 +217,13 @@ Supports threading.
 
 =cut
 
-sub t {shift->t(@_)}
+sub PDL::dims_internal {0}
+sub PDL::Complex::dims_internal {1}
 
+sub t {shift->t(@_)}
 sub PDL::t {
-	$_[0]->xchg(0,1);
-}
-sub PDL::Complex::t {
-	my ($m, $conj) = @_;
-	$conj ? PDL::Complex::Cconj($m->xchg(1,2)) : $m->xchg(1,2);
+  my $d = $_[0]->dims_internal;
+  $_[0]->xchg($d,$d+1);
 }
 
 =head2 issym
@@ -239,43 +244,20 @@ Supports threading.
 sub issym {shift->issym(@_)}
 
 sub PDL::issym {
-	my ($m, $tol) = @_;
+	my ($m, $tol, $conj) = @_;
 	my @dims = $m->dims;
-
+	my $d = $_[0]->dims_internal;
 	barf("issym: Require square array(s)")
-		if( $dims[0] != $dims[1] );
-
-	$tol =  defined($tol) ? $tol  : ($m->type == double) ? 1e-8 : 1e-5;
-
-	my ($min,$max) = PDL::Ufunc::minmaximum($m - $m->t);
+		if( $dims[$d] != $dims[$d+1] );
+	$conj //= !$m->type->real || $m->isa('PDL::Complex');
+	$tol //= ($m->type >= double) ? 1e-8 : 1e-5;
+	$m = $m - $m->t($conj);
+        $m = $m->clump(2) if $m->isa('PDL::Complex');
+	my ($min,$max) = PDL::Ufunc::minmaximum($m);
 	$min = $min->minimum;
 	$max = $max->maximum;
 	return  (((abs($max) > $tol) + (abs($min) > $tol)) == 0);
 }
-
-sub PDL::Complex::issym {
-	my ($m, $tol, $conj) = @_;
-	my @dims = $m->dims;
-
-	barf("issym: Require square array(s)")
-		if( $dims[1] != $dims[2] );
-
-	$conj = 1 unless defined($conj);
-	$tol =  defined($tol) ? $tol  : ($m->type == double) ? 1e-8 : 1e-5;
-
-	my ($min, $max, $mini, $maxi);
-	if ($conj){
-		($min,$max) = PDL::Ufunc::minmaximum(PDL::clump($m - $m->t(1),2));
-	}
-	else{
-		($min,$max) = PDL::Ufunc::minmaximum(PDL::clump($m - $m->t,2));
-	}
-	$min->minimum($mini = null);
-	$max->maximum($maxi = null);
-	return  (((abs($maxi) > $tol) + (abs($mini) > $tol)) == 0);
-
-}
-
 
 =head2 diag
 
