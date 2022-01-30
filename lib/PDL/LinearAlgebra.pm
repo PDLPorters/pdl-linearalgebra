@@ -5450,7 +5450,6 @@ sub PDL::mgeigen {
 		laerror("mgeigen: Can't compute eigenvalues/vectors for PDL(s) @list: \$info = $info");
 	}
 
-
 	$w = PDL::Complex::ecplx ($wtmp, $wi);
 	if ($jobvl){
 		(undef, $vl) = cplx_eigen((bless $wtmp, 'PDL::Complex'), $wi, $vl, 1);
@@ -5459,11 +5458,8 @@ sub PDL::mgeigen {
 		(undef, $vr) = cplx_eigen((bless $wtmp, 'PDL::Complex'), $wi, $vr, 1);
 	}
 
-
-
 	$jobvl? $jobvr? ($w, $beta, $vl->xchg(1,2)->sever, $vr->xchg(1,2)->sever, $info):($w, $beta, $vl->xchg(1,2)->sever, $info) :
 					$jobvr? ($w, $beta, $vr->xchg(1,2)->sever, $info): ($w, $beta, $info);
-
 }
 
 sub PDL::Complex::mgeigen {
@@ -5480,7 +5476,6 @@ sub PDL::Complex::mgeigen {
 		 @bdims >= 3 && $bdims[1] == $bdims[2] && $adims[1] == $bdims[1]);
 	barf("mgeigen: Require matrices with equal number of dimensions")
 		if( @adims != @bdims);
-
 
        	$b = $b->xchg(1,2);
 	$eigens = PDL::Complex->null;
@@ -5500,9 +5495,7 @@ sub PDL::Complex::mgeigen {
 
 	$jobvl? $jobvr? ($eigens, $beta, $vl->xchg(1,2)->sever, $vr->xchg(1,2)->sever, $info):($eigens, $beta, $vl->xchg(1,2)->sever, $info) :
 					$jobvr? ($eigens, $beta, $vr->xchg(1,2)->sever, $info): ($eigens, $beta, $info);
-
 }
-
 
 =head2 mgeigenx
 
@@ -6630,9 +6623,9 @@ sub PDL::Complex::mgsvd {
 	$alpha = zeroes($type, $adims[1]);
 	$beta = zeroes($type, $adims[1]);
 
-	$U = $opt{U} ? PDL::Complex->new_from_specification($type, 2,$adims[2], $adims[2]) : zeroes($type,1,1);
-	$V = $opt{V} ? PDL::Complex->new_from_specification($b->type, 2,$bdims[2], $bdims[2]) : zeroes($b->type,1,1);
-	$Q = $jobqx ? PDL::Complex->new_from_specification($type, 2,$adims[1], $adims[1]) : zeroes($type,1,1);
+	$U = $opt{U} ? PDL::Complex->new_from_specification($type, 2,$adims[2], $adims[2]) : zeroes($type,1,1)->r2C;
+	$V = $opt{V} ? PDL::Complex->new_from_specification($b->type, 2,$bdims[2], $bdims[2]) : zeroes($b->type,1,1)->r2C;
+	$Q = $jobqx ? PDL::Complex->new_from_specification($type, 2,$adims[1], $adims[1]) : zeroes($type,1,1)->r2C;
 	$iwork = zeroes(long, $adims[1]);
 	$info = null;
 	$a->xchg(1,2)->cggsvd($opt{U}, $opt{V}, $jobqx, $b, $k, $l, $alpha, $beta, $U, $V, $Q, $iwork, $info);
