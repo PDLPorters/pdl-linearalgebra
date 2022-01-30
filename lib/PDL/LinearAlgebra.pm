@@ -4647,19 +4647,13 @@ sub PDL::mgeigen {
 	&_square_same;
 	&_same_dims;
 	my($a, $b,$jobvl,$jobvr) = @_;
-       	my ($vl, $vr, $info, $beta, $type, $wtmp);
-       	$type = $a->type;
-	my ($w,$wi);
+	my $type = $a->type;
 	$b = $b->t;
-	$wtmp = null;
-	$wi = null;
-	$beta = null;
-	$vl = $jobvl ? PDL::zeroes $a : pdl($type,0);
-	$vr = $jobvr ? PDL::zeroes $a : pdl($type,0);
-	$info = null;
-	$a->t->ggev($jobvl,$jobvr, $b, $wtmp, $wi, $beta, $vl, $vr, $info);
+	my $vl = $jobvl ? PDL::zeroes $a : pdl($type,0);
+	my $vr = $jobvr ? PDL::zeroes $a : pdl($type,0);
+	$a->t->ggev($jobvl,$jobvr, $b, my $wtmp = null, my $wi = null, my $beta = null, $vl, $vr, my $info = null);
 	_error($info, "mgeigen: Can't compute eigenvalues/vectors for PDL(s) %s");
-	$w = PDL::Complex::ecplx ($wtmp, $wi);
+	my $w = PDL::Complex::ecplx ($wtmp, $wi);
 	if ($jobvl){
 		(undef, $vl) = cplx_eigen($wtmp, $wi, $vl, 1);
 	}
@@ -4939,28 +4933,12 @@ Works on transposed array(s).
 =cut
 
 sub msymeigen {shift->msymeigen(@_)}
-
 sub PDL::msymeigen {
 	&_square;
 	my($m, $upper, $jobv, $method) = @_;
-	my ($w, $v, $info);
-       	$info = null;
-	$w =  null;
-	$method = 'syevd' unless defined $method;
+	my ($w, $info) = (null, null);
+	$method //= ($m->isa('PDL::Complex') || !$m->type->real) ? 'cheevd' :'syevd';
 	$m = $m->copy unless ($m->is_inplace(0) and $jobv);
-	$m->t->$method($jobv, $upper, $w, $info);
-	_error($info, "msymeigen: The algorithm failed to converge for PDL(s) %s");
-	$jobv ? wantarray ? ($w , $m, $info) : $w : wantarray ? ($w, $info) : $w;
-}
-
-sub PDL::Complex::msymeigen {
-	&_square;
-	my($m, $upper, $jobv, $method) = @_;
-	my ($w, $v, $info);
-       	$info = null;
-	$w =  null;
-	$m = $m->copy unless ($m->is_inplace(0) and $jobv);
-	$method = 'cheevd' unless defined $method;
 	$m->t->$method($jobv, $upper, $w, $info);
 	_error($info, "msymeigen: The algorithm failed to converge for PDL(s) %s");
 	$jobv ? wantarray ? ($w , $m, $info) : $w : wantarray ? ($w, $info) : $w;
