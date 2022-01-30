@@ -583,43 +583,21 @@ from Lapack.
 
 =cut
 
-sub mdet{
-	my $m =shift;
-	$m->mdet;
-}
-
-
+sub mdet {shift->mdet(@_)}
 sub PDL::mdet {
 	&_square;
-	my $m = shift;
-	my ($info, $ipiv);
-	$m = $m->copy();
-	$info = null;
-	$ipiv = null;
-	$m->type->real?$m->getrf($ipiv, $info):$m->cgetrf($ipiv, $info);
-	$m = $m->diagonal(0,1)->prodover;
-	$m = $m *  ((PDL::Ufunc::sumover(sequence($ipiv->dim(0))->plus(1,0) != $ipiv)%2)*(-2)+1) ;
-	$info = $m->flat->index(which($info != 0 ));
-	$info .= 0 unless $info->isempty;
-	$m;
-}
-
-sub PDL::Complex::mdet {
-	&_square;
-	my $m = shift;
-	my ($info, $ipiv);
-	$m = $m->copy();
-	$info = null;
-	$ipiv = null;
-	$m->cgetrf($ipiv, $info);
-	$m = PDL::Complex::Cprodover($m->diagonal(1,2));
-	$m = $m *  ((PDL::Ufunc::sumover(sequence($ipiv->dim(0))->plus(1,0) != $ipiv)%2)*(-2)+1) ;
-	$info = which($info != 0 );
-	unless ($info->isempty){
-		$m->re->flat->index($info) .= 0;
-		$m->im->flat->index($info) .= 0;
+	my $di = $_[0]->dims_internal;
+	my $m = shift->copy;
+	$m->_call_method('getrf', my $ipiv = null, my $info = null);
+	$m = $m->diagonal($di,$di+1);
+	$m = $m->complex if $di>0;
+	$m = $m->prodover;
+	$m = $m * ((PDL::Ufunc::sumover(sequence($ipiv->dim(0))->plus(1,0) != $ipiv)%2)*(-2)+1);
+	$info = which($info != 0);
+	unless ($info->isempty) {
+		$_->flat->index($info) .= 0 for $di>0 ? ($m->re, $m->im) : $m;
 	}
-	$m->complex;
+	$m;
 }
 
 =head2 mposdet
