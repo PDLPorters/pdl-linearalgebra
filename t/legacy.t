@@ -26,6 +26,16 @@ my $a = pdl([[1.7,3.2],[9.2,7.3]]);
 my $aa = cplx random(2,2,2);
 runtest($aa, 't', $aa->xchg(1,2));
 
+$aa = sequence(2,2,2)->cplx + 1;
+runtest($aa, 'norm', my $aa_exp = PDL::Complex->from_native(pdl <<'EOF'));
+[
+ [0.223606+0.223606i 0.670820+0.670820i]
+ [0.410997+0.410997i 0.575396+0.575396i]
+]
+EOF
+runtest($aa, 'norm', $aa_exp->abs, [1]);
+runtest($aa, 'norm', $aa_exp->t, [0,1]);
+
 runtest(sequence(2,2), 'issym', 0);
 
 my $x = pdl([0.43,0.03],[0.75,0.72]);
