@@ -62,6 +62,8 @@ runtest($a->mcos, 'macos', pdl([[1.7018092, 0.093001244],[0.26737858,1.8645614]]
 runtest($a->msin, 'masin', pdl([[ -1.4397834,0.093001244],[0.26737858,-1.2770313]]));
 runtest($a->mexp, 'mlog', $a);
 
+ok all(approx pdl([1,1,-1],[-1,-1,2])->positivise, pdl([1,1,-1],[1,1,-2])), 'positivise'; # real only
+
 my $id = pdl([[1,0],[0,1]]);
 ok(fapprox($a->minv x $a,$id));
 

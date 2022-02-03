@@ -409,6 +409,7 @@ sub PDL::Complex::tritosym {
 
 Returns entry pdl with changed sign by row so that average of positive sign > 0.
 In other words threads among dimension 1 and row  =  -row if sum(sign(row)) < 0.
+Only makes sense for real ndarrays.
 Works inplace.
 
 =for example
