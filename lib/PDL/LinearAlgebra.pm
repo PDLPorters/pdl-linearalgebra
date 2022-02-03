@@ -326,59 +326,36 @@ Supports threading.
 =cut
 
 sub diag {shift->diag(@_)}
-sub PDL::diag{
+sub PDL::diag {
+	my $di = $_[0]->dims_internal;
+	my @di_vals = $_[0]->dims_internal_values;
+	my @diag_args = ($di, $di+1);
 	my ($a,$i, $vec) = @_;
-	my ($diag, $dim, @dims, $z);
-	@dims = $a->dims;
-	$diag = ($i < 0) ? -$i : $i ;
-	if (@dims == 1 || $vec){
-		$dim = $dims[0];
+	my $slice_prefix = ',' x $di;
+	my $z;
+	my @dims = $a->dims;
+	my $diag = ($i < 0) ? -$i : $i ;
+	if (@dims == $di+1 || $vec){
+		my $dim = $dims[0];
 		my $zz = $dim + $diag;
-		$z= PDL::zeroes('PDL',$a->type,$zz, $zz,@dims[1..$#dims]);
+		$z= ref($a)->zeroes($a->type,@di_vals,$zz,$zz,@dims[$di+1..$#dims]);
 		if ($i){
-			($i < 0) ? $z(:($dim-1),$diag:)->diagonal(0,1) .= $a : $z($diag:,:($dim-1))->diagonal(0,1).=$a;
+			($i < 0) ? $z->slice("$slice_prefix:@{[$dim-1]},$diag:")->diagonal(@diag_args) .= $a : $z->slice("$slice_prefix$diag:,:@{[$dim-1]}")->diagonal(@diag_args).=$a;
 		}
-		else{ $z->diagonal(0,1) .= $a; }
+		else{ $z->diagonal(@diag_args) .= $a; }
 	}
 	elsif($i < 0){
-		$z = $a(:-$diag-1 , $diag:)->diagonal(0,1);
+		$z = $a->slice(":-@{[$diag+1]} , $diag:")->diagonal(@diag_args);
 	}
 	elsif($i){
-		$z = $a($diag:, :-$diag-1)->diagonal(0,1);
+		$z = $a->slice("$diag:, :-@{[$diag+1]}")->diagonal(@diag_args);
 	}
-	else{$z = $a->diagonal(0,1);}
-	$z;
-}
-
-sub PDL::Complex::diag{
-	my ($a,$i, $vec) = @_;
-	my ($diag, $dim, @dims, $z);
-	@dims = $a->dims;
-	$diag = ($i < 0) ? -$i : $i ;
-	if (@dims == 2 || $vec){
-		$dim = $dims[1];
-		my $zz = $dim + $diag;
-		$z= PDL::zeroes('PDL::Complex',$a->type, 2, $zz, $zz,@dims[2..$#dims]);
-		if ($i){
-			($i < 0) ? $z(,:($dim-1),$diag:)->diagonal(1,2) .= $a : $z(,$diag:,:($dim-1))->diagonal(1,2).=$a;
-		}
-		else{ $z->diagonal(1,2) .= $a; }
-	}
-	elsif($i < 0){
-		$z = $a(,:-$diag-1 , $diag:)->diagonal(1,2);
-	}
-	elsif($i){
-		$z = $a(,$diag:, :-$diag-1 )->diagonal(1,2);
-	}
-	else{
-		$z = $a->diagonal(1,2);
-	}
-	$z->complex;
+	else{$z = $a->diagonal(@diag_args);}
+	$a->isa('PDL::Complex') ? $z->complex : $z;
 }
 
 if ($^V and $^V ge v5.6.0){
 use attributes 'PDL', \&PDL::diag, 'lvalue';
-use attributes 'PDL', \&PDL::Complex::diag, 'lvalue';
 }
 
 =head2 tritosym
