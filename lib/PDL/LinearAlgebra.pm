@@ -4242,6 +4242,7 @@ from Lapack. Works on transposed arrays.
 *mlse = \&PDL::mlse;
 
 sub PDL::mlse {
+	my $di = $_[0]->dims_internal;
 	my($a, $b, $c, $d) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
@@ -4251,17 +4252,17 @@ sub PDL::mlse {
 	my($x, $info);
 
 	barf("mlse: Require 2 matrices with equal number of columns")
-		unless( ((@adims == 2 && @bdims == 2)||(@adims == 3 && @bdims == 3)) &&
-		$adims[-2] == $bdims[-2]);
+		unless( ((@adims == 2+$di && @bdims == 2+$di)) &&
+		$adims[$di] == $bdims[$di]);
 
 	barf("mlse: Require 1D vector C with size equal to number of A rows")
-		unless( (@cdims == 1 || @cdims == 2)&& $adims[-1] == $cdims[-1]);
+		unless( (@cdims == $di+1)&& $adims[$di+2] == $cdims[$di+2]);
 
 	barf("mlse: Require 1D vector D with size equal to number of B rows")
-		unless( (@ddims == 1 || @ddims == 2)&& $bdims[-1] == $ddims[-1]);
+		unless( (@ddims == $di+1)&& $bdims[$di+2] == $ddims[$di+2]);
 
 	barf "mlse: Require that row(B) <= column(A) <= row(A) + row(B)" unless
-		( ($bdims[-1] <= $adims[-2] ) && ($adims[-2] <= ($adims[-1]+ $bdims[-1])) );
+		( ($bdims[$di+1] <= $adims[$di] ) && ($adims[$di] <= ($adims[$di+1]+ $bdims[$di+1])) );
 
 	$a = $a->t->copy;
 	$b = $b->t->copy;
