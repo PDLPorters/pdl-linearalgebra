@@ -225,7 +225,7 @@ sub PDL::Complex::dims_internal_values {(2)}
 sub t {shift->t(@_)}
 sub PDL::t {
   my $d = $_[0]->dims_internal;
-  $_[0]->xchg($d,$d+1);
+  ($_[0]->dims > $d+1) ? $_[0]->xchg($d,$d+1) : $_[0]->dummy(0);
 }
 
 =head2 issym
@@ -1569,10 +1569,7 @@ sub PDL::Complex::mschur {
 	}
 	$m = $mm->t->sever unless $m->is_inplace(0);
 	return wantarray ? ($m, $w, @ret, $info) : $m;
-
 }
-
-
 
 =head2 mschurx
 
@@ -1638,7 +1635,7 @@ Works on transposed array.
 
 *mschurx = \&PDL::mschurx;
 
-sub PDL::mschurx{
+sub PDL::mschurx {
 	&_square;
 	my($m, $jobv, $jobvl, $jobvr, $select_func, $sense, $mult,$norm) = @_;
 	my(@dims) = $m->dims;
@@ -3352,7 +3349,7 @@ Solves linear system of equations using LU decomposition.
 
 	A * X = B
 
-Can optionnally equilibrate the matrix.
+Can optionally equilibrate the matrix.
 Uses L<gesvx|PDL::LinearAlgebra::Real/gesvx> or L<cgesvx|PDL::LinearAlgebra::Complex/cgesvx> from Lapack.
 Works on transposed arrays.
 
@@ -3780,7 +3777,7 @@ symmetric positive definite matrix A
 
 	A * X = B
 
-Can optionnally equilibrate the matrix.
+Can optionally equilibrate the matrix.
 Uses L<posvx|PDL::LinearAlgebra::Real/posvx> or
 L<cposvx|PDL::LinearAlgebra::Complex/cposvx> from Lapack.
 Works on transposed array(s).

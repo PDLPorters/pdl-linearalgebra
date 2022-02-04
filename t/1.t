@@ -32,6 +32,7 @@ runtest($aa, 't', $aa->xchg(1,2), [0]);
 runtest(sequence(2,2), 'issym', 0);
 
 my $x = pdl([0.43,0.03],[0.75,0.72]);
+my $rank2 = pdl([1,0,1],[-2,-3,1],[3,3,0]);
 runtest($x, 'mschur', pdl([0.36637354,-0.72],[0,0.78362646]));
 runtest(sequence(2,2), 'diag', pdl(0,3));
 runtest(sequence(3,3), 'tritosym', pdl [0,1,2],[1,4,5],[2,5,8]);
@@ -39,6 +40,7 @@ runtest(pdl([1,2],[1,0]), 'mrcond', 1/3);
 runtest($x, 'mtriinv', pdl([2.3255814,-0.096899225],[0.75,1.3888889]));
 runtest($x, 'msyminv', pdl([2.3323615,-0.09718173],[-0.09718173,1.3929381]));
 runtest($x->crossprod($x), 'mchol', pdl([0.86452299,0.63954343],[0,0.33209065]));
+runtest($a, 'mschurx', [pdl([-1.605735,-6],[0,10.605735]),pdl([-1.605735,6],[0,10.605735])]);
 my @mgschur_exp = (pdl([-0.35099581,-0.68880032],[0,0.81795847]),
   pdl([1.026674, -0.366662], [0, -0.279640]));
 runtest($x, 'mgschur', \@mgschur_exp, [sequence(2,2)]);
@@ -47,7 +49,9 @@ runtest($x, 'mqr', pdl([-0.49738411,-0.86753043],[-0.86753043,0.49738411]));
 runtest($x, 'mrq', pdl([0.27614707,-0.3309725],[0,-1.0396634]));
 runtest($x, 'mql', pdl([0.99913307,-0.041630545],[-0.041630545,-0.99913307]));
 runtest($x, 'mlq', pdl([-0.43104524,0],[-0.79829207,0.66605538]));
-runtest($x, 'msolve', pdl([-0.20898642,2.1943574],[2.995472,1.8808777]), [sequence(2,2)]);
+my $x_soln = pdl([-0.20898642,2.1943574],[2.995472,1.8808777]);
+runtest($x, 'msolve', $x_soln, [sequence(2,2)]);
+runtest($x, 'msolvex', $x_soln, [sequence(2,2)]);
 runtest($x, 'mtrisolve', pdl([0,2.3255814],[2.7777778,1.744186]), [1,sequence(2,2)]);
 runtest($x, 'msymsolve', pdl([5.9311981,6.0498221],[-3.4005536,-2.1352313]), [1,sequence(2,2)]);
 runtest(pdl([2,-1,0],[-1,2,-1],[0,-1,2]), 'mpossolve', pdl([3,4.5,6],[6,8,10],[6,7.5,9]), [1,sequence(3,3)]);
@@ -61,6 +65,11 @@ runtest($a, 'mdet', -17.03);
 runtest($a->mcos, 'macos', pdl([[1.7018092, 0.093001244],[0.26737858,1.8645614]]));
 runtest($a->msin, 'masin', pdl([[-1.4397834,0.093001244],[0.26737858,-1.2770313]]));
 runtest($a->mexp, 'mlog', $a);
+runtest($a, 'morth', pdl([-0.275682, 0.961248],[-0.961248,-0.275682]));
+runtest($rank2, 'mnull', pdl(-0.5773502,0.5773502,0.5773502)->t);
+runtest($a, 'mpinv', pdl([-0.428655,0.187903],[0.540223,-0.099823]));
+runtest($a, 'mlu', pdl([1,0],[0.184782,1]));
+runtest(sequence(3,3), 'mhessen', pdl([0,-2.236068,0],[-6.708203,12,3],[0,1,0]));
 
 ok all(approx pdl([1,1,-1],[-1,-1,2])->positivise, pdl([1,1,-1],[1,1,-2])), 'positivise'; # real only
 
