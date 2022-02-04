@@ -10,7 +10,7 @@ use Test::More;
 
 sub fapprox {
 	my($a,$b) = @_;
-	($a-$b)->abs->max < 0.0001;
+	(PDL->topdl($a)-$b)->abs->max < 0.0001;
 }
 sub runtest {
   local $Test::Builder::Level = $Test::Builder::Level + 1;
@@ -87,6 +87,10 @@ runtest($rank2, 'mnull', pdl(-0.5773502,0.5773502,0.5773502)->t);
 runtest($a, 'mpinv', pdl([-0.428655,0.187903],[0.540223,-0.099823]));
 runtest($a, 'mlu', pdl([1,0],[0.184782,1]));
 runtest(sequence(3,3), 'mhessen', pdl([0,-2.236068,0],[-6.708203,12,3],[0,1,0]));
+runtest($a, 'mrank', 2);
+runtest($rank2, 'mrank', 2);
+runtest($a, 'mnorm', 12.211267);
+runtest($a, 'msvd', pdl(12.211267,1.3946136), [0,0]);
 
 ok all(approx pdl([1,1,-1],[-1,-1,2])->positivise, pdl([1,1,-1],[1,1,-2])), 'positivise'; # real only
 

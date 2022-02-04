@@ -472,7 +472,8 @@ sub PDL::mcrossprod {
 
 =for ref
 
-Computes the rank of a matrix, using a singular value decomposition.
+Computes the rank of a matrix, using a singular value decomposition,
+returning a Perl scalar.
 from Lapack.
 
 =for usage
@@ -5339,7 +5340,7 @@ sub PDL::msvd {
 	my $u = !$jobu ? ref($m)->new_from_specification($type, @di_vals, 1,1):
 		$jobu == 1 ? ref($m)->new_from_specification($type, @di_vals, $dims[1+$di],$dims[1+$di],@dims[2+$di..$#dims]):
 		ref($m)->new_from_specification($type, @di_vals, $min, $dims[1+$di],@dims[2+$di..$#dims]);
-	$m->gesvd($jobv, $jobu,my $s = null, $v, $u, my $info = null);
+	$m->_call_method('gesvd', $jobv, $jobu,my $s = null, $v, $u, my $info = null);
 	_error($info, "msvd: Matrix (PDL(s) %s) is/are singular(s)");
 	return $jobv ? ($u, $s, $v, $info) : ($u, $s, $info) if $jobu;
 	return ($s, $v, $info) if $jobv;
