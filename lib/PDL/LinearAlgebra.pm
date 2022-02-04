@@ -4047,7 +4047,7 @@ Works on transposed arrays.
 =for usage
 
  ( PDL(X), ( HASH(result) ) )= mllss(PDL(A), PDL(B), SCALAR(method))
- method: specifie which method to use (see Lapack for further details)
+ method: specifies which method to use (see Lapack for further details)
  	'(c)gelss' or '(c)gelsd', default = '(c)gelsd'
  Returned values:
 		X (SCALAR CONTEXT),
@@ -4379,20 +4379,20 @@ Works on transposed arrays.
 		'vector': computes reciprocal condition numbers for eigenvectors
 		'all':    computes reciprocal condition numbers for eigenvalues and eigenvectors
 		 0:      doesn't compute (default)
- error:      specifie whether or not it computes the error bounds (returned in HASH{'eerror'} and HASH{'verror'})
+ error:      specifies whether or not it computes the error bounds (returned in HASH{'eerror'} and HASH{'verror'})
 	     error bound = EPS * One-norm / rcond(e|v)
 	     (reciprocal condition numbers for eigenvalues or eigenvectors must be computed).
  		1: returns error bounds
  		0: not computed
- scale:      specifie whether or not it diagonaly scales the entry matrix
+ scale:      specifies whether or not it diagonaly scales the entry matrix
 	     (scale details returned in HASH : 'scale')
  		1: scales
  		0: Doesn't scale (default)
- permute:    specifie whether or not it permutes row and columns
+ permute:    specifies whether or not it permutes row and columns
 	     (permute details returned in HASH{'balance'})
  		1: permutes
  		0: Doesn't permute (default)
- schur:      specifie whether or not it returns the Schur form (returned in HASH{'schur'})
+ schur:      specifies whether or not it returns the Schur form (returned in HASH{'schur'})
 		1: returns Schur form
 		0: not returned
  Returned values:
@@ -4679,20 +4679,20 @@ Works on transposed arrays.
 		'vector': computes reciprocal condition numbers for eigenvectors
 		'all':    computes reciprocal condition numbers for eigenvalues and eigenvectors
 		 0:      doesn't compute (default)
- error:      specifie whether or not it computes the error bounds (returned in HASH{'eerror'} and HASH{'verror'})
+ error:      specifies whether or not it computes the error bounds (returned in HASH{'eerror'} and HASH{'verror'})
 	     error bound = EPS * sqrt(one-norm(a)**2 + one-norm(b)**2) / rcond(e|v)
 	     (reciprocal condition numbers for eigenvalues or eigenvectors must be computed).
  		1: returns error bounds
  		0: not computed
- scale:      specifie whether or not it diagonaly scales the entry matrix
+ scale:      specifies whether or not it diagonaly scales the entry matrix
 	     (scale details returned in HASH : 'lscale' and 'rscale')
  		1: scales
  		0: doesn't scale (default)
- permute:    specifie whether or not it permutes row and columns
+ permute:    specifies whether or not it permutes row and columns
 	     (permute details returned in HASH{'balance'})
  		1: permutes
  		0: Doesn't permute (default)
- schur:      specifie whether or not it returns the Schur forms (returned in HASH{'aschur'} and HASH{'bschur'})
+ schur:      specifies whether or not it returns the Schur forms (returned in HASH{'aschur'} and HASH{'bschur'})
 	     (right or left eigenvectors must be computed).
 		1: returns Schur forms
 		0: not returned
@@ -4803,22 +4803,19 @@ sub PDL::mgeigenx {
 		$rcondv = pdl($type,0);
 	}
 
-
 	$balanc =  ($opt{'permute'} &&  $opt{'scale'} ) ? pdl(long,3) : $opt{'permute'} ? pdl(long,1) : $opt{'scale'} ? pdl(long,2) : pdl(long,0);
 
 
 	if (@adims == 2){
 		$a->t->ggevx($balanc, $jobvl, $jobvr, $sense, $b, $wr, $wi, $beta, $vl, $vr, $ilo, $ihi, $lscale, $rscale,
 					$abnrm, $bbnrm, $rconde, $rcondv, $info);
-		$eigens = PDL::Complex::complex(t(cat $wr, $wi));
+		$eigens = PDL::Complex::ecplx($wr, $wi);
 	}
 	else{
+		$_ = $_->r2C for $vl, $vr;
 		$a->t->cggevx($balanc, $jobvl, $jobvr, $sense, $b, $eigens, $beta, $vl, $vr, $ilo, $ihi, $lscale, $rscale,
 					$abnrm, $bbnrm, $rconde, $rcondv, $info);
 	}
-
-
-
 
 	if ( ($info > 0) && ($info < $adims[-1])){
 		laerror("mgeigenx: The QZ algorithm failed to converge");
@@ -4827,7 +4824,6 @@ sub PDL::mgeigenx {
 	elsif($info){
 		laerror("mgeigenx: Error from hgeqz or tgevc");
 	}
-
 
 	$result{'aschur'} = $a if $opt{'schur'};
 	$result{'bschur'} = $b->t->sever if $opt{'schur'};
@@ -4872,9 +4868,7 @@ sub PDL::mgeigenx {
 	else{
 		return ($eigens, $beta, %result);
 	}
-
 }
-
 
 =head2 msymeigen
 
@@ -4938,8 +4932,8 @@ or L<cheevr|PDL::LinearAlgebra::Complex/cheevr> for complex. Works on transposed
 		0: find all eigenvalues and optionally all vectors
  range: 	PDL(2), lower and upper bounds interval or smallest and largest indices
  		1<=range<=N for indice
- abstol:        specifie error tolerance for eigenvalues
- method:        specifie which method to use (see Lapack for further details)
+ abstol:        specifies error tolerance for eigenvalues
+ method:        specifies which method to use (see Lapack for further details)
  		'syevx' (default)
  		'syevr'
  		'cheevx' (default)
@@ -5143,7 +5137,7 @@ from Lapack. Works on transposed arrays.
 		0: find all eigenvalues and optionally all vectors
  range: 	PDL(2), lower and upper bounds interval or smallest and largest indices
  		1<=range<=N for indice
- abstol:        specifie error tolerance for eigenvalues
+ abstol:        specifies error tolerance for eigenvalues
  Returned values:
  		eigenvalues (SCALAR CONTEXT),
  		eigenvectors if requested,
@@ -5179,7 +5173,7 @@ sub PDL::msymgeigenx {
 	$type = $a->type;
 	$range = ($opt{'range_type'} eq 'interval') ? pdl(long, 1) :
 		($opt{'range_type'} eq 'indice')? pdl(long, 2) : pdl(long, 0);
-	if (UNIVERSAL::isa($opt{range},'PDL')){
+	if (!UNIVERSAL::isa($opt{range},'PDL')){
 		$opt{range} = pdl($type,[0,0]);
 		$range = pdl(long, 0);
 
