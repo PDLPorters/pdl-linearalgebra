@@ -1018,63 +1018,29 @@ Works on transposed array.
 *mlu = \&PDL::mlu;
 
 sub PDL::mlu {
+	my $di = $_[0]->dims_internal;
 	&_2d_array;
 	my $m = shift;
-	my(@dims) = $m->dims;
-	my ($ipiv, $info, $l, $u);
-
+	my @dims = $m->dims;
         $m = $m->copy;
-	$info = pdl(long ,0);
-	$ipiv = zeroes(long, ($dims[-2] > $dims[-1] ? $dims[-1]: $dims[-2]));
-
-	if (@dims == 3){
-		$m->t->cgetrf($ipiv,$info);
-		if($info > 0) {
-			$info--;
-			laerror("mlu: Factor U is singular: U($info,$info) = 0 (after cgetrf factorization)");
-			$u = $l = $m;
-		}
-		else{
-			$u = $m->mtri;
-			$l = $m->mtri(1);
-			if ($dims[-1] > $dims[-2]){
-				$u = $u(,,:($dims[0]-1));
-				$l((0), :($dims[0]-1), :($dims[0]-1))->diagonal(0,1) .= 1;
-				$l((1), :($dims[0]-1), :($dims[0]-1))->diagonal(0,1) .= 0;
-			}
-			elsif($dims[-1] < $dims[-2]){
-				$l = $l(,:($dims[1]-1),);
-			 	$l((0),,)->diagonal(0,1).=1;
-			 	$l((1),,)->diagonal(0,1).=0;
-			}
-			else{
-			 	$l((0),,)->diagonal(0,1).=1;
-			 	$l((1),,)->diagonal(0,1).=0;
-			}
-		}
+	my $ipiv = zeroes(long, $dims[$di] > $dims[$di+1] ? $dims[$di+1]: $dims[$di]);
+	$m->t->_call_method('getrf',$ipiv,my $info = null);
+	if($info > 0) {
+		$info--;
+		laerror("mlu: Factor U is singular: U($info,$info) = 0 (after cgetrf factorization)");
+		return $m, $m, $ipiv, $info;
 	}
-	else{
-		$m->t->getrf($ipiv,$info);
-		if($info > 0) {
-			$info--;
-			laerror("mlu: Factor U is singular: U($info,$info) = 0 (after getrf factorization)");
-			$u = $l = $m;
-		}
-		else{
-			$u = $m->mtri;
-			$l = $m->mtri(1);
-			if ($dims[1] > $dims[0]){
-				$u = $u(,:($dims[0]-1))->sever;
-				$l( :($dims[0]-1), :($dims[0]-1))->diagonal(0,1) .= 1;
-			}
-			elsif($dims[1] < $dims[0]){
-				$l = $l(:($dims[1]-1),)->sever;
-				$l->diagonal(0,1) .= 1;
-			}
-			else{
-			 	$l->diagonal(0,1).=1;
-			}
-		}
+	my $u = $m->mtri;
+	my $l = $m->mtri(1);
+	my $slice_prefix = ',' x $di;
+	my $smallerm1 = ($dims[$di] < $dims[$di+1] ? $dims[$di] : $dims[$di+1]) - 1;
+	my $one = $m->isa('PDL::Complex') ? PDL::Complex::r2C(1) : 1;
+	if ($dims[$di+1] > $dims[$di]) {
+		$u = $u->slice("$slice_prefix,:$smallerm1")->sever;
+		$l->slice("$slice_prefix :$smallerm1, :$smallerm1")->diagonal($di,$di+1) .= $one;
+	} else {
+		$l = $l->slice("$slice_prefix:$smallerm1")->sever if $dims[$di+1] < $dims[$di];
+		$l->diagonal($di,$di+1) .= $one;
 	}
 	$l, $u, $ipiv, $info;
 }
