@@ -5305,10 +5305,10 @@ sub PDL::mdsvd {
 
 Computes SVD.
 Can compute singular values, either U or V or neither.
-Return singulars values in scalar context else left (U),
+Return singular values in scalar context else left (U),
 singular values, right (V' (hermitian for complex) singulars vector and info.
 Supports threading.
-If only singulars values are requested, info is returned in array context.
+If only singular values are requested, info is returned in array context.
 Uses L<gesvd|PDL::LinearAlgebra::Real/gesvd> or L<cgesvd|PDL::LinearAlgebra::Complex/cgesvd> from Lapack.
 
 =for usage

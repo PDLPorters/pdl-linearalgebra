@@ -59,7 +59,7 @@ runtest($x, 'mdsvd', pdl([0.32189374,0.9467758],[0.9467758,-0.32189374]));
 runtest($x, 'mgsvd', pdl(0.16914549,0.64159379), [sequence(2,2)]);
 runtest($a, 'mdet', -17.03);
 runtest($a->mcos, 'macos', pdl([[1.7018092, 0.093001244],[0.26737858,1.8645614]]));
-runtest($a->msin, 'masin', pdl([[ -1.4397834,0.093001244],[0.26737858,-1.2770313]]));
+runtest($a->msin, 'masin', pdl([[-1.4397834,0.093001244],[0.26737858,-1.2770313]]));
 runtest($a->mexp, 'mlog', $a);
 
 ok all(approx pdl([1,1,-1],[-1,-1,2])->positivise, pdl([1,1,-1],[1,1,-2])), 'positivise'; # real only
