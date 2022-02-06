@@ -19,7 +19,7 @@ sub runtest {
   my ($got) = $in->$method(@{$extra||[]});
   ok fapprox($got, $expected), $method or diag "got: $got";
   $_ = PDL::Complex::r2C($_) for $in, $expected_cplx;
-  ($got) = $in->$method(map ref() ? PDL::Complex::r2C($_) : $_, @{$extra||[]});
+  ($got) = $in->$method(map ref() && ref() ne 'CODE' ? PDL::Complex::r2C($_) : $_, @{$extra||[]});
   ok fapprox($got, $expected_cplx), "PDL::Complex $method" or diag "got: $got";
 }
 
@@ -33,7 +33,7 @@ runtest(sequence(2,2), 'issym', 0);
 
 my $x = pdl([0.43,0.03],[0.75,0.72]);
 my $rank2 = pdl([1,0,1],[-2,-3,1],[3,3,0]);
-runtest($x, 'mschur', pdl([0.36637354,-0.72],[0,0.78362646]));
+runtest($x, 'mschur', pdl([0.36637354,-0.72],[0,0.78362646]), [1,1,1,sub {1}]);
 runtest(sequence(2,2), 'diag', pdl(0,3));
 runtest(sequence(3,3), 'tritosym', pdl [0,1,2],[1,4,5],[2,5,8]);
 runtest(pdl([1,2],[1,0]), 'mrcond', 1/3);
