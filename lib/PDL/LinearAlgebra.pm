@@ -1928,12 +1928,13 @@ Works on transposed array.
 
 sub mgschur {shift->mgschur(@_)}
 sub PDL::mgschur{
+	my $di = $_[0]->dims_internal;
 	&_square_same;
 	my($m, $p, $jobvsl, $jobvsr, $jobvl, $jobvr, $select_func, $mult, $norm) = @_;
 	my @mdims  = $m->dims;
 	my @pdims  = $p->dims;
-	barf("mgschur: thread doesn't supported for selected vectors")
-		if ($select_func && ((@mdims > 2) || (@pdims > 2)) &&
+	barf("mgschur: threading isn't supported for selected vectors")
+		if ($select_func && ((@mdims > 2+$di) || (@pdims > 2+$di)) &&
 			($jobvsl == 2 || $jobvsr == 2 || $jobvl == 2 || $jobvr == 2));
 
 
@@ -2146,12 +2147,13 @@ sub PDL::mgschur{
 
 
 sub PDL::Complex::mgschur{
+	my $di = $_[0]->dims_internal;
 	&_square_same;
 	my($m, $p, $jobvsl, $jobvsr, $jobvl, $jobvr, $select_func, $mult, $norm) = @_;
 	my @mdims  = $m->dims;
 	my @pdims  = $p->dims;
-	barf("mgschur: thread doesn't supported for selected vectors")
-		if ($select_func && ((@mdims > 2) || (@pdims > 2)) &&
+	barf("mgschur: threading isn't supported for selected vectors")
+		if ($select_func && ((@mdims > 2+$di) || (@pdims > 2+$di)) &&
 			($jobvsl == 2 || $jobvsr == 2 || $jobvl == 2 || $jobvr == 2));
 
 
