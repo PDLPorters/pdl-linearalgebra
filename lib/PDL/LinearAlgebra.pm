@@ -68,7 +68,6 @@ our $doubleformat = "%6.6g";
 *asinh = \&PDL::Complex::Casinh;
 *acosh = \&PDL::Complex::Cacosh;
 *atanh = \&PDL::Complex::Catanh;
-*prodover = \&PDL::Complex::Cprodover;
 
 sub ecplx {
   my ($re, $im) = @_;
@@ -83,11 +82,6 @@ sub ecplx {
   }
   Carp::croak("first dimsize must be 2") unless $re->dims > 0 && $re->dim(0) == 2;
   bless $_[0]->slice('');
-}
-
-sub sumover {
-	my $c = shift;
-	return dims($c) > 1 ? PDL::Ufunc::sumover($c->xchg(0,1)) : $c;
 }
 
 sub norm {
