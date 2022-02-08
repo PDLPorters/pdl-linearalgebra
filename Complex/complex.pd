@@ -2456,7 +2456,7 @@ EOF
 		$GENERIC() tmp_work[2];
 		$GENERIC() *rwork;
 
-		rwork = ($GENERIC() *)malloc(2 * $SIZE(m) * sizeof($GENERIC()));
+		rwork = ($GENERIC() *)malloc(2 * $SIZE(n) * sizeof($GENERIC()));
 
 		$TFD(cgelsy_,zgelsy_)(
 		&(integer){$SIZE(m)},

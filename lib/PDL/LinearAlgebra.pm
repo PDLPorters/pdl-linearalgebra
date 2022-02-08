@@ -269,6 +269,14 @@ sub _matrices_match {
     " of row equal to number of columns of A")
     unless @adims >= 2+$d && @bdims >= 2+$d && $bdims[1+$d] == $adims[$d];
 }
+sub _matrices_matchrows {
+  my $d = $_[0]->dims_internal;
+  my @adims = $_[0]->dims;
+  my @bdims = $_[1]->dims;
+  barf("mlls: Require a 2D right hand side matrix B with number".
+    " of rows equal to number of rows of A")
+    unless @adims >= 2+$d && @bdims >= 2+$d && $bdims[1+$d] == $adims[1+$d];
+}
 sub _same_dims {
   my $d = $_[0]->dims_internal;
   my @adims = $_[0]->dims;
@@ -3877,8 +3885,7 @@ Works on transposed arrays.
 *mlls = \&PDL::mlls;
 
 sub PDL::mlls {
-	&_2d_array;
-	&_matrices_match;
+	&_matrices_matchrows;
 	my($a, $b, $trans) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
@@ -3956,8 +3963,8 @@ from Lapack. Works on tranposed arrays.
 *mllsy = \&PDL::mllsy;
 
 sub PDL::mllsy {
-	&_2d_array;
-	&_matrices_match;
+	my $di = $_[0]->dims_internal;
+	&_matrices_matchrows;
 	my($a, $b) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
@@ -3968,7 +3975,7 @@ sub PDL::mllsy {
 
 	$a = $a->t->copy;
 
-	if ( $adims[1] < $adims[0]){
+	if ( $adims[1+$di] < $adims[0+$di]){
 		if (@adims == 3){
 			$x = PDL::Complex->new_from_specification($type, 2, $adims[1], $bdims[1]);
 			$x(, :($bdims[2]-1), :($bdims[1]-1)) .= $b->t;
@@ -3985,7 +3992,6 @@ sub PDL::mllsy {
 	$info = pdl(long,0);
 	$rank = null;
 	$jpvt = zeroes(long, $adims[-2]);
-
 	(@adims == 3) ? $a->cgelsy($x,  $rcond, $jpvt, $rank, $info) :
 			$a->gelsy($x,  $rcond, $jpvt, $rank, $info);
 
@@ -4042,8 +4048,7 @@ Works on transposed arrays.
 *mllss = \&PDL::mllss;
 
 sub PDL::mllss {
-	&_2d_array;
-	&_matrices_match;
+	&_matrices_matchrows;
 	my($a, $b, $method) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;

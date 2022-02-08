@@ -4758,8 +4758,6 @@ pp_def("gels",
 		if($trans())
 			ptrans = \'T\';
 
-
-
 		$TFD(sgels_,dgels_)(
 		&ptrans,
 		&(integer){$SIZE(m)},
