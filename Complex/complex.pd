@@ -973,7 +973,7 @@ EOF
 		char jvs = \'N\';
 		char psort = \'N\';
 		logical *bwork;
-		integer lwork = 0;
+		integer lwork = -1;
 		char sens;
 
 		$GENERIC() *work, *rwork;
@@ -991,17 +991,36 @@ EOF
 		switch ($sense())
 		{
 			case 1: sens = \'E\';
-				lwork  = (integer ) ($SIZE(n) * ($SIZE(n)/2));
 				break;
 			case 2: sens = \'V\';
-				lwork  = (integer ) ($SIZE(n) * ($SIZE(n)/2));
 				break;
 			case 3: sens = \'B\';
-				lwork  = (integer ) ($SIZE(n) * ($SIZE(n)/2));
 				break;
 			default: sens = \'N\';
-				 lwork = (integer ) ($SIZE(n) * 2);
 		}
+
+		$GENERIC() tmp_work[2];
+		$TFD(c,z)geesx_(
+		&jvs,
+		&psort,
+		$TFD(f,d)select_wrapper,
+		&sens,
+		&(integer){$SIZE(n)},
+		$P(A),
+		&(integer){$SIZE(n)},
+		$P(sdim),
+		$P(w),
+		$P(vs),
+		&(integer){$SIZE(p)},
+		$P(rconde),
+		$P(rcondv),
+		&tmp_work[0],
+		&lwork,
+		rwork,
+		bwork,
+		$P(info));
+
+		lwork = (integer )tmp_work[0];
 		work  = ($GENERIC() * )malloc(2*lwork * sizeof ($GENERIC()));
 
 		$TFD(c,z)geesx_(
