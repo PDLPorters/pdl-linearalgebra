@@ -346,17 +346,17 @@ sub PDL::diag {
 	if (@dims == $di+1 || $vec){
 		my $dim = $dims[0];
 		my $zz = $dim + $diag;
-		$z= ref($a)->zeroes($a->type,@di_vals,$zz,$zz,@dims[$di+1..$#dims]);
+		$z= PDL::zeroes(ref($a), $a->type,@di_vals,$zz,$zz,@dims[$di+1..$#dims]);
 		if ($i){
 			($i < 0) ? $z->slice("$slice_prefix:@{[$dim-1]},$diag:")->diagonal(@diag_args) .= $a : $z->slice("$slice_prefix$diag:,:@{[$dim-1]}")->diagonal(@diag_args).=$a;
 		}
 		else{ $z->diagonal(@diag_args) .= $a; }
 	}
 	elsif($i < 0){
-		$z = $a->slice(":-@{[$diag+1]} , $diag:")->diagonal(@diag_args);
+		$z = $a->slice("$slice_prefix:-@{[$diag+1]} , $diag:")->diagonal(@diag_args);
 	}
 	elsif($i){
-		$z = $a->slice("$diag:, :-@{[$diag+1]}")->diagonal(@diag_args);
+		$z = $a->slice("$slice_prefix$diag:, :-@{[$diag+1]}")->diagonal(@diag_args);
 	}
 	else{$z = $a->diagonal(@diag_args);}
 	$a->isa('PDL::Complex') ? $z->complex : $z;
@@ -4048,6 +4048,7 @@ Works on transposed arrays.
 *mllss = \&PDL::mllss;
 
 sub PDL::mllss {
+	my $di = $_[0]->dims_internal;
 	&_matrices_matchrows;
 	my($a, $b, $method) = @_;
 	my(@adims) = $a->dims;
@@ -4060,7 +4061,7 @@ sub PDL::mllss {
 
 	$a = $a->t->copy;
 
-	if ($adims[1] < $adims[0]){
+	if ($adims[1+$di] < $adims[0+$di]){
 		if (@adims == 3){
 			$x = PDL::Complex->new_from_specification($type, 2, $adims[1], $bdims[1]);
 			$x(, :($bdims[2]-1), :($bdims[1]-1)) .= $b->t;
@@ -4089,7 +4090,7 @@ sub PDL::mllss {
 
 	$x = $x->t;
 
-	if ( $adims[-1] <= $adims[-2]){
+	if ($adims[1+$di] <= $adims[0+$di]){
 		if (wantarray){
 			$method =~ /gelsd/ ? return ($x->sever, ('rank' => $rank, 's'=>$s, 'info'=>$info)):
 					(return ($x, ('V'=> $a, 'rank' => $rank, 's'=>$s, 'info'=>$info)) );

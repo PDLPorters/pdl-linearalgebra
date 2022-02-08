@@ -27,7 +27,7 @@ my $a = pdl([[1.7,3.2],[9.2,7.3]]);
 runtest($a, 't', $a->xchg(0,1));
 
 my $aa = cplx random(2,2,2);
-runtest($aa, 't', $aa->xchg(1,2), [0]);
+runtest($aa, 't', $aa->xchg(1,2)->conj, [1]);
 
 runtest(sequence(2,2), 'issym', 0);
 
@@ -42,6 +42,9 @@ runtest($x, 'mschur', pdl([0.36637354,-0.72],[0,0.78362646]), [2,2,2,sub {1},0,0
 runtest($x, 'mschur', pdl([0.36637354,-0.72],[0,0.78362646]), [2,2,2,undef,0,0]);
 runtest($x, 'mschur', pdl([0.36637354,-0.72],[0,0.78362646]), [0,2,2,undef,0,0]);
 runtest(sequence(2,2), 'diag', pdl(0,3));
+runtest(sequence(2,2), 'diag', pdl(1), [1]);
+runtest(sequence(2,2), 'diag', pdl(2), [-1]);
+runtest(sequence(2,2), 'diag', pdl([[0,0],[0,1]],[[2,0],[0,3]]), [0,1]);
 runtest(sequence(3,3), 'tritosym', pdl [0,1,2],[1,4,5],[2,5,8]);
 runtest(pdl([1,2],[1,0]), 'mrcond', 1/3);
 runtest($x, 'mtriinv', pdl([2.3255814,-0.096899225],[0.75,1.3888889]));
@@ -81,11 +84,13 @@ my $x_symsoln = pdl([5.9311981,6.0498221],[-3.4005536,-2.1352313]);
 runtest($x, 'msymsolve', $x_symsoln, [1,sequence(2,2)]);
 runtest($x, 'msymsolvex', $x_symsoln, [1,sequence(2,2)]);
 runtest($x, 'mlls', $x_soln, [sequence(2,2)]);
-runtest($wide, 'mlls', pdl([1.712813,2.511051,3.30928],[2.706977,3.007326,3.30767],[-1.168170,-0.242816,0.682536]), [sequence(3,2)]);
+my $wide_soln = pdl([1.712813,2.511051,3.30928],[2.706977,3.007326,3.30767],[-1.168170,-0.242816,0.682536]);
+runtest($wide, 'mlls', $wide_soln, [sequence(3,2)]);
 runtest($wide->t, 'mlls', pdl([4.055021,4.995087],[0.247090,1.330964]), [sequence(2,3)]);
 runtest($x, 'mllsy', $x_soln, [sequence(2,2)]);
-runtest($wide, 'mllsy', pdl([1.712813,2.511051,3.309288],[2.706977,3.007326,3.307675],[-1.168170,-0.242816,0.682536]), [sequence(3,2)]);
+runtest($wide, 'mllsy', $wide_soln, [sequence(3,2)]);
 runtest($x, 'mllss', $x_soln, [sequence(2,2)]);
+runtest($wide, 'mllss', $wide_soln, [sequence(3,2)]);
 runtest($x, 'mlse', pdl([-1,1]), [sequence(2,2),ones(2),ones(2)]);
 my ($posdef, $possoln) = (pdl([2,-1,0],[-1,2,-1],[0,-1,2]), pdl([3,4.5,6],[6,8,10],[6,7.5,9]));
 runtest($posdef, 'mpossolve', $possoln, [1,sequence(3,3)]);
