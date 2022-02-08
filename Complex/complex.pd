@@ -1979,9 +1979,6 @@ EOF
 		rwork,
 		$P(info));
 
-		free(work);
-		free(rwork);
-
 		switch (pequed)
 		{
 			case \'R\': $equed() = 1;
@@ -1993,6 +1990,9 @@ EOF
 			default: $equed()= 0;
 		}
 		$rpvgrw() = rwork[0];
+
+		free(work);
+		free(rwork);
 ',
 Doc => '
 
@@ -2051,9 +2051,8 @@ EOF
                 work,
 		&lwork,
 		$P(info));
-
-
-             }
+		free(work);
+		}
 ');
 
 pp_defc("sysvx",

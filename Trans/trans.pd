@@ -325,9 +325,7 @@ pp_def('geexp',
 	
 		if ($info() != 0)
 		{
-			free(ipiv);
 			free(coef);
-			free(wsp);
 		}
 		else
 		{
@@ -367,9 +365,9 @@ pp_def('geexp',
 				for (i__1 = iput; i__1 < i__2 ; i__1++)
 					coef[i__++] = wsp[i__1];
 			}
-			free(wsp);
-			free(ipiv);
 		}
+		free(ipiv);
+		free(wsp);
 	}
 ',
 	Doc => <<EOT
@@ -936,10 +934,10 @@ If uplo is true, A is lower triangular.
 			}
 		}
 	}
+	free(diag);
 ENDCTRFUN:
 	;
 #undef subscr
-
 ',
 );
 

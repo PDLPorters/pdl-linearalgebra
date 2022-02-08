@@ -3806,9 +3806,6 @@ pp_def("gesvx",
 		iwork,
 		$P(info));
 
-		free(work);
-		free(iwork);
-
 		switch (pequed)
 		{
 			case \'R\': $equed() = 1;
@@ -3821,6 +3818,8 @@ pp_def("gesvx",
 		}
 		$rpvgrw()=work[0];		
 
+		free(work);
+		free(iwork);
 ',
       Doc => '
 
@@ -4081,7 +4080,6 @@ pp_def("sysv",
 		&lwork,
 		$P(info));
 
-
 		lwork = (integer )tmp_work;
 		{
 		$GENERIC() *work = ($GENERIC() *)malloc(lwork *  sizeof($GENERIC()));
@@ -4097,9 +4095,8 @@ pp_def("sysv",
                 work,
 		&lwork,
 		$P(info));
-
-
-             }
+		free(work);
+		}
 ',
       Doc => '
 
