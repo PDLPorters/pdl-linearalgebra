@@ -110,6 +110,8 @@ sub t {
   my $r = $m->SUPER::t;
   $conj ? $r->conj : $r;
 }
+
+*tricpy = \&PDL::LinearAlgebra::Complex::ctricpy;
 }
 ########################################################################
 
@@ -383,8 +385,8 @@ sub PDL::tritosym {
 	&_square;
 	my ($m, $upper, $conj) = @_;
 	my $b = $m->is_inplace ? $m : ref($m)->new_from_specification($m->type,$m->dims);
-	($conj ? $m->conj : $m)->_call_method('tricpy', $upper, $b->t);
-	$m->_call_method('tricpy', $upper, $b) unless (!$conj && $m->is_inplace(0));
+	($conj ? $m->conj : $m)->tricpy($upper, $b->t);
+	$m->tricpy($upper, $b) unless (!$conj && $m->is_inplace(0));
 	$b->im->diagonal(0,1) .= 0 if $conj;
 	$b;
 }
@@ -2839,12 +2841,12 @@ sub PDL::Complex::mqr {
 		if ($dims[1] < $dims[2] && !$full){
 			$r = PDL::Complex->new_from_specification($m->type, 2, $min, $min);
 			$r .= 0;
-			$m->t->(,,:($min-1))->ctricpy(0,$r);
+			$m->t->(,,:($min-1))->tricpy(0,$r);
 		}
 		else{
 			$r = PDL::Complex->new_from_specification($m->type, 2, $dims[1],$dims[2]);
 			$r .= 0;
-			$m->t->ctricpy(0,$r);
+			$m->t->tricpy(0,$r);
 		}
 	}
 	return ($q->t->sever, $r, $info);
@@ -2960,7 +2962,7 @@ sub PDL::Complex::mrq {
 		if ($dims[1] > $dims[2] && $full){
 			$r = PDL::Complex->new_from_specification($m->type,2,$dims[1],$dims[2]);
 			$r .= 0;
-			$m->t->ctricpy(0,$r);
+			$m->t->tricpy(0,$r);
 			$r(,:($min-1),:($min-1))->diagonal(1,2) .= 0;
 		}
 		elsif ($dims[1] < $dims[2]){
@@ -2968,13 +2970,13 @@ sub PDL::Complex::mrq {
 			$temp .= 0;
 			$temp(,-$min:, :) .= $m->t;
 			$r = PDL::zeroes($temp);
-			$temp->ctricpy(0,$r);
+			$temp->tricpy(0,$r);
 			$r = $r(,-$min:, :)->sever;
 		}
 		else{
 			$r = PDL::Complex->new_from_specification($m->type, 2,$min, $min);
 			$r .= 0;
-			$m->t->(,($dims[1] - $dims[2]):, :)->ctricpy(0,$r);
+			$m->t->(,($dims[1] - $dims[2]):, :)->tricpy(0,$r);
 		}
 	}
 	return ($r, $q->t->sever, $info);
@@ -3091,7 +3093,7 @@ sub PDL::Complex::mql{
 		if ($dims[1] < $dims[2] && $full){
 			$l = PDL::Complex->new_from_specification($m->type, 2, $dims[1], $dims[2]);
 			$l .= 0;
-			$m->t->ctricpy(1,$l);
+			$m->t->tricpy(1,$l);
 			$l(,:($min-1),:($min-1))->diagonal(1,2) .= 0;
 		}
 		elsif ($dims[1] > $dims[2]){
@@ -3099,13 +3101,13 @@ sub PDL::Complex::mql{
 			$temp .= 0;
 			$temp(,, -$dims[2]:) .= $m->t;
 			$l = PDL::zeroes($temp);
-			$temp->ctricpy(1,$l);
+			$temp->tricpy(1,$l);
 			$l = $l(,, -$dims[2]:)->sever;
 		}
 		else{
 			$l = PDL::Complex->new_from_specification($m->type, 2, $min, $min);
 			$l .= 0;
-			$m->t->(,,($dims[2]-$min):)->ctricpy(1,$l);
+			$m->t->(,,($dims[2]-$min):)->tricpy(1,$l);
 		}
 	}
 	return ($q->t->sever, $l, $info);
@@ -3214,12 +3216,12 @@ sub PDL::Complex::mlq{
 		if ($dims[1] > $dims[2] && !$full){
 			$l = PDL::Complex->new_from_specification($m->type, 2, $dims[2], $dims[2]);
 			$l .= 0;
-			$m->t->(,:($min-1))->ctricpy(1,$l);
+			$m->t->(,:($min-1))->tricpy(1,$l);
 		}
 		else{
 			$l = PDL::Complex->new_from_specification($m->type, 2, $dims[1], $dims[2]);
 			$l .= 0;
-			$m->t->ctricpy(1,$l);
+			$m->t->tricpy(1,$l);
 		}
 	}
 	return ($l, $q->t->sever, $info);

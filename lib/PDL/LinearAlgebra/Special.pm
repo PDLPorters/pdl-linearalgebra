@@ -115,7 +115,7 @@ sub PDL::Complex::mtri {
 		unless( @dims >= 3);
 
 	my $b = PDL::zeroes $m;
-	$m->ctricpy($upper, $b);
+	$m->tricpy($upper, $b);
 	$b;
 }
 

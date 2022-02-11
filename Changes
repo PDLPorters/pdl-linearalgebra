@@ -1,6 +1,7 @@
 - now 64-bit safe
 - t, issym, tritosym method for complex now defaults to not conjugate
 - various memory-management bugs fixed
+- PDL::Complex::tricpy now alias to ctricpy
 
 0.26 2021-11-14
 - Reversible now called TwoWay
