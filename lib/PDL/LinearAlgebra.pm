@@ -98,7 +98,7 @@ sub norm {
 		$m = PDL::Complex::Cscale($m,1/$ret->dummy(0))->reshape(-1);
 		$index = $m->Cabs->maximum_ind;
 		$scale = $m->mv(0,-1)->index($index)->mv(-1,0);
-		$scale= $scale->Cconj/$scale->Cabs;
+		$scale= $scale->conj/$scale->Cabs;
 		return $trans ? $m->t*$scale->dummy(2) : $m*$scale->dummy(2)->t;
 	}
 	return $trans ? PDL::Complex::Cscale($m->t,1/$ret->dummy(0)->xchg(0,1))->reshape(-1) :
@@ -108,7 +108,7 @@ sub norm {
 sub t {
   my ($m, $conj) = @_;
   my $r = $m->SUPER::t;
-  $conj ? PDL::Complex::Cconj($r) : $r;
+  $conj ? $r->conj : $r;
 }
 }
 ########################################################################
@@ -381,25 +381,14 @@ Uses L<tricpy|PDL::LinearAlgebra::Real/tricpy> or L<ctricpy|PDL::LinearAlgebra::
 
 =cut
 
-sub tritosym {shift->tritosym(@_)}
-
+*tritosym = \&PDL::tritosym;
 sub PDL::tritosym {
-	&_square;
-	my ($m, $upper) = @_;
-	my $b = $m->is_inplace ? $m : ref($m)->new_from_specification($m->type,$m->dims);
-	$m->tricpy($upper, $b) unless $m->is_inplace(0);
-	$m->tricpy($upper, $b->t);
-	$b;
-}
-
-sub PDL::Complex::tritosym {
 	&_square;
 	my ($m, $upper, $conj) = @_;
 	my $b = $m->is_inplace ? $m : ref($m)->new_from_specification($m->type,$m->dims);
-	$conj ? PDL::Complex::Cconj($m)->ctricpy($upper, $b->t) :
-			$m->ctricpy($upper, $b->t);
-	$m->ctricpy($upper, $b) unless (!$conj && $m->is_inplace(0));
-	$b((1),)->diagonal(0,1) .= 0 if $conj;
+	($conj ? $m->conj : $m)->_call_method('tricpy', $upper, $b->t);
+	$m->_call_method('tricpy', $upper, $b) unless (!$conj && $m->is_inplace(0));
+	$b->im->diagonal(0,1) .= 0 if $conj;
 	$b;
 }
 
