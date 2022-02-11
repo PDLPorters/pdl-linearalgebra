@@ -354,10 +354,7 @@ sub PDL::diag {
 	else{$z = $a->diagonal(@diag_args);}
 	$a->isa('PDL::Complex') ? $z->complex : $z;
 }
-
-if ($^V and $^V ge v5.6.0){
 use attributes 'PDL', \&PDL::diag, 'lvalue';
-}
 
 =head2 tritosym
 
