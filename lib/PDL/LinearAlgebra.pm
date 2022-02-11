@@ -1187,38 +1187,31 @@ Works on transposed array(s).
 
 =cut
 
-
 sub mschur {shift->mschur(@_)}
-sub PDL::mschur{
+sub PDL::mschur {
 	&_square;
-	my ($m, $jobv, $jobvl, $jobvr, $select_func, $mult,$norm) = @_;
-	my(@dims) = $m->dims;
-	barf("mschur: thread doesn't supported for selected vectors")
-		if ($select_func && @dims > 2 && ($jobv == 2 || $jobvl == 2 || $jobvr == 2));
-
-       	my ($w, $v, $info, $type, $select,$sdim, $vr,$vl, $mm, @ret, $select_f, $wi, $wtmp);
-
-	$mult = 1 unless defined($mult);
-	$norm = 1 unless defined($norm);
+	my $di = $_[0]->dims_internal;
+	my @di_vals = $_[0]->dims_internal_values;
+	my ($m, $jobv, $jobvl, $jobvr, $select_func, $mult, $norm) = @_;
+	my @dims = $m->dims;
+	barf("mschur: threading not supported for selected vectors")
+		if $select_func && @dims > 2+$di
+		  && (grep $_ == 2, $jobv, $jobvl, $jobvr);
+	$mult //= 1;
+	$norm //= 1;
        	$jobv = $jobvl = $jobvr = 0 unless wantarray;
-	$type = $m->type;
-	$select = $select_func ? pdl(long,1) : pdl(long,0);
-
-	$info = null;
-	$sdim = null;
-	$wtmp = null;
-       	$wi = null;
-
-	$mm = $m->is_inplace ? $m->t : $m->t->copy;
-	if ($select_func){
-	 	$select_f= sub{
-	 		&$select_func(PDL::Complex::complex(pdl($type,@_[0..1])));
-		};
-	}
-	$v = $jobv ? PDL->new_from_specification($type, $dims[1], $dims[1],@dims[2..$#dims]) :
-				pdl($type,0);
-	$mm->gees( $jobv, $select, $wtmp, $wi, $v, $sdim,$info, $select_f);
-
+	my $type = $m->type;
+	my $mm = $m->is_inplace ? $m->t : $m->t->copy;
+	my $v = !$jobv ? pdl($type,0) :
+		ref($m)->new_from_specification($type, @di_vals, @dims[1+$di,1+$di,2+$di..$#dims]);
+	$mm->_call_method('gees',
+		$jobv, $select_func ? 1 : 0,
+		my $wtmp = null, my $wi = null,
+		$v, my $sdim = null, my $info = null,
+		$select_func ? sub {
+			&$select_func(PDL::Complex::complex(pdl($type,@_[0..1])));
+		} : undef
+	);
 	if ($info->max > 0 && $_laerror){
 		my ($index, @list);
 		$index = which((($info > 0)+($info <=$dims[0]))==2);
@@ -1239,138 +1232,38 @@ sub PDL::mschur{
 			}
 		}
 	}
-	if ($select_func){
-		if ($jobvl == 2){
-			if(!$sdim){
-				push @ret, PDL::Complex->null;
-				$jobvl = 0;
-			}
-		}
-		if ($jobvr == 2){
-			if(!$sdim){
-				push @ret, PDL::Complex->null;
-				$jobvr = 0;
-			}
-		}
-		push @ret, $sdim;
-	}
+	my @ret = !$select_func || $sdim ? () : map PDL::Complex->null, grep $_ == 2, $jobvl, $jobvr;
+	push @ret, $sdim if $select_func;
+	$_ = 0 for grep $select_func && $_ == 2 && !$sdim, $jobvl, $jobvr;
 	if ($jobvl || $jobvr){
-		my ($sel, $job, $wtmpi, $wtmpr, $sdims);
-		unless ($jobvr && $jobvl){
-			$job = $jobvl ? 2 : 1;
-		}
-		if ($select_func){
-			if ($jobvl == 1 || $jobvr == 1 || $mult){
-				$sdims = null;
-				if ($jobv){
-					$vr = $v->copy if $jobvr;
-					$vl = $v->copy if $jobvl;
-				}
-				else{
-					$vr = PDL->new_from_specification($type, $dims[1], $dims[1],@dims[2..$#dims]) if $jobvr;
-					$vl = PDL->new_from_specification($type, $dims[1], $dims[1],@dims[2..$#dims]) if $jobvl;
-					$mult = 0;
-				}
-				$mm->trevc($job, $mult, $sel, $vl, $vr, $sdims, my $infos=null);
-				if ($jobvr){
-					if($norm){
-						(undef,$vr) = $wtmp->cplx_eigen($wi,$vr,1);
-						unshift @ret, $jobvr == 2 ? $vr(,,:($sdim-1))->norm(1,1) : $vr->norm(1,1);
-
-					}
-					else{
-						(undef,$vr) = $wtmp->cplx_eigen($wi,$vr->t,0);
-						unshift @ret, $jobvr == 2 ? $vr(,:($sdim-1))->sever : $vr;
-					}
-				}
-				if ($jobvl){
-					if($norm){
-						(undef,$vl) = $wtmp->cplx_eigen($wi,$vl,1);
-						unshift @ret, $jobvl == 2 ? $vl(,,:($sdim-1))->norm(1,1) : $vl->norm(1,1);
-					}
-					else{
-						(undef,$vl) = $wtmp->cplx_eigen($wi,$vl->t,0);
-						unshift @ret, $jobvl == 2 ? $vl(,:($sdim-1))->sever : $vl;
-					}
-				}
-			}
-			else{
-				$vr = PDL->new_from_specification($type, $dims[1], $sdim) if $jobvr;
-				$vl = PDL->new_from_specification($type, $dims[1], $sdim) if $jobvl;
-				$sel = zeroes($dims[1]);
-				$sel(:($sdim-1)) .= 1;
-				$mm->trevc($job, 2, $sel, $vl, $vr, $sdim, my $infos = null);
-				$wtmpr = $wtmp(:($sdim-1));
-				$wtmpi = $wi(:($sdim-1));
-				if ($jobvr){
-					if ($norm){
-						(undef,$vr) = $wtmpr->cplx_eigen($wtmpi,$vr,1);
-						unshift @ret, $vr->norm(1,1);
-					}
-					else{
-						(undef,$vr) = $wtmpr->cplx_eigen($wtmpi,$vr->t,0);
-						unshift @ret,$vr;
-					}
-				}
-				if ($jobvl){
-					if ($norm){
-						(undef,$vl) = $wtmpr->cplx_eigen($wtmpi,$vl,1);
-						unshift @ret, $vl->norm(1,1);
-
-					}
-					else{
-						(undef,$vl) = $wtmpr->cplx_eigen($wtmpi,$vl->t,0);
-						unshift @ret, $vl;
-					}
-				}
-			}
-		}
-		else{
-			if ($jobv){
-				$vr = $v->copy if $jobvr;
-				$vl = $v->copy if $jobvl;
-			}
-			else{
-				$vr = PDL->new_from_specification($type, $dims[1], $dims[1],@dims[2..$#dims]) if $jobvr;
-				$vl = PDL->new_from_specification($type, $dims[1], $dims[1],@dims[2..$#dims]) if $jobvl;
-				$mult = 0;
-			}
-			$mm->trevc($job, $mult, $sel, $vl, $vr, $sdim, my $infos=null);
-			if ($jobvr){
-				if ($norm){
-					(undef,$vr) = $wtmp->cplx_eigen($wi,$vr,1);
-					unshift @ret, $vr->norm(1,1);
-				}
-				else{
-					(undef,$vr) = $wtmp->cplx_eigen($wi,$vr->t,0);
-					unshift @ret, $vr;
-				}
-			}
-			if ($jobvl){
-				if ($norm){
-					(undef,$vl) = $wtmp->cplx_eigen($wi,$vl,1);
-					unshift @ret, $vl->norm(1,1);
-				}
-				else{
-					(undef,$vl) = $wtmp->cplx_eigen($wi,$vl->t,0);
-					unshift @ret, $vl;
-				}
-			}
+		my $job = $jobvr && $jobvl ? undef : $jobvl ? 2 : 1;
+		my $is_mult = $jobvl == 1 || $jobvr == 1 || $mult;
+		my ($vr, $vl) = map !$_ ? undef :
+			(!$is_mult && $select_func) ? ref($m)->new_from_specification($type, @di_vals, $dims[1+$di], $sdim) :
+			$jobv ? $v->copy : ref($m)->new_from_specification($type, @di_vals, @dims[1+$di,1+$di,2+$di..$#dims]),
+				$jobvr, $jobvl;
+		$mult = ($select_func && !$is_mult) ? 2 : !$jobv ? 0 : $mult;
+		my $sel = ($select_func && !$is_mult) ? zeroes($dims[1]) : undef;
+		$sel(:($sdim-1)) .= 1 if defined $sel;
+		$mm->_call_method('trevc', $job, $mult, $sel, $vl, $vr, $sdim, my $infos=null);
+		my ($wtmpr, $wtmpi) = map $is_mult || !$select_func ? $_ : $_(:($sdim-1)), $wtmp, $wi;
+		for (grep $_->[0], [$jobvr,$vr], [$jobvl,$vl]) {
+			(undef,my $val) = $wtmpr->cplx_eigen($wtmpi,$norm?($_->[1],1):($_->[1]->t,0));
+			unshift(@ret, $norm ? $val->norm(1,1) : $val), next if !$is_mult or !$select_func;
+			$val = $val(,,:($sdim-1))->sever if $_->[0] == 2;
+			$val = $val->norm(1,1) if $norm;
+			unshift @ret, $val;
 		}
 	}
-	$w = PDL::Complex::ecplx ($wtmp, $wi);
-
+	my $w = PDL::Complex::ecplx ($wtmp, $wi);
 	if ($jobv == 2 && $select_func) {
-		$v = $sdim > 0 ? $v->t->(:($sdim-1),)->sever : null;
-		unshift @ret,$v;
+		unshift @ret, $sdim > 0 ? $v->t->(:($sdim-1),)->sever : null;
 	}
 	elsif($jobv){
-		$v =  $v->t->sever;
-		unshift @ret,$v;
+		unshift @ret, $v->t->sever;
 	}
 	$m = $mm->t->sever unless $m->is_inplace(0);
 	return wantarray ? ($m, $w, @ret, $info) : $m;
-
 }
 
 sub PDL::Complex::mschur {
@@ -1379,25 +1272,19 @@ sub PDL::Complex::mschur {
 	my(@dims) = $m->dims;
 	barf("mschur: thread doesn't supported for selected vectors")
 		if ($select_func && @dims > 3 && ($jobv == 2 || $jobvl == 2 || $jobvr == 2));
-
        	my ($w, $v, $info, $type, $select,$sdim, $vr,$vl, $mm, @ret);
-
 	$mult = 1 unless defined($mult);
 	$norm = 1 unless defined($norm);
        	$jobv = $jobvl = $jobvr = 0 unless wantarray;
 	$type = $m->type;
        	$select = $select_func ? pdl(long,1) : pdl(long,0);
-
        	$info = null;
        	$sdim = null;
-
 	$mm = $m->is_inplace ? $m->t : $m->t->copy;
 	$w = PDL::Complex->null;
 	$v = $jobv ? PDL::Complex->new_from_specification($type, 2, $dims[1], $dims[1],@dims[3..$#dims]) :
 				pdl($type,[0,0]);
-
-	$mm->cgees( $jobv, $select, $w, $v, $sdim, $info, $select_func);
-
+	$mm->_call_method('gees', $jobv, $select, $w, $v, $sdim, $info, $select_func);
 	if ($info->max > 0 && $_laerror){
 		my ($index, @list);
 		$index = which((($info > 0)+($info <=$dims[1]))==2);
@@ -1422,7 +1309,6 @@ sub PDL::Complex::mschur {
 			}
 		}
 	}
-
 	if ($select_func){
 		if ($jobvl == 2){
 			if (!$sdim){
@@ -1509,12 +1395,10 @@ sub PDL::Complex::mschur {
 		}
 	}
 	if ($jobv == 2 && $select_func) {
-		$v = $sdim > 0 ? $v->t->(,:($sdim-1),) ->sever : PDL::Complex->null;
-		unshift @ret,$v;
+		unshift @ret, $sdim > 0 ? $v->t->(,:($sdim-1),) ->sever : PDL::Complex->null;
 	}
 	elsif($jobv){
-		$v =  $v->t->sever;
-		unshift @ret,$v;
+		unshift @ret, $v->t->sever;
 	}
 	$m = $mm->t->sever unless $m->is_inplace(0);
 	return wantarray ? ($m, $w, @ret, $info) : $m;
