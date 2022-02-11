@@ -228,7 +228,7 @@ sub PDL::t {
 
  PDL = issym(PDL, SCALAR|PDL(tol),SCALAR(hermitian))
  tol : tolerance value, default: 1e-8 for double else 1e-5
- hermitian : Hermitian = 1 | Symmetric = 0, default = 1;
+ hermitian : Hermitian = 1 | Symmetric = 0, default = 0;
 
 =for ref
 
@@ -289,7 +289,6 @@ sub issym {shift->issym(@_)}
 sub PDL::issym {
 	&_square;
 	my ($m, $tol, $conj) = @_;
-	$conj //= !$m->type->real || $m->isa('PDL::Complex');
 	$tol //= ($m->type >= double) ? 1e-8 : 1e-5;
 	$m = $m - $m->t($conj);
         $m = $m->clump(2) if $m->isa('PDL::Complex');
@@ -372,7 +371,7 @@ Uses L<tricpy|PDL::LinearAlgebra::Real/tricpy> or L<ctricpy|PDL::LinearAlgebra::
 
  PDL = tritosym(PDL, SCALAR(uplo), SCALAR(conj))
  uplo : UPPER = 0 | LOWER = 1, default = 0
- conj : Hermitian = 1 | Symmetric = 0, default = 1;
+ conj : Hermitian = 1 | Symmetric = 0, default = 0;
 
 =for example
 
@@ -397,7 +396,6 @@ sub PDL::Complex::tritosym {
 	&_square;
 	my ($m, $upper, $conj) = @_;
 	my $b = $m->is_inplace ? $m : ref($m)->new_from_specification($m->type,$m->dims);
-	$conj = 1 unless defined($conj);
 	$conj ? PDL::Complex::Cconj($m)->ctricpy($upper, $b->t) :
 			$m->ctricpy($upper, $b->t);
 	$m->ctricpy($upper, $b) unless (!$conj && $m->is_inplace(0));
