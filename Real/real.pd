@@ -10600,31 +10600,22 @@ pp_def(
 	Pars => 'eigreval(n);eigimval(n); eigvec(n,p);int fortran();[o]cplx_val(c=2,n);[o]cplx_vec(c=2,n,p)',
 	Code => '
 	  register PDL_Indx i,j;
-	  PDL_Indx index;
-
 	  if ($fortran() && $SIZE(n) != $SIZE(p))
 		  $CROAK("Fortran storage type needs square eigvec!");
-	  if ($fortran())
-	  {
-		  for(i = 0; i < $SIZE(n);i++)
-		  {
+	  if ($fortran()) {
+		  for(i = 0; i < $SIZE(n);i++) {
 			 $cplx_val(c=>0,n=>i) = $eigreval(n=>i);
 			 $cplx_val(c=>1,n=>i) = $eigimval(n=>i);
-			 if ($eigimval(n=>i) == 0)
-			 {
-				 for (j = 0; j < $SIZE(p); j++)
-				 {
+			 if ($eigimval(n=>i) == 0) {
+				 for (j = 0; j < $SIZE(p); j++) {
 					$cplx_vec(c=>0,n=>j,p=>i) = $eigvec(n=>j,p=>i);
 					$cplx_vec(c=>1,n=>j,p=>i) = 0;
 				 }
-			 }
-			 else
-			 {
-				 index = i+1;
+			 } else {
+				 PDL_Indx index = i+1;
 				 $cplx_val(c=>0,n=>index) = $eigreval(n=>index);
 				 $cplx_val(c=>1,n=>index) = $eigimval(n=>index);
-				 for (j = 0; j < $SIZE(p); j++)
-				 {
+				 for (j = 0; j < $SIZE(p); j++) {
 					$cplx_vec(c=>0,n=>j,p=>i) = $cplx_vec(c=>0,n=>j,p=>index) = $eigvec(n=>j,p=>i);
 					$cplx_vec(c=>1,n=>j,p=>i) = $eigvec(n=>j,p=>index);
 					$cplx_vec(c=>1,n=>j,p=>index) = - $eigvec(n=>j,p=>index);
@@ -10632,27 +10623,20 @@ pp_def(
 				 i = index;
 			 }
 		  }
-	  }
-	  else{
-		  for(i = 0; i < $SIZE(n);i++)
-		  {
+	  } else {
+		  for(i = 0; i < $SIZE(n);i++) {
 			 $cplx_val(c=>0,n=>i) = $eigreval(n=>i);
 			 $cplx_val(c=>1,n=>i) = $eigimval(n=>i);
-			 if ($eigimval(n=>i) == 0)
-			 {
-				 for (j = 0; j < $SIZE(p); j++)
-				 {
+			 if ($eigimval(n=>i) == 0) {
+				 for (j = 0; j < $SIZE(p); j++) {
 					$cplx_vec(c=>0,n=>i,p=>j) = $eigvec(n=>i,p=>j);
 					$cplx_vec(c=>1,n=>i,p=>j) = 0;
 				 }
-			 }
-			 else
-			 {
-				 index = i+1;
+			 } else {
+				 PDL_Indx index = i+1;
 				 $cplx_val(c=>0,n=>index) = $eigreval(n=>index);
 				 $cplx_val(c=>1,n=>index) = $eigimval(n=>index);
-				 for (j = 0; j < $SIZE(p); j++)
-				 {
+				 for (j = 0; j < $SIZE(p); j++) {
 					$cplx_vec(c=>0,n=>i,p=>j) = $cplx_vec(c=>0,n=>index,p=>j) = $eigvec(n=>i,p=>j);
 					$cplx_vec(c=>1,n=>i,p=>j) = $eigvec(n=>index,p=>j);
 					$cplx_vec(c=>1,n=>index,p=>j) = - $eigvec(n=>index,p=>j);
@@ -10661,7 +10645,6 @@ pp_def(
 			 }
 		  }
 	  }
-
 	',
 	PMCode => <<'EOF',
 sub PDL::cplx_eigen {
@@ -10677,11 +10660,7 @@ EOF
 Output complex eigen-values/vectors from eigen-values/vectors
 as computed by geev or geevx.
 'fortran' means fortran storage type.
-
-=cut
-
 EOT
-
 );
 
 

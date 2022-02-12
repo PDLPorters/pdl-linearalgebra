@@ -1283,7 +1283,7 @@ sub PDL::Complex::mschur {
 	$mm = $m->is_inplace ? $m->t : $m->t->copy;
 	$w = PDL::Complex->null;
 	$v = $jobv ? PDL::Complex->new_from_specification($type, 2, $dims[1], $dims[1],@dims[3..$#dims]) :
-				pdl($type,[0,0]);
+				PDL::Complex::r2C(pdl($type,0));
 	$mm->_call_method('gees', $jobv, $select, $w, $v, $sdim, $info, $select_func);
 	if ($info->max > 0 && $_laerror){
 		my ($index, @list);
