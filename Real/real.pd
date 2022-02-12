@@ -10608,10 +10608,10 @@ pp_def(
 			  croak("Fortran storage type needs square eigvec!");
 		  for(i = 0; i < $SIZE(p);i++)
 		  {
+			 $cplx_val(q=>0,n=>i) = $eigreval(n=>i);
+			 $cplx_val(q=>1,n=>i) = $eigimval(n=>i);
 			 if ($eigimval(n=>i) == 0)
 			 {
-				 $cplx_val(q=>0,n=>i) = $eigreval(n=>i);
-	 			 $cplx_val(q=>1,n=>i) = $eigimval(n=>i);
 				 for (j = 0; j < $SIZE(n); j++)
 				 {
 					$cplx_vec(r=>0,n=>j,p=>i) = $eigvec(n=>j,p=>i);
@@ -10621,8 +10621,6 @@ pp_def(
 			 else
 			 {
 				 index = i+1;
-				 $cplx_val(q=>0,n=>i) = $eigreval(n=>i);
-	 			 $cplx_val(q=>1,n=>i) = $eigimval(n=>i);
 				 $cplx_val(q=>0,n=>index) = $eigreval(n=>index);
 	 			 $cplx_val(q=>1,n=>index) = $eigimval(n=>index);
 				 for (j = 0; j < $SIZE(n); j++)
@@ -10638,10 +10636,10 @@ pp_def(
 	  else{
 		  for(i = 0; i < $SIZE(n);i++)
 		  {
+			 $cplx_val(q=>0,n=>i) = $eigreval(n=>i);
+			 $cplx_val(q=>1,n=>i) = $eigimval(n=>i);
 			 if ($eigimval(n=>i) == 0)
 			 {
-				 $cplx_val(q=>0,n=>i) = $eigreval(n=>i);
-	 			 $cplx_val(q=>1,n=>i) = $eigimval(n=>i);
 				 for (j = 0; j < $SIZE(p); j++)
 				 {
 					$cplx_vec(r=>0,n=>i,p=>j) = $eigvec(n=>i,p=>j);
@@ -10651,8 +10649,6 @@ pp_def(
 			 else
 			 {
 				 index = i+1;
-				 $cplx_val(q=>0,n=>i) = $eigreval(n=>i);
-	 			 $cplx_val(q=>1,n=>i) = $eigimval(n=>i);
 				 $cplx_val(q=>0,n=>index) = $eigreval(n=>index);
 	 			 $cplx_val(q=>1,n=>index) = $eigimval(n=>index);
 				 for (j = 0; j < $SIZE(p); j++)
