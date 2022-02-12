@@ -60,7 +60,7 @@ my %float2native = (F => 'G', D => 'C');
 sub pp_defc {
   my ($function, %hash) = @_;
   $hash{GenericTypes} ||= [qw(F D)];
-  my $doc = $hash{Doc} || "\n=for ref\n\nComplex version of $function\n\n";
+  my $doc = $hash{Doc} || "\n=for ref\n\nComplex version of L<PDL::LinearAlgebra::Real/$function>\n\n";
   $hash{Doc} = undef;
   my $decl = delete $hash{_decl};
   $decl =~ s/\$GENERIC\(\)\s*\*/void */g; # dodge float vs float complex ptr problem
@@ -81,12 +81,13 @@ sub pp_defc {
   }
   pp_def("__Nc$function", %hash2);
   pp_add_exported("c$function");
+  my $sig = join ';', grep defined, @hash{qw(Pars OtherPars)};
   pp_addpm(<<EOF);
 =head2 c$function
 
 =for sig
 
-  Signature: ($hash{Pars})
+  Signature: ($sig)
 
 $doc
 
@@ -318,7 +319,7 @@ Doc=>'
 
 =for ref
 
-Complex version of gesvd.
+Complex version of L<PDL::LinearAlgebra::Real/gesvd>.
 
 The SVD is written
 
@@ -411,7 +412,7 @@ Doc=>'
 
 =for ref
 
-Complex version of gesdd.
+Complex version of L<PDL::LinearAlgebra::Real/gesdd>.
 
 The SVD is written
 
@@ -940,7 +941,7 @@ EOF
 
 =for ref
 
-Complex version of gees
+Complex version of L<PDL::LinearAlgebra::Real/gees>
 
     select_func:
             If sort = 1, select_func is used to select eigenvalues to sort
@@ -1052,7 +1053,7 @@ EOF
 
 =for ref
 
-Complex version of geesx
+Complex version of L<PDL::LinearAlgebra::Real/geesx>
 
     select_func:
             If sort = 1, select_func is used to select eigenvalues to sort
@@ -1166,7 +1167,7 @@ Doc=>'
 
 =for ref
 
-Complex version of ggees
+Complex version of L<PDL::LinearAlgebra::Real/ggees>
 
     select_func:
             If sort = 1, select_func is used to select eigenvalues to sort
@@ -1300,7 +1301,7 @@ Doc=>'
 
 =for ref
 
-Complex version of ggeesx
+Complex version of L<PDL::LinearAlgebra::Real/ggeesx>
 
     select_func:
             If sort = 1, select_func is used to select eigenvalues to sort
@@ -1372,7 +1373,7 @@ Doc=>'
 
 =for ref
 
-Complex version of syev for Hermitian matrix
+Complex version of L<PDL::LinearAlgebra::Real/syev> for Hermitian matrix
 
 ');
 
@@ -1448,7 +1449,7 @@ Doc=>'
 
 =for ref
 
-Complex version of syevd for Hermitian matrix
+Complex version of L<PDL::LinearAlgebra::Real/syevd> for Hermitian matrix
 
 ');
 
@@ -1547,7 +1548,7 @@ Doc=>'
 
 =for ref
 
-Complex version of syevx for Hermitian matrix
+Complex version of L<PDL::LinearAlgebra::Real/syevx> for Hermitian matrix
 
 ');
 
@@ -1652,7 +1653,7 @@ Doc=>'
 
 =for ref
 
-Complex version of syevr for Hermitian matrix
+Complex version of L<PDL::LinearAlgebra::Real/syevr> for Hermitian matrix
 
 ');
 
@@ -1718,7 +1719,7 @@ Doc=>'
 
 =for ref
 
-Complex version of sygv for Hermitian matrix
+Complex version of L<PDL::LinearAlgebra::Real/sygv> for Hermitian matrix
 
 ');
 
@@ -1801,7 +1802,7 @@ Doc=>'
 
 =for ref
 
-Complex version of sygvd for Hermitian matrix
+Complex version of L<PDL::LinearAlgebra::Real/sygvd> for Hermitian matrix
 
 ');
 
@@ -1906,7 +1907,7 @@ Doc=>'
 
 =for ref
 
-Complex version of sygvx for Hermitian matrix
+Complex version of L<PDL::LinearAlgebra::Real/sygvx> for Hermitian matrix
 
 ');
 
@@ -2017,7 +2018,7 @@ Doc => '
 
 =for ref
 
-Complex version of gesvx.
+Complex version of L<PDL::LinearAlgebra::Real/gesvx>.
 
     trans:  Specifies the form of the system of equations:
             = 0:  A * X = B     (No transpose)   
@@ -2204,7 +2205,7 @@ Doc=>'
 
 =for ref
 
-Complex version of sysv for Hermitian matrix
+Complex version of L<PDL::LinearAlgebra::Real/sysv> for Hermitian matrix
 
 ');
 
@@ -2289,7 +2290,7 @@ Doc=>'
 
 =for ref
 
-Complex version of sysvx for Hermitian matrix
+Complex version of L<PDL::LinearAlgebra::Real/sysvx> for Hermitian matrix
 
 ');
 
@@ -2320,7 +2321,7 @@ Doc=>'
 
 =for ref
 
-Complex version of posv for Hermitian positive definite matrix
+Complex version of L<PDL::LinearAlgebra::Real/posv> for Hermitian positive definite matrix
 
 ');
 pp_defc("posvx",
@@ -2393,7 +2394,7 @@ Doc => '
 
 =for ref
 
-Complex version of posvx for Hermitian positive definite matrix
+Complex version of L<PDL::LinearAlgebra::Real/posvx> for Hermitian positive definite matrix
 
 ');
 
@@ -2453,7 +2454,7 @@ Doc=>'
 
 Solves overdetermined or underdetermined complex linear systems   
 involving an M-by-N matrix A, or its conjugate-transpose.
-Complex version of gels.
+Complex version of L<PDL::LinearAlgebra::Real/gels>.
 
     trans:  = 0: the linear system involves A;
             = 1: the linear system involves A**H.
@@ -2894,7 +2895,7 @@ Doc=>'
 
 =for ref
 
-Complex version of sytrf for Hermitian matrix
+Complex version of L<PDL::LinearAlgebra::Real/sytrf> for Hermitian matrix
 
 ');
 
@@ -2922,7 +2923,7 @@ Doc=>'
 
 =for ref
 
-Complex version of sytf2 for Hermitian matrix
+Complex version of L<PDL::LinearAlgebra::Real/sytf2> for Hermitian matrix
 
 ');
 
@@ -2949,7 +2950,7 @@ Doc=>'
 
 =for ref
 
-Complex version of potrf for Hermitian positive definite matrix
+Complex version of L<PDL::LinearAlgebra::Real/potrf> for Hermitian positive definite matrix
 
 ');
 
@@ -2976,7 +2977,7 @@ Doc => '
 
 =for ref
 
-Complex version of potf2 for Hermitian positive definite matrix
+Complex version of L<PDL::LinearAlgebra::Real/potf2> for Hermitian positive definite matrix
 
 ');
 
@@ -3067,7 +3068,7 @@ Doc => '
 
 =for ref
 
-Complex version of sytri for Hermitian matrix
+Complex version of L<PDL::LinearAlgebra::Real/sytri> for Hermitian matrix
 
 ');
 
@@ -3169,7 +3170,7 @@ EOF
 
 =for ref
 
-Complex version of getrs
+Complex version of L<PDL::LinearAlgebra::Real/getrs>
 
     Arguments   
     =========   
@@ -3233,7 +3234,7 @@ Doc => '
 
 =for ref
 
-Complex version of sytrs for Hermitian matrix
+Complex version of L<PDL::LinearAlgebra::Real/sytrs> for Hermitian matrix
 
 ');
 
@@ -3265,7 +3266,7 @@ Doc=>'
 
 =for ref
 
-Complex version of potrs for Hermitian positive definite matrix
+Complex version of L<PDL::LinearAlgebra::Real/potrs> for Hermitian positive definite matrix
 
 ');
 
@@ -3307,7 +3308,7 @@ EOF
 
 =for ref
 
-Complex version of trtrs
+Complex version of L<PDL::LinearAlgebra::Real/trtrs>
 
     Arguments   
     =========   
@@ -3360,7 +3361,7 @@ EOF
 
 =for ref
 
-Complex version of latrs
+Complex version of L<PDL::LinearAlgebra::Real/latrs>
 
     Arguments   
     =========   
@@ -3465,7 +3466,7 @@ Doc => '
 
 =for ref
 
-Complex version of sycon for Hermitian matrix
+Complex version of L<PDL::LinearAlgebra::Real/sycon> for Hermitian matrix
 
 ');
 
@@ -3503,7 +3504,7 @@ Doc => '
 
 =for ref
 
-Complex version of pocon for Hermitian positive definite matrix
+Complex version of L<PDL::LinearAlgebra::Real/pocon> for Hermitian positive definite matrix
 
 ');
 
@@ -3672,7 +3673,7 @@ EOF
 
 =for ref
 
-Complex version of orgqr
+Complex version of L<PDL::LinearAlgebra::Real/orgqr>
 
 ');
 
@@ -3734,7 +3735,7 @@ EOF
 
 =for ref
 
-Complex version of ormqr. Here trans = 1 means conjugate transpose.
+Complex version of L<PDL::LinearAlgebra::Real/ormqr>. Here trans = 1 means conjugate transpose.
 
 ');
 
@@ -3819,7 +3820,7 @@ EOF
 
 =for ref
 
-Complex version of orglq
+Complex version of L<PDL::LinearAlgebra::Real/orglq>
 
 ');
 
@@ -3880,7 +3881,7 @@ EOF
 
 =for ref
 
-Complex version of ormlq. Here trans = 1 means conjugate transpose.
+Complex version of L<PDL::LinearAlgebra::Real/ormlq>. Here trans = 1 means conjugate transpose.
 
 ');
 
@@ -3967,7 +3968,7 @@ EOF
 
 =for ref
 
-Complex version of orgql.
+Complex version of L<PDL::LinearAlgebra::Real/orgql>.
 
 ');
 
@@ -4028,7 +4029,7 @@ EOF
 
 =for ref
 
-Complex version of ormql. Here trans = 1 means conjugate transpose.
+Complex version of L<PDL::LinearAlgebra::Real/ormql>. Here trans = 1 means conjugate transpose.
 
 ');
 
@@ -4113,7 +4114,7 @@ EOF
 
 =for ref
 
-Complex version of orgrq.
+Complex version of L<PDL::LinearAlgebra::Real/orgrq>.
 
 ');
 
@@ -4174,7 +4175,7 @@ EOF
 
 =for ref
 
-Complex version of ormrq. Here trans = 1 means conjugate transpose.
+Complex version of L<PDL::LinearAlgebra::Real/ormrq>. Here trans = 1 means conjugate transpose.
 
 ');
 
@@ -4276,7 +4277,7 @@ EOF
 
 =for ref
 
-Complex version of ormrz. Here trans = 1 means conjugate transpose.
+Complex version of L<PDL::LinearAlgebra::Real/ormrz>. Here trans = 1 means conjugate transpose.
 
 ');
 
@@ -4366,7 +4367,7 @@ Doc=>'
 
 =for ref
 
-Complex version of orghr
+Complex version of L<PDL::LinearAlgebra::Real/orghr>
 
 ');
 
@@ -4742,7 +4743,7 @@ EOF
 
 =for ref
 
-Complex version of gemm. 
+Complex version of L<PDL::LinearAlgebra::Real/gemm>.
 
     Arguments   
     =========   
@@ -4804,7 +4805,7 @@ Doc=>'
 
 =for ref
 
-Complex version of rmgemm. 
+Complex version of L<PDL::LinearAlgebra::Real/rmgemm>.
 
     Arguments   
     =========   
@@ -4986,7 +4987,7 @@ Doc=>'
 
 =for ref
 
-Complex version of rmsyrk
+Complex version of L<PDL::LinearAlgebra::Real/rmsyrk>
 
 ');
 }
