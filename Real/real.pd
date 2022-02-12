@@ -10605,7 +10605,7 @@ pp_def(
 	  if ($fortran())
 	  {
 		  if ($SIZE(n) != $SIZE(p))
-			  croak("Fortran storage type needs square eigvec!");
+			  $CROAK("Fortran storage type needs square eigvec!");
 		  for(i = 0; i < $SIZE(p);i++)
 		  {
 			 $cplx_val(q=>0,n=>i) = $eigreval(n=>i);
