@@ -10602,17 +10602,17 @@ pp_def(
 	  register PDL_Indx i,j;
 	  PDL_Indx index;
 
+	  if ($fortran() && $SIZE(n) != $SIZE(p))
+		  $CROAK("Fortran storage type needs square eigvec!");
 	  if ($fortran())
 	  {
-		  if ($SIZE(n) != $SIZE(p))
-			  $CROAK("Fortran storage type needs square eigvec!");
-		  for(i = 0; i < $SIZE(p);i++)
+		  for(i = 0; i < $SIZE(n);i++)
 		  {
 			 $cplx_val(c=>0,n=>i) = $eigreval(n=>i);
 			 $cplx_val(c=>1,n=>i) = $eigimval(n=>i);
 			 if ($eigimval(n=>i) == 0)
 			 {
-				 for (j = 0; j < $SIZE(n); j++)
+				 for (j = 0; j < $SIZE(p); j++)
 				 {
 					$cplx_vec(c=>0,n=>j,p=>i) = $eigvec(n=>j,p=>i);
 					$cplx_vec(c=>1,n=>j,p=>i) = 0;
@@ -10623,7 +10623,7 @@ pp_def(
 				 index = i+1;
 				 $cplx_val(c=>0,n=>index) = $eigreval(n=>index);
 				 $cplx_val(c=>1,n=>index) = $eigimval(n=>index);
-				 for (j = 0; j < $SIZE(n); j++)
+				 for (j = 0; j < $SIZE(p); j++)
 				 {
 					$cplx_vec(c=>0,n=>j,p=>i) = $cplx_vec(c=>0,n=>j,p=>index) = $eigvec(n=>j,p=>i);
 					$cplx_vec(c=>1,n=>j,p=>i) = $eigvec(n=>j,p=>index);
