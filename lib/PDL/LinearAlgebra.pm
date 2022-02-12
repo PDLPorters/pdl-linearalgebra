@@ -285,6 +285,29 @@ sub _error {
   my @list = (which($info > 0)+1)->list;
   laerror(sprintf $msg . ": \$info = $info", "@list");
 }
+sub _error_schur {
+  my ($info, $select_func, $N, $func, $algo) = @_;
+  return unless $info->max > 0 && $_laerror;
+  my $index = which((($info > 0)+($info <=$N))==2);
+  if (!$index->isempty) {
+    laerror("$func: The $algo algorithm failed to converge for matrix (PDL(s) @{[$index->list]}): \$info = $info");
+    print "Returning converged eigenvalues\n";
+  }
+  return if !$select_func;
+  if (!($index = which($info == $N+1))->isempty) {
+    if ($algo eq 'QR') {
+      laerror("$func: The eigenvalues could not be reordered because some\n".
+	"eigenvalues were too close to separate (the problem".
+	" is very ill-conditioned) for PDL(s) @{[$index->list]}: \$info = $info");
+    } else {
+      laerror("$func: Error in hgeqz for matrix (PDL(s) @{[$index->list]}): \$info = $info");
+    }
+  }
+  if (!($index = which($info == $N+2))->isempty) {
+    warn("$func: The Schur form no longer satisfy select_func = 1\n because of roundoff".
+      " or underflow (PDL(s) @{[$index->list]})\n");
+  }
+}
 
 *issym = \&PDL::issym;
 sub PDL::issym {
@@ -1099,7 +1122,6 @@ Works on transposed array.
 =cut
 
 *mhessen = \&PDL::mhessen;
-
 sub PDL::mhessen {
 	&_square;
 	my $m = shift;
@@ -1212,26 +1234,7 @@ sub PDL::mschur {
 			&$select_func(PDL::Complex::complex(pdl($type,@_[0..1])));
 		} : undef
 	);
-	if ($info->max > 0 && $_laerror){
-		my ($index, @list);
-		$index = which((($info > 0)+($info <=$dims[0]))==2);
-		_error($info, "mschur: The QR algorithm failed to converge for matrix (PDL(s) %s)");
-		if ($select_func){
-			$index = which((($info > 0)+($info == ($dims[0]+1) ))==2);
-			unless ($index->isempty){
-				@list = $index->list;
-				laerror("mschur: The eigenvalues could not be reordered because some\n".
-                			     "eigenvalues were too close to separate (the problem".
-	        		             "is very ill-conditioned) for PDL(s) @list: \$info = $info");
-			}
-			$index = which((($info > 0)+($info > ($dims[0]+1) ))==2);
-			unless ($index->isempty){
-				@list = $index->list;
-				warn("mschur: The Schur form no longer satisfy select_func = 1\n because of roundoff".
-					"or underflow (PDL(s) @list)\n");
-			}
-		}
-	}
+	_error_schur($info, $select_func, $dims[$di], 'mschur', 'QR');
 	my @ret = !$select_func || $sdim ? () : map PDL::Complex->null, grep $_ == 2, $jobvl, $jobvr;
 	push @ret, $sdim if $select_func;
 	$_ = 0 for grep $select_func && $_ == 2 && !$sdim, $jobvl, $jobvr;
@@ -1268,6 +1271,7 @@ sub PDL::mschur {
 
 sub PDL::Complex::mschur {
 	&_square;
+	my $di = $_[0]->dims_internal;
 	my($m, $jobv, $jobvl, $jobvr, $select_func, $mult, $norm) = @_;
 	my(@dims) = $m->dims;
 	barf("mschur: thread doesn't supported for selected vectors")
@@ -1285,30 +1289,7 @@ sub PDL::Complex::mschur {
 	$v = $jobv ? PDL::Complex->new_from_specification($type, 2, $dims[1], $dims[1],@dims[3..$#dims]) :
 				PDL::Complex::r2C(pdl($type,0));
 	$mm->_call_method('gees', $jobv, $select, $w, $v, $sdim, $info, $select_func);
-	if ($info->max > 0 && $_laerror){
-		my ($index, @list);
-		$index = which((($info > 0)+($info <=$dims[1]))==2);
-		unless ($index->isempty){
-			@list = $index->list;
-			laerror("mschur: The QR algorithm failed to converge for matrix (PDL(s) @list): \$info = $info");
-			print ("Returning converged eigenvalues\n");
-		}
-		if ($select_func){
-			$index = which((($info > 0)+($info == ($dims[1]+1) ))==2);
-			unless ($index->isempty){
-				@list = $index->list;
-				laerror("mschur: The eigenvalues could not be reordered because some\n".
-                			     "eigenvalues were too close to separate (the problem".
-	        		             "is very ill-conditioned) for PDL(s) @list: \$info = $info");
-			}
-			$index = which((($info > 0)+($info > ($dims[1]+1) ))==2);
-			unless ($index->isempty){
-				@list = $index->list;
-				warn("mschur: The Schur form no longer satisfy select_func = 1\n because of roundoff".
-					"or underflow (PDL(s) @list)\n");
-			}
-		}
-	}
+	_error_schur($info, $select_func, $dims[$di], 'mschur', 'QR');
 	if ($select_func){
 		if ($jobvl == 2){
 			if (!$sdim){
@@ -1470,6 +1451,7 @@ Works on transposed array.
 
 sub PDL::mschurx {
 	&_square;
+	my $di = $_[0]->dims_internal;
 	my($m, $jobv, $jobvl, $jobvr, $select_func, $sense, $mult,$norm) = @_;
 	my(@dims) = $m->dims;
 	my ($w, $v, %ret, $vl, $vr);
@@ -1486,18 +1468,7 @@ sub PDL::mschurx {
 		$v = $jobv ? PDL::Complex->new_from_specification($type, 2, $dims[1], $dims[1]) :
 					pdl($type,[0,0]);
 		$mm->cgeesx( $jobv, $select, $sense, $w, $v, $sdim, $rconde, $rcondv,$info, $select_func);
-		if ($info){
-			if ($info < $dims[1]){
-				laerror("mschurx: The QR algorithm failed to converge");
-				print ("Returning converged eigenvalues\n") if $_laerror;
-			}
-			laerror("mschurx: The eigenvalues could not be reordered because some\n".
-	                	     "eigenvalues were too close to separate (the problem".
-	        	             "is very ill-conditioned)")
-				if $info == ($dims[1] + 1);
-			warn("mschurx: The Schur form no longer satisfy select_func = 1\n because of roundoff or underflow\n")
-					if ($info > ($dims[1] + 1) and $_laerror);
-		}
+		_error_schur($info, $select_func, $dims[$di], 'mschurx', 'QR');
 		if ($select_func){
 			if(!$sdim){
 				if ($jobvl == 2){
@@ -1593,18 +1564,7 @@ sub PDL::mschurx {
 		$v = $jobv ? PDL->new_from_specification($type, $dims[1], $dims[1]) :
 					pdl($type,0);
 		$mm->geesx( $jobv, $select, $sense, $wtmp, $wi, $v, $sdim, $rconde, $rcondv,$info, $select_f);
-		if ($info){
-			if ($info < $dims[0]){
-				laerror("mschurx: The QR algorithm failed to converge");
-				print ("Returning converged eigenvalues\n") if $_laerror;
-			}
-			laerror("mschurx: The eigenvalues could not be reordered because some\n".
-	                	     "eigenvalues were too close to separate (the problem".
-	        	             "is very ill-conditioned)")
-				if $info == ($dims[0] + 1);
-			warn("mschurx: The Schur form no longer satisfy select_func = 1\n because of roundoff or underflow\n")
-					if ($info > ($dims[0] + 1) and $_laerror);
-		}
+		_error_schur($info, $select_func, $dims[$di], 'mschurx', 'QR');
 		if ($select_func){
 			if(!$sdim){
 				if ($jobvl == 2){
@@ -1834,45 +1794,9 @@ sub PDL::mgschur{
 				pdl($type,[[0]]);
 	$mm->gges( $jobvsl, $jobvsr, $select, $pp, $wtmp, $wi, $beta, $vsl, $vsr, $sdim, $info, $select_f);
 
-	if ($info->max > 0 && $_laerror){
-		my ($index, @list);
-		$index = which((($info > 0)+($info <=$mdims[0])) == 2);
-		unless ($index->isempty){
-			@list = $index->list;
-			laerror("mgschur: The QZ algorithm failed to converge for matrix (PDL(s) @list): \$info = $info");
-			print ("Returning converged eigenvalues\n");
-		}
-		$index = which((($info > 0)+($info <=($mdims[0]+1))) == 2);
-		unless ($index->isempty){
-			@list = $index->list;
-			laerror("mgschur: Error in hgeqz for matrix (PDL(s) @list): \$info = $info");
-		}
-		if ($select_func){
-			$index = which((($info > 0)+($info == ($mdims[0]+3))) == 2);
-			unless ($index->isempty){
-				laerror("mgschur: The eigenvalues could not be reordered because some\n".
-                			     "eigenvalues were too close to separate (the problem".
-		        	             "is very ill-conditioned) for PDL(s) @list: \$info = $info");
-			}
-		}
-	}
+	_error_schur($info, $select_func, $mdims[$di], 'mgschur', 'QZ');
 
 	if ($select_func){
-		if ($jobvsl == 2 || $jobvsr == 2 || $jobvl == 2 || $jobvr == 2){
-			if ($info == ($mdims[0] + 2)){
-				warn("mgschur: The Schur form no longer satisfy select_func = 1\n because of roundoff or underflow\n") if $_laerror;
-				#TODO : Check sdim and lapack
-				$sdim+=1 if ($sdim < $mdims[0] && $wi($sdim) != 0 && $wi($sdim-1) == -$wi($sdim));
-			}
-		}
-		elsif($_laerror){
-			my $index = which((($info > 0)+($info == ($mdims[0]+2))) == 2);
-			unless ($index->isempty){
-				my @list = $index->list;
-				warn("mgschur: The Schur form no longer satisfy select_func = 1\n because".
-					"of roundoff or underflow for PDL(s) @list: \$info = $info\n");
-			}
-		}
 		if ($jobvl == 2){
 			if (!$sdim){
 				$ret{VL} = PDL::Complex->null;
@@ -2044,43 +1968,9 @@ sub PDL::Complex::mgschur{
 				pdl($type,[0,0]);
 
 	$mm->cgges( $jobvsl, $jobvsr, $select, $pp, $w, $beta, $vsl, $vsr, $sdim, $info, $select_func);
-	if ($info->max > 0 && $_laerror){
-		my ($index, @list);
-		$index = which((($info > 0)+($info <=$mdims[1])) == 2);
-		unless ($index->isempty){
-			@list = $index->list;
-			laerror("mgschur: The QZ algorithm failed to converge for matrix (PDL(s) @list): \$info = $info");
-			print ("Returning converged eigenvalues\n");
-		}
-		$index = which((($info > 0)+($info <=($mdims[1]+1))) == 2);
-		unless ($index->isempty){
-			@list = $index->list;
-			laerror("mgschur: Error in hgeqz for matrix (PDL(s) @list): \$info = $info");
-		}
-		if ($select_func){
-			$index = which((($info > 0)+($info == ($mdims[1]+3))) == 2);
-			unless ($index->isempty){
-				laerror("mgschur: The eigenvalues could not be reordered because some\n".
-                			     "eigenvalues were too close to separate (the problem".
-		        	             "is very ill-conditioned) for PDL(s) @list: \$info = $info");
-			}
-		}
-	}
+	_error_schur($info, $select_func, $mdims[$di], 'mgschur', 'QZ');
 
 	if ($select_func){
-		if ($_laerror){
-			if (($jobvsl == 2 || $jobvsr == 2 || $jobvl == 2 || $jobvr == 2) && $info == ($mdims[1] + 2)){
-				warn("mgschur: The Schur form no longer satisfy select_func = 1\n because of roundoff or underflow\n");
-			}
-			else{
-				my $index = which((($info > 0)+($info == ($mdims[1]+2))) == 2);
-				unless ($index->isempty){
-					my @list = $index->list;
-					warn("mgschur: The Schur form no longer satisfy select_func = 1\n because".
-						"of roundoff or underflow for PDL(s) @list: \$info = $info\n");
-				}
-			}
-		}
 		if ($jobvl == 2){
 			if (!$sdim){
 				$ret{VL} = PDL::Complex->null;
@@ -2280,6 +2170,7 @@ from Lapack. Works on transposed array.
 *mgschurx = \&PDL::mgschurx;
 
 sub PDL::mgschurx{
+	my $di = $_[0]->dims_internal;
 	&_square_same;
 	my($m, $p, $jobvsl, $jobvsr, $jobvl, $jobvr, $select_func, $sense, $mult, $norm) = @_;
 	my (@mdims) = $m->dims;
@@ -2317,23 +2208,7 @@ sub PDL::mgschurx{
 		$vsr = $jobvsr ? PDL::Complex->new_from_specification($type, 2, $mdims[1], $mdims[1]) :
 					pdl($type,[0,0]);
 		$mm->cggesx( $jobvsl, $jobvsr, $select, $sense, $pp, $w, $beta, $vsl, $vsr, $sdim, $rconde, $rcondv,$info, $select_func);
-		if ($info){
-			if ($info < $mdims[1]){
-				laerror("mgschurx: The QZ algorithm failed to converge");
-				print ("Returning converged eigenvalues\n") if $_laerror;
-			}
-			laerror("mgschurx: The eigenvalues could not be reordered because some\n".
-	                	     "eigenvalues were too close to separate (the problem".
-	        	             "is very ill-conditioned)")
-				if $info == ($mdims[1] + 3);
-			laerror("mgschurx: Error in hgeqz\n")
-				if $info == ($mdims[1] + 1);
-
-			warn("mgschurx: The Schur form no longer satisfy select_func = 1\n because of roundoff or underflow\n")
-					if ($info == ($mdims[1] + 2) and $_laerror);
-
-		}
-
+		_error_schur($info, $select_func, $mdims[$di], 'mgschurx', 'QZ');
 		if ($select_func){
 			if(!$sdim){
 				if ($jobvl == 2){
@@ -2467,23 +2342,7 @@ sub PDL::mgschurx{
 		$vsr = $jobvsr ? PDL->new_from_specification($type, $mdims[1], $mdims[1]) :
 					pdl($type,[[0]]);
 		$mm->ggesx( $jobvsl, $jobvsr, $select, $sense, $pp, $wtmp, $wi, $beta, $vsl, $vsr, $sdim, $rconde, $rcondv,$info, $select_f);
-		if ($info){
-			if ($info < $mdims[0]){
-				laerror("mgschurx: The QZ algorithm failed to converge");
-				print ("Returning converged eigenvalues\n") if $_laerror;
-			}
-			laerror("mgschurx: The eigenvalues could not be reordered because some\n".
-	                	     "eigenvalues were too close to separate (the problem".
-	        	             "is very ill-conditioned)")
-				if $info == ($mdims[0] + 3);
-			laerror("mgschurx: Error in hgeqz\n")
-				if $info == ($mdims[0] + 1);
-
-			if ($info == ($mdims[0] + 2)){
-				warn("mgschur: The Schur form no longer satisfy select_func = 1\n because of roundoff or underflow\n") if $_laerror;
-				$sdim+=1 if ($sdim < $mdims[0] && $wi($sdim) != 0 && $wi($sdim-1) == -$wi($sdim));
-			}
-		}
+		_error_schur($info, $select_func, $mdims[$di], 'mgschurx', 'QZ');
 
 		if ($select_func){
 			if(!$sdim){
