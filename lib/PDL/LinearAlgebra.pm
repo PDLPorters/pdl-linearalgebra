@@ -2842,29 +2842,20 @@ Works on transposed arrays.
 sub PDL::msolvex {
 	&_square;
 	&_matrices_match;
+	my $di = $_[0]->dims_internal;
 	my($a, $b, %opt) = @_;
 	my(@adims) = $a->dims;
-	my(@bdims) = $b->dims;
-	my ( $af, $x, $ipiv, $info, $equilibrate, $berr, $ferr, $rcond, $equed, %result, $r, $c ,$rpvgrw);
-	$equilibrate = $opt{'equilibrate'} ? pdl(long, 2): pdl(long,1);
 	$a = $a->t->copy;
 	$b = $b->t->copy;
-	$x = PDL::zeroes $b;
-	$af = PDL::zeroes $a;
-       	$info = pdl(long, 0);
-       	$rcond = null;
-       	$rpvgrw = null;
-	$equed = pdl(long, 0);
-
-	$c = zeroes($a->type, $adims[-2]);
-	$r = zeroes($a->type, $adims[-2]);
-	$ipiv = zeroes(long, $adims[-2]);
-	$ferr = zeroes($b->type, $bdims[-2]);
-	$berr = zeroes($b->type, $bdims[-2]);
-
-	( @adims == 3 ) ? $a->cgesvx($opt{'transpose'}, $equilibrate, $b, $af, $ipiv, $equed, $r, $c, $x, $rcond, $ferr, $berr, $rpvgrw,$info) :
-			$a->gesvx($opt{'transpose'}, $equilibrate, $b, $af, $ipiv, $equed, $r, $c, $x, $rcond, $ferr, $berr, $rpvgrw,$info);
-	if( $info < $adims[-2] && $info > 0){
+	my $x = PDL::zeroes $b;
+	my $af = PDL::zeroes $a;
+	my ($info, $rcond, $rpvgrw, $ferr, $berr) = map null, 1..5;
+	my $equed = pdl(long, 0);
+	my $c = zeroes($a->type, $adims[$di]);
+	my $r = zeroes($a->type, $adims[$di]);
+	my $ipiv = zeroes(long, $adims[$di]);
+	$a->_call_method('gesvx', $opt{transpose}, $opt{equilibrate} ? 2 : 1, $b, $af, $ipiv, $equed, $r, $c, $x, $rcond, $ferr, $berr, $rpvgrw,$info);
+	if( $info < $adims[$di] && $info > 0){
 		$info--;
 		laerror("msolvex: Can't solve system of linear equations:\nfactor U($info,$info)".
 		" of coefficient matrix is exactly 0");
@@ -2872,28 +2863,20 @@ sub PDL::msolvex {
 	elsif ($info != 0 and $_laerror){
 		warn ("msolvex: The matrix is singular to working precision");
 	}
-
 	return $x->t->sever unless wantarray;
-
-	$result{rcondition} = $rcond;
-	$result{ferror} = $ferr;
-	$result{berror} = $berr;
+	my %result = (rcondition => $rcond, ferror => $ferr, berror => $berr);
 	if ($opt{equilibrate}){
 		$result{equilibration} = $equed;
-		$result{row} = $r if $equed == 1 || $equed == 3;
-		$result{column} = $c if $equed == 2 || $equed == 3;
+		$result{row} = $r if $equed & 1;
+		$result{column} = $c if $equed & 2;
 		if ($equed){
 			$result{A} = $a->t->sever if $opt{A};
 			$result{B} = $b->t->sever if $opt{B};
 		}
 	}
-	$result{pivot} = $ipiv;
-	$result{rpvgrw} = $rpvgrw;
-	$result{info} = $info;
+	@result{qw(pivot rpvgrw info)} = ($ipiv, $rpvgrw, $info);
         $result{LU} = $af->t->sever if $opt{LU};
-
 	return ($x->t->sever, %result);
-
 }
 
 =head2 mtrisolve

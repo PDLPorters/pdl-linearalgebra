@@ -3735,7 +3735,7 @@ system of equations A * X = B.
 
 pp_def("gesvx",
        HandleBad => 0,
-	Pars => '[io,phys]A(n,n); int trans(); int fact(); [io,phys]B(n,m); [io,phys]af(n,n); int [io,phys]ipiv(n); int [io]equed(); [io,phys]r(n); [io,phys]c(n); [o,phys]X(n,m); [o,phys]rcond(); [o,phys]ferr(m); [o,phys]berr(m);[o,phys]rpvgrw();int [o,phys]info()',
+	Pars => '[io,phys]A(n,n); int trans(); int fact(); [io,phys]B(n,m); [io,phys]af(n,n); int [io,phys]ipiv(n); int [io]equed(); [io,phys]r(n); [io,phys]c(n); [o]X(n,m); [o]rcond(); [o]ferr(m); [o]berr(m);[o]rpvgrw();int [o]info()',
 	GenericTypes => [F,D],
 	Code => generate_code '
 		char ptrans, pfact, pequed;
