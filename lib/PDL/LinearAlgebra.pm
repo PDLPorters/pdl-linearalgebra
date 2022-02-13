@@ -2616,8 +2616,7 @@ from Lapack and returns C<Q> in scalar context. Works on transposed array.
 
 =cut
 
-sub mrq {shift->mrq(@_)}
-
+*mrq = \&PDL::mrq;
 sub PDL::mrq {
 	&_2d_array;
 	my $di = $_[0]->dims_internal;
@@ -2691,110 +2690,53 @@ from Lapack and returns C<Q> in scalar context. Works on transposed array.
 
 =cut
 
-sub mql {shift->mql(@_)}
-
+*mql = \&PDL::mql;
 sub PDL::mql {
 	&_2d_array;
+	my $di = $_[0]->dims_internal;
+	my @di_vals = $_[0]->dims_internal_values;
+	my $slice_prefix = ',' x $di;
+	my @diag_args = ($di, $di+1);
 	my($m, $full) = @_;
 	my(@dims) = $m->dims;
 	my ($q, $l);
         $m = $m->t->copy;
-	my $min = $dims[0] < $dims[1] ?  $dims[0] : $dims[1];
-
-	my $tau = zeroes($m->type, $min);
-	$m->geqlf($tau, (my $info = pdl(long,0)));
+	my $min = $dims[$di] < $dims[$di+1] ? $dims[$di] : $dims[$di+1];
+	my $tau = zeroes($m->type, @di_vals, $min);
+	$m->_call_method('geqlf', $tau, my $info = null);
 	if ($info){
 		laerror("mql: Error $info in geqlf\n");
-		$q = $l = $m;
+		return ($m->t->sever, $m, $info);
+	}
+	if ($dims[$di] < $dims[$di+1] && $full){
+		$q = ref($m)->new_from_specification($m->type, @di_vals, @dims[$di+1,$di+1]);
+		$q->slice("$slice_prefix:,-$dims[$di]:") .= $m;
+	}
+	elsif ($dims[$di] > $dims[$di+1]){
+		$q = $m->slice("$slice_prefix:,-$min:")->copy;
 	}
 	else{
-		if ($dims[0] < $dims[1] && $full){
-			$q = zeroes($m->type, $dims[1],$dims[1]);
-			$q(:, -$dims[0]:) .= $m;
-		}
-		elsif ($dims[0] > $dims[1]){
-			$q = $m(:,-$min:)->copy;
-		}
-		else{
-			$q = $m->copy;
-		}
-
-		$q->orgql($tau, $info);
-		return $q->t->sever unless wantarray;
-
-		if ($dims[0] < $dims[1] && $full){
-			$l = zeroes ($m->type,$dims[0],$dims[1]);
-			$m->t->tricpy(1,$l);
-			$l(:($min-1),:($min-1))->diagonal(0,1) .= 0;
-		}
-		elsif ($dims[0] > $dims[1]){
-			my $temp = zeroes($m->type,$dims[0],$dims[0]);
-			$temp(:, -$dims[1]:) .= $m->t;
-			$l = PDL::zeroes($temp);
-			$temp->tricpy(1,$l);
-			$l = $l(:, -$dims[1]:)->sever;
-		}
-		else{
-			$l = zeroes($m->type, $min, $min);
-			$m->t->(:,($dims[1]-$min):)->tricpy(1,$l);
-		}
+		$q = $m->copy;
 	}
-	return ($q->t->sever, $l, $info);
-
-}
-
-sub PDL::Complex::mql{
-	&_2d_array;
-	my($m, $full) = @_;
-	my(@dims) = $m->dims;
-	my ($q, $l);
-        $m = $m->t->copy;
-	my $min = $dims[1] < $dims[2] ?  $dims[1] : $dims[2];
-
-	my $tau = zeroes($m->type, 2, $min);
-	$m->cgeqlf($tau, (my $info = pdl(long,0)));
-	if ($info){
-		laerror("mql: Error $info in cgeqlf\n");
-		$q = $l = $m;
+	$q->_call_method(['orgql','cungql'], $tau, $info);
+	return $q->t->sever unless wantarray;
+	if ($dims[$di] < $dims[$di+1] && $full){
+		$l = ref($m)->new_from_specification($m->type,@di_vals, @dims[$di,$di+1]);
+		$m->t->tricpy(1,$l);
+		$l->slice("$slice_prefix:@{[$min-1]},:@{[$min-1]}")->diagonal(@diag_args) .= 0;
+	}
+	elsif ($dims[$di] > $dims[$di+1]){
+		my $temp = ref($m)->new_from_specification($m->type,@di_vals, @dims[$di,$di]);
+		$temp->slice("$slice_prefix:,-$dims[$di+1]:") .= $m->t;
+		$l = PDL::zeroes($temp);
+		$temp->tricpy(1,$l);
+		$l = $l->slice("$slice_prefix:,-$dims[$di+1]:");
 	}
 	else{
-		if ($dims[1] < $dims[2] && $full){
-			$q = PDL::Complex->new_from_specification($m->type, 2, $dims[2],$dims[2]);
-			$q .= 0;
-			$q(,:, -$dims[1]:) .= $m;
-		}
-		elsif ($dims[1] > $dims[2]){
-			$q = $m(,:,-$min:)->copy;
-		}
-		else{
-			$q = $m->copy;
-		}
-
-		$q->cungql($tau, $info);
-		return $q->t->sever unless wantarray;
-
-		if ($dims[1] < $dims[2] && $full){
-			$l = PDL::Complex->new_from_specification($m->type, 2, $dims[1], $dims[2]);
-			$l .= 0;
-			$m->t->tricpy(1,$l);
-			$l(,:($min-1),:($min-1))->diagonal(1,2) .= 0;
-		}
-		elsif ($dims[1] > $dims[2]){
-			my $temp = PDL::Complex->new_from_specification($m->type,2,$dims[1],$dims[1]);
-			$temp .= 0;
-			$temp(,, -$dims[2]:) .= $m->t;
-			$l = PDL::zeroes($temp);
-			$temp->tricpy(1,$l);
-			$l = $l(,, -$dims[2]:)->sever;
-		}
-		else{
-			$l = PDL::Complex->new_from_specification($m->type, 2, $min, $min);
-			$l .= 0;
-			$m->t->(,,($dims[2]-$min):)->tricpy(1,$l);
-		}
+		$l = ref($m)->new_from_specification($m->type,@di_vals, $min, $min);
+		$m->t->slice("$slice_prefix:,@{[$dims[$di+1] - $min]}:")->tricpy(1,$l);
 	}
 	return ($q->t->sever, $l, $info);
-
 }
 
 =head2 mlq
