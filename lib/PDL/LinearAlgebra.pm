@@ -462,12 +462,14 @@ Uses L<crossprod|PDL::LinearAlgebra::Real/crossprod> or L<ccrossprod|PDL::Linear
 
 sub PDL::_call_method {
   my ($m, $method, @args) = @_;
-  $method = "c$method" if !$m->type->real;
+  $method = [$method, "c$method"] if !ref $method;
+  $method = $method->[!$m->type->real ? 1 : 0];
   $m->$method(@args);
 }
 sub PDL::Complex::_call_method {
   my ($m, $method, @args) = @_;
-  $method = "c$method";
+  $method = [$method, "c$method"] if !ref $method;
+  $method = $method->[1];
   $m->$method(@args);
 }
 *mcrossprod = \&PDL::mcrossprod;
