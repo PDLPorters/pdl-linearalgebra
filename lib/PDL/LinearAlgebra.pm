@@ -2764,93 +2764,46 @@ from Lapack and returns C<Q> in scalar context. Works on transposed array.
 
 =cut
 
-sub mlq {shift->mlq(@_)}
-
+*mlq = \&PDL::mlq;
 sub PDL::mlq {
 	&_2d_array;
+	my $di = $_[0]->dims_internal;
+	my @di_vals = $_[0]->dims_internal_values;
+	my $slice_prefix = ',' x $di;
+	my @diag_args = ($di, $di+1);
 	my($m, $full) = @_;
 	my(@dims) = $m->dims;
 	my ($q, $l);
         $m = $m->t->copy;
-	my $min = $dims[0] < $dims[1] ?  $dims[0] : $dims[1];
-
-	my $tau = zeroes($m->type, $min);
-	$m->gelqf($tau, (my $info = pdl(long,0)));
+	my $min = $dims[$di] < $dims[$di+1] ? $dims[$di] : $dims[$di+1];
+	my $tau = zeroes($m->type, @di_vals, $min);
+	$m->_call_method('gelqf', $tau, my $info = null);
 	if ($info){
 		laerror("mlq: Error $info in gelqf\n");
-		$q = $l = $m;
+		return ($m, $m->t->sever, $info);
+	}
+	if ($dims[$di] > $dims[$di+1] && $full){
+		$q = ref($m)->new_from_specification($m->type, @di_vals, @dims[$di,$di]);
+		$q->slice("$slice_prefix:@{[$min-1]}") .= $m;
+	}
+	elsif ($dims[$di] < $dims[$di+1]){
+		$q = $m->slice("$slice_prefix:@{[$min-1]}")->copy;
 	}
 	else{
-		if ($dims[0] > $dims[1] && $full){
-			$q = zeroes($m->type, $dims[0],$dims[0]);
-			$q(:($min -1),:) .= $m;
-		}
-		elsif ($dims[0] < $dims[1]){
-			$q = $m(:($min-1),)->copy;
-		}
-		else{
-			$q = $m->copy;
-		}
-
-		$q->orglq($tau, $info);
-		return $q->t->sever unless wantarray;
-
-		if ($dims[0] > $dims[1] && !$full){
-			$l = zeroes($m->type, $dims[1], $dims[1]);
-			$m->t->(:($min-1))->tricpy(1,$l);
-		}
-		else{
-			$l = zeroes($m->type, $dims[0], $dims[1]);
-			$m->t->tricpy(1,$l);
-		}
+		$q = $m->copy;
 	}
-	return ($l, $q->t->sever, $info);
+	$q->_call_method(['orglq','cunglq'], $tau, $info);
+	return $q->t->sever unless wantarray;
 
-}
-
-sub PDL::Complex::mlq{
-	&_2d_array;
-	my($m, $full) = @_;
-	my(@dims) = $m->dims;
-	my ($q, $l);
-        $m = $m->t->copy;
-	my $min = $dims[1] < $dims[2] ?  $dims[1] : $dims[2];
-
-	my $tau = zeroes($m->type, 2, $min);
-	$m->cgelqf($tau, (my $info = pdl(long,0)));
-	if ($info){
-		laerror("mlq: Error $info in cgelqf\n");
-		$q = $l = $m;
+	if ($dims[$di] > $dims[$di+1] && !$full){
+		$l = ref($m)->new_from_specification($m->type,@di_vals, @dims[$di+1,$di+1]);
+		$m->t->slice("$slice_prefix:@{[$min-1]}")->tricpy(1,$l);
 	}
 	else{
-		if ($dims[1] > $dims[2] && $full){
-			$q = PDL::Complex->new_from_specification($m->type, 2, $dims[1],$dims[1]);
-			$q .= 0;
-			$q(,:($min -1),:) .= $m;
-		}
-		elsif ($dims[1] < $dims[2]){
-			$q = $m(,:($min-1),)->copy;
-		}
-		else{
-			$q = $m->copy;
-		}
-
-		$q->cunglq($tau, $info);
-		return $q->t->sever unless wantarray;
-
-		if ($dims[1] > $dims[2] && !$full){
-			$l = PDL::Complex->new_from_specification($m->type, 2, $dims[2], $dims[2]);
-			$l .= 0;
-			$m->t->(,:($min-1))->tricpy(1,$l);
-		}
-		else{
-			$l = PDL::Complex->new_from_specification($m->type, 2, $dims[1], $dims[2]);
-			$l .= 0;
-			$m->t->tricpy(1,$l);
-		}
+		$l = ref($m)->new_from_specification($m->type,@di_vals, @dims[$di,$di+1]);
+		$m->t->tricpy(1,$l);
 	}
 	return ($l, $q->t->sever, $info);
-
 }
 
 =head2 msolve
