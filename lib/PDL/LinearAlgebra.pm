@@ -217,6 +217,11 @@ sub PDL::dims_internal {0}
 sub PDL::dims_internal_values {()}
 sub PDL::Complex::dims_internal {1}
 sub PDL::Complex::dims_internal_values {(2)}
+sub PDL::_similar {
+  my @di_vals = $_[0]->dims_internal_values;
+  my ($m, @vdims) = @_;
+  ref($m)->new_from_specification($m->type, @di_vals, @vdims);
+}
 
 sub t {shift->t(@_)}
 sub PDL::t {
@@ -353,7 +358,6 @@ Supports threading.
 *diag = \&PDL::diag;
 sub PDL::diag {
 	my $di = $_[0]->dims_internal;
-	my @di_vals = $_[0]->dims_internal_values;
 	my @diag_args = ($di, $di+1);
 	my ($a,$i, $vec) = @_;
 	my $slice_prefix = ',' x $di;
@@ -363,7 +367,7 @@ sub PDL::diag {
 	if (@dims == $di+1 || $vec){
 		my $dim = $dims[0];
 		my $zz = $dim + $diag;
-		$z= PDL::zeroes(ref($a), $a->type,@di_vals,$zz,$zz,@dims[$di+1..$#dims]);
+		$z = $a->_similar($zz,$zz,@dims[$di+1..$#dims]);
 		if ($i){
 			($i < 0) ? $z->slice("$slice_prefix:@{[$dim-1]},$diag:")->diagonal(@diag_args) .= $a : $z->slice("$slice_prefix$diag:,:@{[$dim-1]}")->diagonal(@diag_args).=$a;
 		}
@@ -1126,14 +1130,15 @@ Works on transposed array.
 *mhessen = \&PDL::mhessen;
 sub PDL::mhessen {
 	&_square;
+	my $di = $_[0]->dims_internal;
 	my $m = shift;
 	my(@dims) = $m->dims;
-	my ($info, $tau, $h, $q);
+	my ($info, $h, $q);
 	$m = $m->t->copy;
 	$info = pdl(long, 0);
+	my $tau = $m->_similar($dims[$di]-1);
+	$m->_call_method('gehrd',1,$dims[$di],$tau,$info);
 	if(@dims == 3){
-		$tau = zeroes($m->type, 2, ($dims[-2]-1));
-		$m->cgehrd(1,$dims[-2],$tau,$info);
 		if (wantarray){
 			$q = $m->copy;
 			$q->cunghr(1, $dims[-2], $tau, $info);
@@ -1144,8 +1149,6 @@ sub PDL::mhessen {
 		$h((1),:-2, 1:)->diagonal(0,1) .= $m((1),:-2, 1:)->diagonal(0,1);
 	}
 	else{
-		$tau = zeroes($m->type, ($dims[0]-1));
-		$m->gehrd(1,$dims[0],$tau,$info);
 		if (wantarray){
 			$q = $m->copy;
 			$q->orghr(1, $dims[0], $tau, $info);
@@ -1215,7 +1218,6 @@ sub mschur {shift->mschur(@_)}
 sub PDL::mschur {
 	&_square;
 	my $di = $_[0]->dims_internal;
-	my @di_vals = $_[0]->dims_internal_values;
 	my ($m, $jobv, $jobvl, $jobvr, $select_func, $mult, $norm) = @_;
 	my @dims = $m->dims;
 	barf("mschur: threading not supported for selected vectors")
@@ -1227,7 +1229,7 @@ sub PDL::mschur {
 	my $type = $m->type;
 	my $mm = $m->is_inplace ? $m->t : $m->t->copy;
 	my $v = !$jobv ? pdl($type,0) :
-		ref($m)->new_from_specification($type, @di_vals, @dims[1+$di,1+$di,2+$di..$#dims]);
+		$m->_similar(@dims[1+$di,1+$di..$#dims]);
 	$mm->_call_method('gees',
 		$jobv, $select_func ? 1 : 0,
 		my $wtmp = null, my $wi = null,
@@ -1244,8 +1246,8 @@ sub PDL::mschur {
 		my $job = $jobvr && $jobvl ? undef : $jobvl ? 2 : 1;
 		my $is_mult = $jobvl == 1 || $jobvr == 1 || $mult;
 		my ($vr, $vl) = map !$_ ? undef :
-			(!$is_mult && $select_func) ? ref($m)->new_from_specification($type, @di_vals, $dims[1+$di], $sdim) :
-			$jobv ? $v->copy : ref($m)->new_from_specification($type, @di_vals, @dims[1+$di,1+$di,2+$di..$#dims]),
+			(!$is_mult && $select_func) ? $m->_similar($dims[1+$di], $sdim) :
+			$jobv ? $v->copy : $m->_similar(@dims[1+$di,1+$di..$#dims]),
 				$jobvr, $jobvl;
 		$mult = ($select_func && !$is_mult) ? 2 : !$jobv ? 0 : $mult;
 		my $sel = ($select_func && !$is_mult) ? zeroes($dims[1]) : undef;
@@ -2527,13 +2529,12 @@ sub PDL::mqr {
 	my $di = $_[0]->dims_internal;
 	my @di_vals = $_[0]->dims_internal_values;
 	my $slice_prefix = ',' x $di;
-	my @diag_args = ($di, $di+1);
 	my($m, $full) = @_;
 	my(@dims) = $m->dims;
 	my ($q, $r);
         $m = $m->t->copy;
 	my $min = $dims[$di] < $dims[$di+1] ? $dims[$di] : $dims[$di+1];
-	my $tau = zeroes($m->type, @di_vals, $min);
+	my $tau = $m->_similar($min);
 	$m->_call_method('geqrf', $tau, my $info = null);
 	if ($info){
 		laerror ("mqr: Error $info in geqrf\n");
@@ -2544,11 +2545,11 @@ sub PDL::mqr {
 	$q->_call_method(['orgqr','cungqr'], $tau, $info);
 	return $q->t->sever unless wantarray;
 	if ($dims[$di] < $dims[$di+1] && !$full){
-		$r = ref($m)->new_from_specification($m->type,@di_vals, $min, $min);
+		$r = $m->_similar($min, $min);
 		$m->t->slice("$slice_prefix,:@{[$min-1]}")->tricpy(0,$r);
 	}
 	else{
-		$r = ref($m)->new_from_specification($m->type,@di_vals, @dims[$di,$di+1]);
+		$r = $m->_similar(@dims[$di,$di+1]);
 		$m->t->tricpy(0,$r);
 	}
 	return ($q->t->sever, $r, $info);
@@ -2583,7 +2584,6 @@ from Lapack and returns C<Q> in scalar context. Works on transposed array.
 sub PDL::mrq {
 	&_2d_array;
 	my $di = $_[0]->dims_internal;
-	my @di_vals = $_[0]->dims_internal_values;
 	my $slice_prefix = ',' x $di;
 	my @diag_args = ($di, $di+1);
 	my($m, $full) = @_;
@@ -2591,14 +2591,14 @@ sub PDL::mrq {
 	my ($q, $r);
         $m = $m->t->copy;
 	my $min = $dims[$di] < $dims[$di+1] ? $dims[$di] : $dims[$di+1];
-	my $tau = zeroes($m->type, @di_vals, $min);
+	my $tau = $m->_similar($min);
 	$m->_call_method('gerqf', $tau, my $info = null);
 	if ($info){
 		laerror ("mrq: Error $info in gerqf\n");
 		return ($m, $m->t->sever, $info);
 	}
 	if ($dims[$di] > $dims[$di+1] && $full){
-		$q = ref($m)->new_from_specification($m->type, @di_vals, @dims[$di,$di]);
+		$q = $m->_similar(@dims[$di,$di]);
 		$q->slice("$slice_prefix@{[$dims[$di] - $dims[$di+1]]}:") .= $m;
 	}
 	elsif ($dims[$di] < $dims[$di+1]){
@@ -2610,19 +2610,19 @@ sub PDL::mrq {
 	$q->_call_method(['orgrq','cungrq'], $tau, $info);
 	return $q->t->sever unless wantarray;
 	if ($dims[$di] > $dims[$di+1] && $full){
-		$r = ref($m)->new_from_specification($m->type,@di_vals, @dims[$di,$di+1]);
+		$r = $m->_similar(@dims[$di,$di+1]);
 		$m->t->tricpy(0,$r);
 		$r->slice("$slice_prefix:@{[$min-1]},:@{[$min-1]}")->diagonal(@diag_args) .= 0;
 	}
 	elsif ($dims[$di] < $dims[$di+1]){
-		my $temp = ref($m)->new_from_specification($m->type,@di_vals, @dims[$di+1,$di+1]);
+		my $temp = $m->_similar(@dims[$di+1,$di+1]);
 		$temp->slice("$slice_prefix-$min:") .= $m->t;
 		$r = PDL::zeroes($temp);
 		$temp->tricpy(0,$r);
 		$r = $r->slice("$slice_prefix-$min:")->sever;
 	}
 	else{
-		$r = ref($m)->new_from_specification($m->type,@di_vals, $min, $min);
+		$r = $m->_similar($min, $min);
 		$m->t->slice("$slice_prefix@{[$dims[$di] - $dims[$di+1]]}:")->tricpy(0,$r);
 	}
 	return ($r, $q->t->sever, $info);
@@ -2657,7 +2657,6 @@ from Lapack and returns C<Q> in scalar context. Works on transposed array.
 sub PDL::mql {
 	&_2d_array;
 	my $di = $_[0]->dims_internal;
-	my @di_vals = $_[0]->dims_internal_values;
 	my $slice_prefix = ',' x $di;
 	my @diag_args = ($di, $di+1);
 	my($m, $full) = @_;
@@ -2665,14 +2664,14 @@ sub PDL::mql {
 	my ($q, $l);
         $m = $m->t->copy;
 	my $min = $dims[$di] < $dims[$di+1] ? $dims[$di] : $dims[$di+1];
-	my $tau = zeroes($m->type, @di_vals, $min);
+	my $tau = $m->_similar($min);
 	$m->_call_method('geqlf', $tau, my $info = null);
 	if ($info){
 		laerror("mql: Error $info in geqlf\n");
 		return ($m->t->sever, $m, $info);
 	}
 	if ($dims[$di] < $dims[$di+1] && $full){
-		$q = ref($m)->new_from_specification($m->type, @di_vals, @dims[$di+1,$di+1]);
+		$q = $m->_similar(@dims[$di+1,$di+1]);
 		$q->slice("$slice_prefix:,-$dims[$di]:") .= $m;
 	}
 	elsif ($dims[$di] > $dims[$di+1]){
@@ -2684,19 +2683,19 @@ sub PDL::mql {
 	$q->_call_method(['orgql','cungql'], $tau, $info);
 	return $q->t->sever unless wantarray;
 	if ($dims[$di] < $dims[$di+1] && $full){
-		$l = ref($m)->new_from_specification($m->type,@di_vals, @dims[$di,$di+1]);
+		$l = $m->_similar(@dims[$di,$di+1]);
 		$m->t->tricpy(1,$l);
 		$l->slice("$slice_prefix:@{[$min-1]},:@{[$min-1]}")->diagonal(@diag_args) .= 0;
 	}
 	elsif ($dims[$di] > $dims[$di+1]){
-		my $temp = ref($m)->new_from_specification($m->type,@di_vals, @dims[$di,$di]);
+		my $temp = $m->_similar(@dims[$di,$di]);
 		$temp->slice("$slice_prefix:,-$dims[$di+1]:") .= $m->t;
 		$l = PDL::zeroes($temp);
 		$temp->tricpy(1,$l);
 		$l = $l->slice("$slice_prefix:,-$dims[$di+1]:");
 	}
 	else{
-		$l = ref($m)->new_from_specification($m->type,@di_vals, $min, $min);
+		$l = $m->_similar($min, $min);
 		$m->t->slice("$slice_prefix:,@{[$dims[$di+1] - $min]}:")->tricpy(1,$l);
 	}
 	return ($q->t->sever, $l, $info);
@@ -2731,22 +2730,20 @@ from Lapack and returns C<Q> in scalar context. Works on transposed array.
 sub PDL::mlq {
 	&_2d_array;
 	my $di = $_[0]->dims_internal;
-	my @di_vals = $_[0]->dims_internal_values;
 	my $slice_prefix = ',' x $di;
-	my @diag_args = ($di, $di+1);
 	my($m, $full) = @_;
 	my(@dims) = $m->dims;
 	my ($q, $l);
         $m = $m->t->copy;
 	my $min = $dims[$di] < $dims[$di+1] ? $dims[$di] : $dims[$di+1];
-	my $tau = zeroes($m->type, @di_vals, $min);
+	my $tau = $m->_similar($min);
 	$m->_call_method('gelqf', $tau, my $info = null);
 	if ($info){
 		laerror("mlq: Error $info in gelqf\n");
 		return ($m, $m->t->sever, $info);
 	}
 	if ($dims[$di] > $dims[$di+1] && $full){
-		$q = ref($m)->new_from_specification($m->type, @di_vals, @dims[$di,$di]);
+		$q = $m->_similar(@dims[$di,$di]);
 		$q->slice("$slice_prefix:@{[$min-1]}") .= $m;
 	}
 	elsif ($dims[$di] < $dims[$di+1]){
@@ -2758,11 +2755,11 @@ sub PDL::mlq {
 	$q->_call_method(['orglq','cunglq'], $tau, $info);
 	return $q->t->sever unless wantarray;
 	if ($dims[$di] > $dims[$di+1] && !$full){
-		$l = ref($m)->new_from_specification($m->type,@di_vals, @dims[$di+1,$di+1]);
+		$l = $m->_similar(@dims[$di+1,$di+1]);
 		$m->t->slice("$slice_prefix:@{[$min-1]}")->tricpy(1,$l);
 	}
 	else{
-		$l = ref($m)->new_from_specification($m->type,@di_vals, @dims[$di,$di+1]);
+		$l = $m->_similar(@dims[$di,$di+1]);
 		$m->t->tricpy(1,$l);
 	}
 	return ($l, $q->t->sever, $info);
@@ -4755,7 +4752,6 @@ Uses L<gesdd|PDL::LinearAlgebra::Real/gesdd> or L<cgesdd|PDL::LinearAlgebra::Com
 *mdsvd = \&PDL::mdsvd;
 sub PDL::mdsvd {
 	my $di = $_[0]->dims_internal;
-	my @di_vals = $_[0]->dims_internal_values;
 	my($m, $job) = @_;
 	my(@dims) = $m->dims;
 	my $type = $m->type;
@@ -4765,16 +4761,16 @@ sub PDL::mdsvd {
 	my ($u, $v);
 	if ($job){
 		if ($job == 2){
-			$u = ref($m)->new_from_specification($type, @di_vals, $min, $dims[1+$di],@dims[2+$di..$#dims]);
-			$v = ref($m)->new_from_specification($type, @di_vals, $dims[$di],$min,@dims[2+$di..$#dims]);
+			$u = $m->_similar($min, @dims[1+$di..$#dims]);
+			$v = $m->_similar($dims[$di],$min,@dims[2+$di..$#dims]);
 		}
 		else{
-			$u = ref($m)->new_from_specification($type, @di_vals, $dims[1+$di],$dims[1+$di],@dims[2+$di..$#dims]);
-			$v = ref($m)->new_from_specification($type, @di_vals, $dims[$di],$dims[$di],@dims[2+$di..$#dims]);
+			$u = $m->_similar(@dims[1+$di,1+$di..$#dims]);
+			$v = $m->_similar(@dims[$di,$di,2+$di..$#dims]);
 		}
 	}else{
-		$u = ref($m)->new_from_specification($type, @di_vals, 1,1);
-		$v = ref($m)->new_from_specification($type, @di_vals, 1,1);
+		$u = $m->_similar(1,1);
+		$v = $m->_similar(1,1);
 	}
 	$m->_call_method('gesdd', $job, my $s = null, $v, $u, my $info = null);
 	_error($info, "mdsvd: Matrix (PDL(s) %s) is/are singular(s)");
@@ -4816,7 +4812,6 @@ Uses L<gesvd|PDL::LinearAlgebra::Real/gesvd> or L<cgesvd|PDL::LinearAlgebra::Com
 *msvd = \&PDL::msvd;
 sub PDL::msvd {
 	my $di = $_[0]->dims_internal;
-	my @di_vals = $_[0]->dims_internal_values;
 	my($m, $jobu, $jobv) = @_;
 	my(@dims) = $m->dims;
 	my $type = $m->type;
@@ -4824,12 +4819,12 @@ sub PDL::msvd {
 	$jobv = !wantarray ? 0 : $jobv // 1;
 	$m = $m->copy;
 	my $min = $dims[$di] > $dims[1+$di] ? $dims[1+$di]: $dims[$di];
-	my $v = !$jobv ? ref($m)->new_from_specification($type, @di_vals, 1,1):
-		$jobv == 1 ? ref($m)->new_from_specification($type, @di_vals, $dims[$di],$dims[$di],@dims[2+$di..$#dims]):
-		ref($m)->new_from_specification($type, @di_vals, $dims[$di],$min,@dims[2+$di..$#dims]);
-	my $u = !$jobu ? ref($m)->new_from_specification($type, @di_vals, 1,1):
-		$jobu == 1 ? ref($m)->new_from_specification($type, @di_vals, $dims[1+$di],$dims[1+$di],@dims[2+$di..$#dims]):
-		ref($m)->new_from_specification($type, @di_vals, $min, $dims[1+$di],@dims[2+$di..$#dims]);
+	my $v = !$jobv ? $m->_similar(1,1):
+		$jobv == 1 ? $m->_similar(@dims[$di,$di,2+$di..$#dims]):
+		$m->_similar($dims[$di],$min,@dims[2+$di..$#dims]);
+	my $u = !$jobu ? $m->_similar(1,1):
+		$jobu == 1 ? $m->_similar(@dims[1+$di,1+$di..$#dims]):
+		$m->_similar($min, @dims[1+$di..$#dims]);
 	$m->_call_method('gesvd', $jobv, $jobu,my $s = null, $v, $u, my $info = null);
 	_error($info, "msvd: Matrix (PDL(s) %s) is/are singular(s)");
 	return $jobv ? ($u, $s, $v, $info) : ($u, $s, $info) if $jobu;
