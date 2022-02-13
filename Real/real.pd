@@ -4169,7 +4169,7 @@ used to solve the system of equations A * X = B.
 
 pp_def("sysvx",
        HandleBad => 0,
-	Pars => '[phys]A(n,n); int uplo(); int fact(); [phys]B(n,m); [io,phys]af(n,n); int [io,phys]ipiv(n); [o,phys]X(n,m); [o,phys]rcond(); [o,phys]ferr(m); [o,phys]berr(m); int [o,phys]info()',
+	Pars => '[phys]A(n,n); int uplo(); int fact(); [phys]B(n,m); [io,phys]af(n,n); int [io,phys]ipiv(n); [o]X(n,m); [o]rcond(); [o]ferr(m); [o]berr(m); int [o]info()',
 	GenericTypes => [F,D],
 	Code => generate_code '
 		char pfact = \'N\';

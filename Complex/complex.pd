@@ -2084,7 +2084,7 @@ pp_defc("sysvx",
 		$GENERIC() *work, integer *lwork, $GENERIC() *rwork, integer *info);
 EOF
        HandleBad => 0,
-	Pars => '[phys]A(2,n,n); int uplo(); int fact(); [phys]B(2,n,m); [io,phys]af(2,n,n); int [io,phys]ipiv(n); [o,phys]X(2,n,m); [o,phys]rcond(); [o,phys]ferr(m); [o,phys]berr(m); int [o,phys]info()',
+	Pars => '[phys]A(2,n,n); int uplo(); int fact(); [phys]B(2,n,m); [io,phys]af(2,n,n); int [io,phys]ipiv(n); [o]X(2,n,m); [o]rcond(); [o]ferr(m); [o]berr(m); int [o]info()',
 	Code => generate_code '
 		char pfact = \'N\';
 		char puplo = \'U\';

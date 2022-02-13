@@ -3012,29 +3012,21 @@ from Lapack. Works on transposed array.
 
 
 *msymsolvex = \&PDL::msymsolvex;
-
 sub PDL::msymsolvex {
 	&_square;
 	my $uplo = splice @_, 1, 1;
 	&_matrices_match;
+	my $di = $_[0]->dims_internal;
 	my($a, $b, $d) = @_;
 	my(@adims) = $a->dims;
-	my(@bdims) = $b->dims;
-	my ( $af, $x, $ipiv, $info, $berr, $ferr, $rcond, %result);
 	$uplo = 1 - $uplo;
 	$b = $b->t;
-	$x = PDL::zeroes $b;
-	$af =  PDL::zeroes $a;
-       	$info = pdl(long, 0);
-       	$rcond = null;
-
-	$ipiv = zeroes(long, $adims[-2]);
-	$ferr = zeroes($b->type, $bdims[-2]);
-	$berr = zeroes($b->type, $bdims[-2]);
-
-	(@adims == 3) ?  $a->csysvx($uplo, (pdl(long, 0)), $b, $af, $ipiv, $x, $rcond, $ferr, $berr, $info) :
-		$a->sysvx($uplo, (pdl(long, 0)), $b, $af, $ipiv, $x, $rcond, $ferr, $berr, $info);
-	if( $info < $adims[-2] && $info > 0){
+	my $x = PDL::zeroes $b;
+	my $af =  PDL::zeroes $a;
+	my ($info, $rcond, $ferr, $berr) = map null, 1..4;
+	my $ipiv = zeroes(long, $adims[$di]);
+	$a->_call_method('sysvx', $uplo, 0, $b, $af, $ipiv, $x, $rcond, $ferr, $berr, $info);
+	if( $info < $adims[$di] && $info > 0){
 		$info--;
 		laerror("msymsolvex: Can't solve system of linear equations:\nfactor D($info,$info)".
 		" of coefficient matrix is exactly 0");
@@ -3042,17 +3034,9 @@ sub PDL::msymsolvex {
 	elsif ($info != 0 and $_laerror){
 		warn("msymsolvex: The matrix is singular to working precision");
 	}
-	$result{rcondition} = $rcond;
-	$result{ferror} = $ferr;
-	$result{berror} = $berr;
-	$result{info} = $info;
-        if ($d){
-		$result{D} = $af;
-		$result{pivot} = $ipiv;
-	}
-
+	my %result = (rcondition => $rcond, ferror => $ferr, berror => $berr, info => $info);
+	@result{qw(pivot D)} = ($ipiv, $af) if $d;
 	wantarray ? ($x->t->sever, %result): $x->t->sever;
-
 }
 
 =head2 mpossolve
