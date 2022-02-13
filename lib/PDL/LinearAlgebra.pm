@@ -2620,106 +2620,50 @@ sub mrq {shift->mrq(@_)}
 
 sub PDL::mrq {
 	&_2d_array;
+	my $di = $_[0]->dims_internal;
+	my @di_vals = $_[0]->dims_internal_values;
+	my $slice_prefix = ',' x $di;
+	my @diag_args = ($di, $di+1);
 	my($m, $full) = @_;
 	my(@dims) = $m->dims;
 	my ($q, $r);
         $m = $m->t->copy;
-	my $min = $dims[0] < $dims[1] ?  $dims[0] : $dims[1];
-
-	my $tau = zeroes($m->type, $min);
-	$m->gerqf($tau, (my $info = pdl(long,0)));
+	my $min = $dims[$di] < $dims[$di+1] ? $dims[$di] : $dims[$di+1];
+	my $tau = zeroes($m->type, @di_vals, $min);
+	$m->_call_method('gerqf', $tau, my $info = null);
 	if ($info){
 		laerror ("mrq: Error $info in gerqf\n");
-		$r = $q = $m;
+		return ($m, $m->t->sever, $info);
+	}
+	if ($dims[$di] > $dims[$di+1] && $full){
+		$q = ref($m)->new_from_specification($m->type, @di_vals, @dims[$di,$di]);
+		$q->slice("$slice_prefix@{[$dims[$di] - $dims[$di+1]]}:") .= $m;
+	}
+	elsif ($dims[$di] < $dims[$di+1]){
+		$q = $m->slice("$slice_prefix@{[$dims[$di+1] - $dims[$di]]}:")->copy;
 	}
 	else{
-		if ($dims[0] > $dims[1] && $full){
-			$q = zeroes($m->type, $dims[0],$dims[0]);
-			$q(($dims[0] - $dims[1]):,:) .= $m;
-		}
-		elsif ($dims[0] < $dims[1]){
-			$q = $m(($dims[1] - $dims[0]):,:)->copy;
-		}
-		else{
-			$q = $m->copy;
-		}
-
-		$q->orgrq($tau, $info);
-		return $q->t->sever unless wantarray;
-
-		if ($dims[0] > $dims[1] && $full){
-			$r = zeroes ($m->type,$dims[0],$dims[1]);
-			$m->t->tricpy(0,$r);
-			$r(:($min-1),:($min-1))->diagonal(0,1) .= 0;
-		}
-		elsif ($dims[0] < $dims[1]){
-			my $temp = zeroes($m->type,$dims[1],$dims[1]);
-			$temp(-$min:, :) .= $m->t->sever;
-			$r = PDL::zeroes($temp);
-			$temp->tricpy(0,$r);
-			$r = $r(-$min:, :);
-		}
-		else{
-			$r = zeroes($m->type, $min, $min);
-			$m->t->(($dims[0] - $dims[1]):, :)->tricpy(0,$r);
-		}
+		$q = $m->copy;
 	}
-	return ($r, $q->t->sever, $info);
-
-}
-
-sub PDL::Complex::mrq {
-	&_2d_array;
-	my($m, $full) = @_;
-	my(@dims) = $m->dims;
-	my ($q, $r);
-        $m = $m->t->copy;
-	my $min = $dims[1] < $dims[2] ?  $dims[1] : $dims[2];
-
-	my $tau = zeroes($m->type, 2, $min);
-	$m->cgerqf($tau, (my $info = pdl(long,0)));
-	if ($info){
-		laerror ("mrq: Error $info in cgerqf\n");
-		$r = $q = $m;
+	$q->_call_method(['orgrq','cungrq'], $tau, $info);
+	return $q->t->sever unless wantarray;
+	if ($dims[$di] > $dims[$di+1] && $full){
+		$r = ref($m)->new_from_specification($m->type,@di_vals, @dims[$di,$di+1]);
+		$m->t->tricpy(0,$r);
+		$r->slice("$slice_prefix:@{[$min-1]},:@{[$min-1]}")->diagonal(@diag_args) .= 0;
+	}
+	elsif ($dims[$di] < $dims[$di+1]){
+		my $temp = ref($m)->new_from_specification($m->type,@di_vals, @dims[$di+1,$di+1]);
+		$temp->slice("$slice_prefix-$min:") .= $m->t;
+		$r = PDL::zeroes($temp);
+		$temp->tricpy(0,$r);
+		$r = $r->slice("$slice_prefix-$min:")->sever;
 	}
 	else{
-		if ($dims[1] > $dims[2] && $full){
-			$q = PDL::Complex->new_from_specification($m->type, 2, $dims[1],$dims[1]);
-			$q .= 0;
-			$q(,($dims[1] - $dims[2]):,:) .= $m;
-		}
-		elsif ($dims[1] < $dims[2]){
-			$q = $m(,($dims[2] - $dims[1]):,:)->copy;
-		}
-		else{
-			$q = $m->copy;
-		}
-
-		$q->cungrq($tau, $info);
-		return $q->t->sever unless wantarray;
-
-		if ($dims[1] > $dims[2] && $full){
-			$r = PDL::Complex->new_from_specification($m->type,2,$dims[1],$dims[2]);
-			$r .= 0;
-			$m->t->tricpy(0,$r);
-			$r(,:($min-1),:($min-1))->diagonal(1,2) .= 0;
-		}
-		elsif ($dims[1] < $dims[2]){
-			my $temp = PDL::Complex->new_from_specification($m->type,2,$dims[2],$dims[2]);
-			$temp .= 0;
-			$temp(,-$min:, :) .= $m->t;
-			$r = PDL::zeroes($temp);
-			$temp->tricpy(0,$r);
-			$r = $r(,-$min:, :)->sever;
-		}
-		else{
-			$r = PDL::Complex->new_from_specification($m->type, 2,$min, $min);
-			$r .= 0;
-			$m->t->(,($dims[1] - $dims[2]):, :)->tricpy(0,$r);
-		}
+		$r = ref($m)->new_from_specification($m->type,@di_vals, $min, $min);
+		$m->t->slice("$slice_prefix@{[$dims[$di] - $dims[$di+1]]}:")->tricpy(0,$r);
 	}
 	return ($r, $q->t->sever, $info);
-
 }
 
 =head2 mql
