@@ -2908,48 +2908,20 @@ Work on transposed array(s).
 
 =cut
 
-sub mtrisolve {shift->mtrisolve(@_)}
-
+*mtrisolve = \&PDL::mtrisolve;
 sub PDL::mtrisolve{
 	&_square;
 	my $uplo = splice @_, 1, 1;
 	&_matrices_match;
 	&_same_dims;
 	my($a, $b, $trans, $diag) = @_;
-	my(@adims) = $a->dims;
-	my(@bdims) = $b->dims;
-	my ($info, $c);
-       	$uplo = 1 - $uplo;
-       	$trans = 1 - $trans;
-	$c = $b->is_inplace ? $b->t : $b->t->copy;
-	@adims = @adims[2..$#adims];
-	$info = @adims ? zeroes(long,@adims) : pdl(long,0);
-	$a->trtrs($uplo, $trans, $diag, $c, $info);
-
+	$uplo = 1 - $uplo;
+	$trans = 1 - $trans;
+	my $c = $b->is_inplace ? $b->t : $b->t->copy;
+	$a->_call_method('trtrs', $uplo, $trans, $diag, $c, my $info = null);
 	_error($info, "mtrisolve: Can't solve system of linear equations: matrix (PDL(s) %s) is/are singular(s)");
-	return wantarray  ? $b->is_inplace(0) ? ($b, $info) : ($c->t->sever, $info) :
-				$b->is_inplace(0) ? $b : $c->t->sever;
-}
-
-sub PDL::Complex::mtrisolve{
-	&_square;
-	my $uplo = splice @_, 1, 1;
-	&_matrices_match;
-	&_same_dims;
-	my($a, $b, $trans, $diag) = @_;
-	my(@adims) = $a->dims;
-	my(@bdims) = $b->dims;
-	my ($info, $c);
-       	$uplo = 1 - $uplo;
-       	$trans = 1 - $trans;
-	$c = $b->is_inplace ? $b->t : $b->t->copy;
-	@adims = @adims[3..$#adims];
-	$info = @adims ? zeroes(long,@adims) : pdl(long,0);
-	$a->ctrtrs($uplo, $trans, $diag, $c, $info);
-
-	_error($info, "mtrisolve: Can't solve system of linear equations: matrix (PDL(s) %s) is/are singular(s)");
-	return wantarray  ? $b->is_inplace(0) ? ($b, $info) : ($c->t->sever, $info) :
-				$b->is_inplace(0) ? $b : $c->t->sever;
+	$b = $c->t->sever if !$b->is_inplace(0);
+	wantarray ? ($b, $info) : $b;
 }
 
 =head2 msymsolve
