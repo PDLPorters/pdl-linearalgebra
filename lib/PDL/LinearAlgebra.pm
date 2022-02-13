@@ -222,6 +222,7 @@ sub PDL::_similar {
   my ($m, @vdims) = @_;
   ref($m)->new_from_specification($m->type, @di_vals, @vdims);
 }
+sub PDL::_similar_null { ref($_[0])->null }
 
 sub t {shift->t(@_)}
 sub PDL::t {
@@ -745,23 +746,15 @@ Returns an orthonormal basis of the range space of matrix A.
 
 sub PDL::morth {
 	&_2d_array;
+	my $di = $_[0]->dims_internal;
+	my $slice_prefix = ',' x $di;
 	my ($m, $tol) = @_;
 	my @dims = $m->dims;
-	my ($u, $s, $rank, $info, $err);
 	$tol =  (defined $tol) ? $tol  : ($m->type == double) ? 1e-8 : 1e-5;
-
-	$err = setlaerror(NO);
-	($u, $s, undef, $info) = $m->mdsvd;
-	setlaerror($err);
+	(my $u, my $s, undef, my $info) = $m->mdsvd;
 	barf("morth: SVD algorithm did not converge\n") if $info;
-
-	$rank = (which($s > $tol))->dim(0) - 1;
-	if(@dims == 3){
-		return $rank < 0 ? PDL::Complex->null : $u(,:$rank,)->sever;
-	}
-	else{
-		return $rank < 0 ? null : $u(:$rank,)->sever;
-	}
+	my $rank = (which($s > $tol))->dim(0) - 1;
+	$rank < 0 ? $m->_similar_null : $u->slice("$slice_prefix:$rank,")->sever;
 }
 
 =head2 mnull
