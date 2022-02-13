@@ -1131,32 +1131,15 @@ Works on transposed array.
 sub PDL::mhessen {
 	&_square;
 	my $di = $_[0]->dims_internal;
+	my @diag_args = ($di, $di+1);
+	my $slice_arg = (',' x $di) . ":-2, 1:";
 	my $m = shift;
 	my(@dims) = $m->dims;
-	my ($info, $h, $q);
 	$m = $m->t->copy;
-	$info = pdl(long, 0);
-	my $tau = $m->_similar($dims[$di]-1);
-	$m->_call_method('gehrd',1,$dims[$di],$tau,$info);
-	if(@dims == 3){
-		if (wantarray){
-			$q = $m->copy;
-			$q->cunghr(1, $dims[-2], $tau, $info);
-		}
-		$m = $m->t;
-		$h = $m->mtri;
-		$h((0),:-2, 1:)->diagonal(0,1) .= $m((0),:-2, 1:)->diagonal(0,1);
-		$h((1),:-2, 1:)->diagonal(0,1) .= $m((1),:-2, 1:)->diagonal(0,1);
-	}
-	else{
-		if (wantarray){
-			$q = $m->copy;
-			$q->orghr(1, $dims[0], $tau, $info);
-		}
-		$m = $m->t;
-		$h = $m->mtri;
-		$h(:-2, 1:)->diagonal(0,1) .= $m(:-2, 1:)->diagonal(0,1);
-	}
+	$m->_call_method('gehrd',1,$dims[$di], my $tau = $m->_similar($dims[$di]-1),my $info = null);
+	(my $q = $m->copy)->_call_method(['orghr','cunghr'], 1, $dims[$di], $tau, $info) if wantarray;
+	my $h = ($m = $m->t)->mtri;
+	$h->slice($slice_arg)->diagonal(@diag_args) .= $m->slice($slice_arg)->diagonal(@diag_args);
 	wantarray ? return ($h, $q->t->sever) : $h;
 }
 
