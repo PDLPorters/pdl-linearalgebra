@@ -92,7 +92,7 @@ sub norm {
 	# 		     such that max abs will be real
 
 	#require PDL::LinearAlgebra::Complex;
-	PDL::LinearAlgebra::Complex::cnrm2($m,1, my $ret = PDL::null());
+	my $ret = PDL::LinearAlgebra::Complex::cnrm2($m);
 	if ($real){
 		my ($index, $scale);
 		$m = PDL::Complex::Cscale($m,1/$ret->dummy(0))->reshape(-1);

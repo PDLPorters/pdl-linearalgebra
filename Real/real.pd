@@ -100,9 +100,6 @@ PDL::LinearAlgebra::Real - PDL interface to the real lapack linear algebra progr
  $job = 0;
  gesdd($a, $job, $info, $s , $u, $v);
 
-
-Blas vector routine use increment.
-
 =head1 DESCRIPTION
 
 This module provides an interface to parts of the real lapack library.
@@ -10067,19 +10064,17 @@ Row major version of syrk
 
 pp_def("dot",
        HandleBad => 0,
-	Pars => '[phys]a(n);int [phys]inca();[phys]b(m);int [phys]incb();[o,phys]c()',
+	Pars => '[phys]a(n);[phys]b(n);[o,phys]c()',
 	GenericTypes => [F,D],
 	Code => '
 			extern $GENERIC() $TFD(s,d)dot_(integer *n, $GENERIC() *dx, integer *incx, $GENERIC() *dy,
 			integer *incy);
-		integer n = (integer ) $SIZE(n)/$inca();
-
 		$c() = $TFD(sdot_,ddot_)(
-		&n,
+		&(integer){$SIZE(n)},
 		$P(a),
-		$P(inca),
+		&(integer){1},
 		$P(b),
-		$P(incb));
+		&(integer){1});
 ',
       Doc => '
 
@@ -10091,27 +10086,25 @@ Dot product of two vectors using Blas.
 
  $a = random(5);
  $b = random(5);
- $c = dot($a, 1, $b, 1)
+ $c = dot($a, $b)
 
 ');
 
 
 pp_def("axpy",
        HandleBad => 0,
-	Pars => '[phys]a(n);int [phys]inca();[phys] alpha();[io,phys]b(m);int [phys]incb()',
+	Pars => '[phys]a(n);[phys] alpha();[io,phys]b(m)',
 	GenericTypes => [F,D],
 	Code => '
 			extern int $TFD(s,d)axpy_(integer *n, $GENERIC() *da, $GENERIC() *dx,
 			integer *incx, $GENERIC() *dy, integer *incy);
-		integer n = (integer ) $SIZE(n)/$inca();
-
 		$TFD(saxpy_,daxpy_)(
-		&n,
+		&(integer){$SIZE(n)},
 		$P(alpha),
 		$P(a),
-		$P(inca),
+		&(integer){1},
 		$P(b),
-		$P(incb));
+		&(integer){1});
 ',
       Doc => '
 
@@ -10125,23 +10118,21 @@ Returns result in b.
 
  $a = random(5);
  $b = random(5);
- axpy($a, 1, 12, $b, 1)
+ axpy($a, 12, $b)
 
 ');
 
 pp_def("nrm2",
        HandleBad => 0,
-	Pars => '[phys]a(n);int [phys]inca();[o,phys]b()',
+	Pars => '[phys]a(n);[o]b()',
 	GenericTypes => [F,D],
 	Code => '
 			extern $GENERIC() $TFD(s,d)nrm2_(integer *n, $GENERIC() *dx,
 			integer *incx);
-		integer n = (integer ) $SIZE(n)/$inca();
-
 		$b() = $TFD(snrm2_,dnrm2_)(
-		&n,
+		&(integer){$SIZE(n)},
 		$P(a),
-		$P(inca));
+		&(integer){1});
 ',
       Doc => '
 
@@ -10152,23 +10143,21 @@ Euclidean norm of a vector using Blas.
 =for example
 
  $a = random(5);
- $norm2 = norm2($a,1)
+ $norm2 = norm2($a)
 
 ');
 
 pp_def("asum",
        HandleBad => 0,
-	Pars => '[phys]a(n);int [phys]inca();[o,phys]b()',
+	Pars => '[phys]a(n);[o]b()',
 	GenericTypes => [F,D],
 	Code => '
 			extern $GENERIC() $TFD(s,d)asum_(integer *n, $GENERIC() *dx,
 			integer *incx);
-		integer n = (integer ) $SIZE(n)/$inca();
-
 		$b() = $TFD(sasum_,dasum_)(
-		&n,
+		&(integer){$SIZE(n)},
 		$P(a),
-		$P(inca));
+		&(integer){1});
 ',
       Doc => '
 
@@ -10179,24 +10168,22 @@ Sum of absolute values of a vector using Blas.
 =for example
 
  $a = random(5);
- $absum = asum($a,1)
+ $absum = asum($a)
 
 ');
 
 pp_def("scal",
        HandleBad => 0,
-	Pars => '[io,phys]a(n);int [phys]inca();[phys]scale()',
+	Pars => '[io,phys]a(n);scale()',
 	GenericTypes => [F,D],
 	Code => '
 			extern int $TFD(s,d)scal_(integer *n, $GENERIC() *sa,
 			$GENERIC() *dx, integer *incx);
-		integer n = (integer ) $SIZE(n)/$inca();
-
 		$TFD(sscal_,dscal_)(
-		&n,
+		&(integer){$SIZE(n)},
 		$P(scale),
 		$P(a),
-		$P(inca));
+		&(integer){1});
 ',
       Doc => '
 
@@ -10207,25 +10194,23 @@ Scale a vector by a constant using Blas.
 =for example
 
  $a = random(5);
- $a->scal(1, 0.5)
+ $a->scal(0.5)
 
 ');
 
 pp_def("rot",
        HandleBad => 0,
-	Pars => '[io,phys]a(n);int [phys]inca();[phys]c(); [phys]s();[io,phys]b(n);int [phys]incb()',
+	Pars => '[io,phys]a(n);[phys]c(); [phys]s();[io,phys]b(n)',
 	GenericTypes => [F,D],
 	Code => '
 			extern int $TFD(s,d)rot_(integer *n, $GENERIC() *dx,
 			integer *incx, $GENERIC() *dy, integer *incy, $GENERIC() *c, $GENERIC() *s);
-		integer n = (integer ) $SIZE(n)/$inca();
-
 		$TFD(srot_,drot_)(
-		&n,
+		&(integer){$SIZE(n)},
 		$P(a),
-		$P(inca),
+		&(integer){1},
 		$P(b),
-		$P(incb),
+		&(integer){1},
 		$P(c),
 		$P(s)
 		);
@@ -10240,7 +10225,7 @@ Applies plane rotation using Blas.
 
  $a = random(5);
  $b = random(5);
- rot($a, 1, 0.5, 0.7, $b, 1)
+ rot($a, 0.5, 0.7, $b)
 
 ');
 

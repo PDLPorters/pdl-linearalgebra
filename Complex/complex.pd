@@ -67,7 +67,7 @@ sub pp_defc {
   $hash{Code} = "$decl\n$hash{Code}";
   pp_def("__Cc$function", %hash);
   my %hash2 = %hash;
-  $hash2{Pars} =~ s/\(2,/(/g;
+  $hash2{Pars} =~ s/\((?:ri=)?2,/(/g;
   $hash2{GenericTypes} = [map $float2native{$_} || $_, @{$hash{GenericTypes}}];
   $hash2{Code} =~ s/\$GENERIC\(\)/\$TFD(float,double)/g;
   $hash2{Code} =~ s/\$TFD\(/\$TGC(/g;
@@ -4993,38 +4993,38 @@ Complex version of L<PDL::LinearAlgebra::Real/rmsyrk>
 }
 pp_defc("dot",
        _decl => <<'EOF',
-			extern $GENERIC() $TFD(c,z)dotu_($GENERIC() *ret, integer *n, $GENERIC() *dx, integer *incx, $GENERIC() *dy,
+			extern complex $TFD(float,double) $TFD(c,z)dotu_(integer *n, $GENERIC() *dx, integer *incx, $GENERIC() *dy,
 			integer *incy);
 EOF
        HandleBad => 0,
-	Pars => '[phys]a(2,n);int [phys]inca();[phys]b(2,n);int [phys]incb();[o,phys]c(2)',
+	Pars => '[phys]a(2,n);[phys]b(2,n);[o]c(ri=2)',
 	Code =>  '
-		integer n = (integer ) $SIZE(n)/$inca();
-		$TFD(cdotu_,zdotu_)(
-		$P(c),
-		&n,
+		complex $TFD(float,double) *cptr = (void*)&$c(ri=>0), t;
+		t = $TFD(cdotu_,zdotu_)(
+		&(integer){$SIZE(n)},
 		$P(a),
-		$P(inca),
+		&(integer){1},
 		$P(b),
-		$P(incb));
+		&(integer){1});
+		*cptr = t;
 ');
 
 pp_defc("dotc",
        _decl => <<'EOF',
-			extern $GENERIC() $TFD(c,z)dotc_($GENERIC() *ret, integer *n, $GENERIC() *dx, integer *incx, $GENERIC() *dy,
+			extern $GENERIC() $TFD(c,z)dotc_(integer *n, $GENERIC() *dx, integer *incx, $GENERIC() *dy,
 			integer *incy);
 EOF
        HandleBad => 0,
-	Pars => '[phys]a(2,n);int [phys]inca();[phys]b(2,n);int [phys]incb();[o,phys]c(2)',
+	Pars => '[phys]a(2,n);[phys]b(2,n);[o,phys]c(ri=2)',
 	Code =>  '
-		integer n = (integer ) $SIZE(n)/$inca();
-		$TFD(cdotc_,zdotc_)(
-		$P(c),
-		&n,
+		complex $TFD(float,double) *cptr = (void*)&$c(ri=>0), t;
+		t = $TFD(cdotc_,zdotc_)(
+		&(integer){$SIZE(n)},
 		$P(a),
-		$P(inca),
+		&(integer){1},
 		$P(b),
-		$P(incb));
+		&(integer){1});
+		*cptr = t;
 ',
 Doc=>'
 
@@ -5041,16 +5041,15 @@ pp_defc("axpy",
 		integer *incx, $GENERIC() *dy, integer *incy);
 EOF
        HandleBad => 0,
-	Pars => '[phys]a(2,n);int [phys]inca();[phys] alpha(2);[io,phys]b(2,n);int [phys]incb()',
+	Pars => '[phys]a(2,n);[phys] alpha(2);[io,phys]b(2,n)',
 	Code =>  '
-		integer n = (integer ) $SIZE(n)/$inca();
 		$TFD(caxpy_,zaxpy_)(
-		&n,
+		&(integer){$SIZE(n)},
 		$P(alpha),
 		$P(a),
-		$P(inca),
+		&(integer){1},
 		$P(b),
-		$P(incb));
+		&(integer){1});
 ');
 
 pp_defc("nrm2",
@@ -5059,13 +5058,12 @@ pp_defc("nrm2",
 			integer *incx);
 EOF
        HandleBad => 0,
-	Pars => '[phys]a(2,n);int [phys]inca();[o,phys]b()',
+	Pars => '[phys]a(2,n);[o]b()',
 	Code =>  '
-		integer n = (integer ) $SIZE(n)/$inca();
 		$b() = $TFD(sc,dz)nrm2_(
-		&n,
+		&(integer){$SIZE(n)},
 		$P(a),
-		$P(inca));
+		&(integer){1});
 ');
 
 pp_defc("asum",
@@ -5074,13 +5072,12 @@ pp_defc("asum",
 		integer *incx);
 EOF
        HandleBad => 0,
-	Pars => '[phys]a(2,n);int [phys]inca();[o,phys]b()',
+	Pars => '[phys]a(2,n);[o]b()',
 	Code =>  '
-		integer n = (integer ) $SIZE(n)/$inca();
 		$b() = $TFD(sc,dz)asum_(
-		&n,
+		&(integer){$SIZE(n)},
 		$P(a),
-		$P(inca));
+		&(integer){1});
 ');
 
 pp_defc("scal",
@@ -5089,25 +5086,28 @@ pp_defc("scal",
 		$GENERIC() *dx, integer *incx);
 EOF
         HandleBad => 0,
-	Pars => '[io,phys]a(2,n);int [phys]inca();[phys]scale(2)',
+	Pars => '[io,phys]a(2,n);scale(2)',
 	Code =>  '
-		integer n = (integer ) $SIZE(n)/$inca();
 		$TFD(cscal_,zscal_)(
-		&n,
+		&(integer){$SIZE(n)},
 		$P(scale),
 		$P(a),
-		$P(inca));
+		&(integer){1});
 ');
 
-pp_def("sscal",
-        HandleBad => 0,
-	Pars => '[io,phys]a(2,n);int [phys]inca();[phys]scale()',
-	GenericTypes => [F],
-	Code =>  '
-		extern int csscal_(integer *n, $GENERIC() *sa,
+pp_defc("sscal",
+	_decl => <<'EOF',
+		extern int $TFD(cs,zd)scal_(integer *n, $GENERIC() *sa,
 		$GENERIC() *dx, integer *incx);
-		integer n = (integer ) $SIZE(n)/$inca();
-		csscal_( &n, $P(scale), $P(a), $P(inca));
+EOF
+        HandleBad => 0,
+	Pars => '[io,phys]a(2,n);scale()',
+	Code =>  '
+		$TFD(csscal_,zdscal_)(
+		&(integer){$SIZE(n)},
+		$P(scale),
+		$P(a),
+		&(integer){1});
 ',
 Doc=>'
 
@@ -5173,7 +5173,7 @@ pp_defc("laswp",
 		*k1, integer *k2, integer *ipiv, integer *incx);
 EOF
        HandleBad => 0,
-	Pars => '[io,phys]A(2,m,n); int [phys]k1(); int [phys]k2(); int [phys]ipiv(p);int [phys]inc()',
+	Pars => '[io,phys]A(2,m,n); int [phys]k1(); int [phys]k2(); int [phys]ipiv(p)',
 	Code => '
 		$TFD(claswp_,zlaswp_)(
 		&(integer){$SIZE(n)},
@@ -5182,7 +5182,7 @@ EOF
 		$P(k1),
 		$P(k2),
 		$P(ipiv),
-		$P(inc));
+		&(integer){1});
 ');
 
 ################################################################################
