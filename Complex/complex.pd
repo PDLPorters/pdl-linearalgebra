@@ -2034,7 +2034,7 @@ pp_defc("sysv",
 		$GENERIC() *work, integer *lwork, integer *info);
 EOF
        HandleBad => 0,
-	Pars => '[io,phys]A(2,n,n);  int uplo(); [io,phys]B(2,n,m); int [o,phys]ipiv(n); int [o,phys]info()',
+	Pars => '[io,phys]A(2,n,n);  int uplo(); [io,phys]B(2,n,m); int [o]ipiv(n); int [o]info()',
 	Code => generate_code '
 		char puplo = \'U\';
 		integer lwork = -1;

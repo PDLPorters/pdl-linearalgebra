@@ -4052,7 +4052,7 @@ that it solves the original system before equilibration.
 
 pp_def("sysv",
        HandleBad => 0,
-	Pars => '[io,phys]A(n,n);  int uplo(); [io,phys]B(n,m); int [o,phys]ipiv(n); int [o,phys]info()',
+	Pars => '[io,phys]A(n,n);  int uplo(); [io,phys]B(n,m); int [o]ipiv(n); int [o]info()',
 	GenericTypes => [F,D],
 	Code => generate_code '
 		char puplo = \'U\';

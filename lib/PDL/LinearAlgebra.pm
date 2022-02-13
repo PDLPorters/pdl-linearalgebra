@@ -2952,49 +2952,20 @@ Works on transposed array(s).
 
 =cut
 
-sub msymsolve {shift->msymsolve(@_)}
-
+*msymsolve = \&PDL::msymsolve;
 sub PDL::msymsolve {
 	&_square;
 	my $uplo = splice @_, 1, 1;
 	&_matrices_match;
 	&_same_dims;
 	my($a, $b) = @_;
-	my(@adims) = $a->dims;
-	my(@bdims) = $b->dims;
-	my ($ipiv, $info, $c);
        	$uplo = 1 - $uplo;
 	$a = $a->copy;
-	$c =  $b->is_inplace ? $b->t : $b->t->copy;
-	$ipiv = zeroes(long, @adims[1..$#adims]);
-	@adims = @adims[2..$#adims];
-	$info = @adims ? zeroes(long,@adims) : pdl(long,0);
-	$a->sysv($uplo, $c, $ipiv, $info);
+	my $c = $b->is_inplace ? $b->t : $b->t->copy;
+	$a->_call_method('sysv', $uplo, $c, my $ipiv = null, my $info = null);
 	_error($info, "msymsolve: Can't solve system of linear equations (after sytrf factorization): matrix (PDL(s) %s) is/are singular(s)");
-	wantarray ? (  ( $b->is_inplace(0) ? $b : $c->t->sever ), $a, $ipiv, $info):
-		$b->is_inplace(0) ? $b : $c->t->sever;
-
-}
-
-sub PDL::Complex::msymsolve {
-	&_square;
-	my $uplo = splice @_, 1, 1;
-	&_matrices_match;
-	&_same_dims;
-	my($a, $b) = @_;
-	my(@adims) = $a->dims;
-	my(@bdims) = $b->dims;
-	my ($ipiv, $info, $c);
-       	$uplo = 1 - $uplo;
-	$a = $a->copy;
-	$c =  $b->is_inplace ? $b->t : $b->t->copy;
-	$ipiv = zeroes(long, @adims[2..$#adims]);
-	@adims = @adims[3..$#adims];
-	$info = @adims ? zeroes(long,@adims) : pdl(long,0);
-	$a->csysv($uplo, $c, $ipiv, $info);
-	_error($info, "msymsolve: Can't solve system of linear equations (after sytrf factorization): matrix (PDL(s) %s) is/are singular(s)");
-	wantarray ? (  ( $b->is_inplace(0) ? $b : $c->t->sever ), $a, $ipiv, $info):
-		$b->is_inplace(0) ? $b : $c->t->sever;
+	$b = $c->t->sever if !$b->is_inplace(0);
+	wantarray ? ($b, $a, $ipiv, $info) : $b;
 }
 
 =head2 msymsolvex
