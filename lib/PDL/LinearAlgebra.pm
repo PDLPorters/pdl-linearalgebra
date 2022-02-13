@@ -2494,25 +2494,25 @@ sub PDL::mqr {
 	&_2d_array;
 	my $di = $_[0]->dims_internal;
 	my @di_vals = $_[0]->dims_internal_values;
-	my $slice_prefix = ',' x $di;
 	my($m, $full) = @_;
 	my(@dims) = $m->dims;
 	my ($q, $r);
         $m = $m->t->copy;
 	my $min = $dims[$di] < $dims[$di+1] ? $dims[$di] : $dims[$di+1];
+	my $slice_arg = (',' x $di) . ",:@{[$min-1]}";
 	my $tau = $m->_similar($min);
 	$m->_call_method('geqrf', $tau, my $info = null);
 	if ($info){
 		laerror ("mqr: Error $info in geqrf\n");
 		return ($m->t->sever, $m, $info);
 	}
-	$q = ($dims[$di] > $dims[$di+1] ? $m->slice("$slice_prefix:,:@{[$min-1]}") : $m)->copy;
+	$q = ($dims[$di] > $dims[$di+1] ? $m->slice($slice_arg) : $m)->copy;
 	$q->reshape(@di_vals, @dims[$di+1,$di+1]) if $full && $dims[$di] < $dims[$di+1];
 	$q->_call_method(['orgqr','cungqr'], $tau, $info);
 	return $q->t->sever unless wantarray;
 	if ($dims[$di] < $dims[$di+1] && !$full){
 		$r = $m->_similar($min, $min);
-		$m->t->slice("$slice_prefix,:@{[$min-1]}")->tricpy(0,$r);
+		$m->t->slice($slice_arg)->tricpy(0,$r);
 	}
 	else{
 		$r = $m->_similar(@dims[$di,$di+1]);
@@ -2696,12 +2696,12 @@ from Lapack and returns C<Q> in scalar context. Works on transposed array.
 sub PDL::mlq {
 	&_2d_array;
 	my $di = $_[0]->dims_internal;
-	my $slice_prefix = ',' x $di;
 	my($m, $full) = @_;
 	my(@dims) = $m->dims;
 	my ($q, $l);
         $m = $m->t->copy;
 	my $min = $dims[$di] < $dims[$di+1] ? $dims[$di] : $dims[$di+1];
+	my $slice_arg = (',' x $di) . ":@{[$min-1]}";
 	my $tau = $m->_similar($min);
 	$m->_call_method('gelqf', $tau, my $info = null);
 	if ($info){
@@ -2710,10 +2710,10 @@ sub PDL::mlq {
 	}
 	if ($dims[$di] > $dims[$di+1] && $full){
 		$q = $m->_similar(@dims[$di,$di]);
-		$q->slice("$slice_prefix:@{[$min-1]}") .= $m;
+		$q->slice($slice_arg) .= $m;
 	}
 	elsif ($dims[$di] < $dims[$di+1]){
-		$q = $m->slice("$slice_prefix:@{[$min-1]}")->copy;
+		$q = $m->slice($slice_arg)->copy;
 	}
 	else{
 		$q = $m->copy;
@@ -2722,7 +2722,7 @@ sub PDL::mlq {
 	return $q->t->sever unless wantarray;
 	if ($dims[$di] > $dims[$di+1] && !$full){
 		$l = $m->_similar(@dims[$di+1,$di+1]);
-		$m->t->slice("$slice_prefix:@{[$min-1]}")->tricpy(1,$l);
+		$m->t->slice($slice_arg)->tricpy(1,$l);
 	}
 	else{
 		$l = $m->_similar(@dims[$di,$di+1]);
