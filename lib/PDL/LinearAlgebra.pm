@@ -2521,72 +2521,35 @@ from Lapack and returns C<Q> in scalar context. Works on transposed array.
 
 =cut
 
-sub mqr {shift->mqr(@_)}
-
+*mqr = \&PDL::mqr;
 sub PDL::mqr {
 	&_2d_array;
+	my $di = $_[0]->dims_internal;
+	my @di_vals = $_[0]->dims_internal_values;
+	my $slice_prefix = ',' x $di;
+	my @diag_args = ($di, $di+1);
 	my($m, $full) = @_;
 	my(@dims) = $m->dims;
 	my ($q, $r);
         $m = $m->t->copy;
-	my $min = $dims[0] < $dims[1] ?  $dims[0] : $dims[1];
-
-	my $tau = zeroes($m->type, $min);
-	$m->geqrf($tau, (my $info = pdl(long,0)));
+	my $min = $dims[$di] < $dims[$di+1] ? $dims[$di] : $dims[$di+1];
+	my $tau = zeroes($m->type, @di_vals, $min);
+	$m->_call_method('geqrf', $tau, my $info = null);
 	if ($info){
-		laerror("mqr: Error $info in geqrf\n");
-		$q = $r = $m;
+		laerror ("mqr: Error $info in geqrf\n");
+		return ($m->t->sever, $m, $info);
+	}
+	$q = ($dims[$di] > $dims[$di+1] ? $m->slice("$slice_prefix:,:@{[$min-1]}") : $m)->copy;
+	$q->reshape(@di_vals, @dims[$di+1,$di+1]) if $full && $dims[$di] < $dims[$di+1];
+	$q->_call_method(['orgqr','cungqr'], $tau, $info);
+	return $q->t->sever unless wantarray;
+	if ($dims[$di] < $dims[$di+1] && !$full){
+		$r = ref($m)->new_from_specification($m->type,@di_vals, $min, $min);
+		$m->t->slice("$slice_prefix,:@{[$min-1]}")->tricpy(0,$r);
 	}
 	else{
-		$q = $dims[0] > $dims[1] ? $m(:,:($min-1))->copy : $m->copy;
-        	$q->reshape($dims[1], $dims[1]) if $full && $dims[0] < $dims[1];
-
-		$q->orgqr($tau, $info);
-		return $q->t->sever unless wantarray;
-
-		if ($dims[0] < $dims[1] && !$full){
-			$r = zeroes($m->type, $min, $min);
-			$m->t->(,:($min-1))->tricpy(0,$r);
-		}
-		else{
-			$r = zeroes($m->type, $dims[0],$dims[1]);
-			$m->t->tricpy(0,$r);
-		}
-	}
-	return ($q->t->sever, $r, $info);
-}
-
-sub PDL::Complex::mqr {
-	&_2d_array;
-	my($m, $full) = @_;
-	my(@dims) = $m->dims;
-	my ($q, $r);
-        $m = $m->t->copy;
-	my $min = $dims[1] < $dims[2] ?  $dims[1] : $dims[2];
-
-	my $tau = zeroes($m->type, 2, $min);
-	$m->cgeqrf($tau, (my $info = pdl(long,0)));
-	if ($info){
-		laerror("mqr: Error $info in cgeqrf\n");
-		$q = $r = $m;
-	}
-	else{
-		$q = $dims[1] > $dims[2] ? $m(,:,:($min-1))->copy : $m->copy;
-        	$q->reshape(2,$dims[2], $dims[2]) if $full && $dims[1] < $dims[2];
-
-		$q->cungqr($tau, $info);
-		return $q->t->sever unless wantarray;
-
-		if ($dims[1] < $dims[2] && !$full){
-			$r = PDL::Complex->new_from_specification($m->type, 2, $min, $min);
-			$r .= 0;
-			$m->t->(,,:($min-1))->tricpy(0,$r);
-		}
-		else{
-			$r = PDL::Complex->new_from_specification($m->type, 2, $dims[1],$dims[2]);
-			$r .= 0;
-			$m->t->tricpy(0,$r);
-		}
+		$r = ref($m)->new_from_specification($m->type,@di_vals, @dims[$di,$di+1]);
+		$m->t->tricpy(0,$r);
 	}
 	return ($q->t->sever, $r, $info);
 }
@@ -2794,7 +2757,6 @@ sub PDL::mlq {
 	}
 	$q->_call_method(['orglq','cunglq'], $tau, $info);
 	return $q->t->sever unless wantarray;
-
 	if ($dims[$di] > $dims[$di+1] && !$full){
 		$l = ref($m)->new_from_specification($m->type,@di_vals, @dims[$di+1,$di+1]);
 		$m->t->slice("$slice_prefix:@{[$min-1]}")->tricpy(1,$l);
