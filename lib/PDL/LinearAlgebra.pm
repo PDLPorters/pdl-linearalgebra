@@ -780,27 +780,17 @@ Works on transposed array.
 
 sub PDL::mnull {
 	&_2d_array;
+	my $di = $_[0]->dims_internal;
+	my $slice_prefix = ',' x $di;
 	my ($m, $tol) = @_;
 	my @dims = $m->dims;
-	my ($v, $s, $rank, $info, $err);
-	$tol =  (defined $tol) ? $tol  : ($m->type == double) ? 1e-8 : 1e-5;
-
-	$err = setlaerror(NO);
-	(undef, $s, $v, $info) = $m->mdsvd;
-	setlaerror($err);
+	$tol //= ($m->type == double) ? 1e-8 : 1e-5;
+	(undef, my $s, my $v, my $info) = $m->mdsvd;
 	barf("mnull: SVD algorithm did not converge\n") if $info;
-
 	#TODO: USE TRANSPOSED A
-	$rank = (which($s > $tol))->dim(0);
-	if (@dims == 3){
-		return $rank < $dims[1] ? $v->(,,$rank:)->t : PDL::Complex->null;
-	}
-	else{
-		return $rank < $dims[1] ? $v->t->($rank:,)->sever : null;
-	}
+	my $rank = (which($s > $tol))->dim(0);
+	$rank < $dims[$di] ? $v->t->slice("$slice_prefix$rank:")->sever : $m->_similar_null;
 }
-
-
 
 =head2 minv
 
