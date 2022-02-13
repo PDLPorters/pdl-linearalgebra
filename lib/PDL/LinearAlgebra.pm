@@ -2757,48 +2757,19 @@ Works on transposed arrays.
 
 =cut
 
-sub msolve {shift->msolve(@_)}
-
+*msolve = \&PDL::msolve;
 sub PDL::msolve {
 	&_square;
 	&_matrices_match;
 	&_same_dims;
+	my $di = $_[0]->dims_internal;
 	my($a, $b) = @_;
-	my(@adims) = $a->dims;
-	my(@bdims) = $b->dims;
-	my ($ipiv, $info, $c);
 	$a = $a->t->copy;
-	$c = $b->is_inplace ? $b->t : $b->t->copy;
-	$ipiv = zeroes(long, @adims[1..$#adims]);
-	@adims = @adims[2..$#adims];
-	$info = @adims ? zeroes(long,@adims) : pdl(long,0);
-	$a->gesv($c, $ipiv, $info);
-
+	my $c = $b->is_inplace ? $b->t : $b->t->copy;
+	$a->_call_method('gesv', $c, my $ipiv = null, my $info = null);
 	_error($info, "msolve: Can't solve system of linear equations (after getrf factorization): matrix (PDL(s) %s) is/are singular(s)");
-	return wantarray ? $b->is_inplace(0) ? ($b, $a->t->sever, $ipiv, $info) : ($c->t->sever , $a->t->sever, $ipiv, $info) :
-			$b->is_inplace(0) ? $b : $c->t->sever;
-
-}
-
-sub PDL::Complex::msolve {
-	&_square;
-	&_matrices_match;
-	&_same_dims;
-	my($a, $b) = @_;
-	my(@adims) = $a->dims;
-	my(@bdims) = $b->dims;
-	my ($ipiv, $info, $c);
-	$a = $a->t->copy;
-	$c = $b->is_inplace ?  $b->t : $b->t->copy;
-	$ipiv = zeroes(long, @adims[2..$#adims]);
-	@adims = @adims[3..$#adims];
-	$info = @adims ? zeroes(long,@adims) : pdl(long,0);
-	$a->cgesv($c, $ipiv, $info);
-
-	_error($info, "msolve: Can't solve system of linear equations (after cgetrf factorization): matrix (PDL(s) %s) is/are singular(s)");
-	return wantarray ? $b->is_inplace(0) ? ($b, $a->t->sever, $ipiv, $info) : ($c->t->sever , $a->t->sever, $ipiv, $info):
-			$b->is_inplace(0) ? $b : $c->t->sever;
-
+	$b = $c->t->sever if !$b->is_inplace(0);
+	wantarray ? ($b, $a->t->sever, $ipiv, $info) : $b;
 }
 
 =head2 msolvex
