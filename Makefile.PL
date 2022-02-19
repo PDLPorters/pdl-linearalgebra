@@ -31,10 +31,10 @@ WriteMakefile(
     x_IRC => 'irc://irc.perl.org/#pdl',
   },
   CONFIGURE_REQUIRES =>  {
-    "PDL" => '2.061',
+    "PDL" => '2.075',
   },
   PREREQ_PM => {
-    "PDL" => '2.061', # Reversible -> TwoWay
+    "PDL" => '2.075', # RedoDimsCode with SIZE() available
   },
   TEST_REQUIRES =>  {
     "Test::More" => '0.88', # done_testing

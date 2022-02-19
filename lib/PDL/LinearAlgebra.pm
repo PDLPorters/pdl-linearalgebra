@@ -890,13 +890,10 @@ sub PDL::msyminv {
 	my $di = $_[0]->dims_internal;
 	my $m = shift;
 	my $upper = @_ ? (1 - shift)  : pdl (long,1);
-	my ($ipiv , $info);
 	my(@dims) = $m->dims;
 	$m = $m->copy() unless $m->is_inplace(0);
-	$ipiv = zeroes(long, @dims[1+$di..$#dims]);
 	@dims = @dims[2+$di..$#dims];
-	$info = @dims ? zeroes(long,@dims) : pdl(long,0);
-	$m->_call_method('sytrf', $upper, $ipiv, $info);
+	$m->_call_method('sytrf', $upper, my $ipiv=null, my $info=null);
 	_error($info, "msyminv: Block diagonal matrix D (PDL(s) %s) is/are singular(s) (after sytrf factorization)");
 	$m->_call_method('sytri',$upper,$ipiv,$info);
 	$m = $m->t->tritosym($upper, 0);
@@ -936,8 +933,7 @@ sub PDL::mposinv {
 	my(@dims) = $m->dims;
 	$m = $m->copy() unless $m->is_inplace(0);
 	@dims = @dims[2+$di..$#dims];
-	my $info = @dims ? zeroes(long,@dims) : pdl(long,0);
-	$m->_call_method('potrf', $upper, $info);
+	$m->_call_method('potrf', $upper, my $info=null);
 	_error($info, "mposinv: matrix (PDL(s) %s) is/are not positive definite(s) (after potrf factorization)");
 	$m->_call_method('potri', $upper, $info);
 	return wantarray ? ($m, $info) : $m;
@@ -1018,8 +1014,7 @@ sub PDL::mlu {
 	my $m = shift;
 	my @dims = $m->dims;
         $m = $m->copy;
-	my $ipiv = zeroes(long, $dims[$di] > $dims[$di+1] ? $dims[$di+1]: $dims[$di]);
-	$m->t->_call_method('getrf',$ipiv,my $info = null);
+	$m->t->_call_method('getrf',my $ipiv=null,my $info = null);
 	if($info > 0) {
 		$info--;
 		laerror("mlu: Factor U is singular: U($info,$info) = 0 (after cgetrf factorization)");
@@ -1069,12 +1064,10 @@ sub PDL::mchol {
 	my $di = $_[0]->dims_internal;
 	my($m, $upper) = @_;
 	my(@dims) = $m->dims;
-	my ($uplo, $info);
 	$m = $m->mtri($upper) unless $m->is_inplace(0);
 	@dims = @dims[2+$di..$#dims];
-	$info = @dims ? zeroes(long,@dims) : pdl(long,0);
-	$uplo =  1 - $upper;
-	$m->_call_method('potrf',$uplo,$info);
+	my $uplo =  1 - $upper;
+	$m->_call_method('potrf',$uplo,my $info=null);
 	_error($info, "mchol: matrix (PDL(s) %s) is/are not positive definite(s) (after potrf factorization)");
 	return wantarray ? ($m, $info) : $m;
 }
@@ -2583,8 +2576,7 @@ sub PDL::mrq {
 	elsif ($dims[$di] < $dims[$di+1]){
 		my $temp = $m->_similar(@dims[$di+1,$di+1]);
 		$temp->slice("$slice_prefix-$min:") .= $m->t;
-		$r = PDL::zeroes($temp);
-		$temp->tricpy(0,$r);
+		$temp->tricpy(0,$r = $temp->_similar_null);
 		$r = $r->slice("$slice_prefix-$min:")->sever;
 	}
 	else{
@@ -2656,8 +2648,7 @@ sub PDL::mql {
 	elsif ($dims[$di] > $dims[$di+1]){
 		my $temp = $m->_similar(@dims[$di,$di]);
 		$temp->slice("$slice_prefix:,-$dims[$di+1]:") .= $m->t;
-		$l = PDL::zeroes($temp);
-		$temp->tricpy(1,$l);
+		$temp->tricpy(0,$l = $temp->_similar_null);
 		$l = $l->slice("$slice_prefix:,-$dims[$di+1]:");
 	}
 	else{
@@ -3076,8 +3067,6 @@ sub PDL::mpossolve {
 	&_matrices_match;
 	&_same_dims;
 	my($a, $b) = @_;
-	my(@adims) = $a->dims;
-	my(@bdims) = $b->dims;
        	$uplo = 1 - $uplo;
 	$a = $a->copy;
 	my $c = $b->is_inplace ? $b->t :  $b->t->copy;
@@ -3149,28 +3138,19 @@ Works on transposed array(s).
 
 sub PDL::mpossolvex {
 	&_square;
-	my $uplo = splice @_, 1, 1;
+	my $uplo = splice(@_, 1, 1) ? 0 : 1;
 	&_matrices_match;
 	my($a, $b, %opt) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
-	my ( $af, $x, $info, $equilibrate, $berr, $ferr, $rcond, $equed, %result, $s);
-	$uplo = $uplo ? pdl(long, 0): pdl(long, 1);
-	$equilibrate = $opt{'equilibrate'} ? pdl(long, 2): pdl(long,1);
+	my $equilibrate = $opt{'equilibrate'} ? 2: 1;
 	$a = $a->copy;
 	$b = $b->t->copy;
-	$x = PDL::zeroes $b;
-	$af = PDL::zeroes $a;
-       	$info = pdl(long, 0);
-       	$rcond = null;
-	$equed = pdl(long, 0);
-
-	$s = zeroes($a->type, $adims[-2]);
-	$ferr = zeroes($b->type, $bdims[-2]);
-	$berr = zeroes($b->type, $bdims[-2]);
-
-	(@adims == 3) ? $a->cposvx($uplo, $equilibrate, $b, $af, $equed, $s, $x, $rcond, $ferr, $berr, $info) :
-		$a->posvx($uplo, $equilibrate, $b, $af, $equed, $s, $x, $rcond, $ferr, $berr, $info);
+	my $x = PDL::zeroes $b;
+	my $af = PDL::zeroes $a;
+	my $equed = pdl(long, 0);
+	my $s = zeroes($a->type, $adims[-2]);
+	$a->_call_method('posvx', $uplo, $equilibrate, $b, $af, $equed, $s, $x, my $rcond=null, my $ferr=null, my $berr=null, my $info=null);
 	if( $info < $adims[-2] && $info > 0){
 		$info--;
 		barf("mpossolvex: Can't solve system of linear equations:\n".
@@ -3181,9 +3161,7 @@ sub PDL::mpossolvex {
 	elsif ( $info  and $_laerror){
 		warn("mpossolvex: The matrix is singular to working precision");
 	}
-	$result{rcondition} = $rcond;
-	$result{ferror} = $ferr;
-	$result{berror} = $berr;
+	my %result = (rcondition=>$rcond, ferror=>$ferr, berror=>$berr);
 	if ($opt{equilibrate}){
 		$result{equilibration} = $equed;
 		if ($equed){
@@ -3195,9 +3173,7 @@ sub PDL::mpossolvex {
 	$result{info} = $info;
         $result{L} = $af if $opt{L};
         $result{U} = $af if $opt{U};
-
 	wantarray ? ($x->t->sever, %result): $x->t->sever;
-
 }
 
 =head2 mlls
@@ -3309,13 +3285,11 @@ sub PDL::mllsy {
 	my($a, $b) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
-	my ($info, $x, $rcond, $rank, $jpvt, $type);
-	$type = $a->type;
-	$rcond = lamch(pdl($type,0));
+	my $type = $a->type;
+	my $rcond = lamch(pdl($type,0));
 	$rcond = $rcond->sqrt - ($rcond->sqrt - $rcond) / 2;
-
 	$a = $a->t->copy;
-
+	my ($x);
 	if ( $adims[1+$di] < $adims[0+$di]){
 		if (@adims == 3){
 			$x = PDL::Complex->new_from_specification($type, 2, $adims[1], $bdims[1]);
@@ -3325,17 +3299,14 @@ sub PDL::mllsy {
 			$x = PDL->new_from_specification($type, $adims[0], $bdims[0]);
 			$x(:($bdims[1]-1), :($bdims[0]-1)) .= $b->t;
 		}
-
 	}
 	else{
 		$x = $b->t->copy;
 	}
-	$info = pdl(long,0);
-	$rank = null;
-	$jpvt = zeroes(long, $adims[-2]);
-	(@adims == 3) ? $a->cgelsy($x,  $rcond, $jpvt, $rank, $info) :
-			$a->gelsy($x,  $rcond, $jpvt, $rank, $info);
-
+	my $info = null;
+	my $rank = null;
+	my $jpvt = zeroes(long, $adims[-2]);
+	$a->_call_method('gelsy', $x,  $rcond, $jpvt, $rank, $info);
 	if ( $adims[-1] <= $adims[-2]){
 		wantarray ? return ($x->t->sever, ('A'=> $a->t->sever, 'rank' => $rank, 'jpvt'=>$jpvt)) :
 				return $x->t->sever;
@@ -3420,7 +3391,7 @@ sub PDL::mllss {
 	$info = pdl(long,0);
 	$rank = null;
 	$min =  ($adims[-2] > $adims[-1]) ? $adims[-1] : $adims[-2];
-	$s = zeroes($a->type, $min);
+	$s = null;
 
 	unless ($method) {
 		$method = (@adims == 3) ? 'cgelsd' : 'gelsd';
@@ -4045,33 +4016,20 @@ sub PDL::mgeigenx {
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my (%result, $jobvl, $jobvr, $sense, $balanc, $vr, $vl, $rconde, $rcondv,
-	$wr, $wi, $beta, $info, $ilo, $ihi, $rscale, $lscale, $abnrm, $bbnrm, $type, $eigens);
-
+	$wr, $wi, $beta, $eigens);
+	$a = $a->copy;
+	$b = $b->t->copy;
 	if (@adims ==3){
-		$a = $a->copy;
-		$b = $b->t->copy;
 		$eigens = PDL::Complex->null;
 		$beta = PDL::Complex->null;
 	}
 	else{
-		$a = $a->copy;
-		$b = $b->t->copy;
 		$wr = null;
 		$wi = null;
 		$beta= null;
-
 	}
-
-	$type = $a->type;
-	$info = null;
-	$ilo = null;
-	$ihi = null;
-
-	$rscale  = zeroes($type, $adims[-1]);
-	$lscale  = zeroes($type, $adims[-1]);
-	$abnrm = null;
-	$bbnrm = null;
-
+	my $type = $a->type;
+	my ($info, $ilo, $ihi, $rscale, $lscale, $abnrm, $bbnrm) = map null, 1..7;
 	if ($opt{'vector'} eq 'left' ||
 		$opt{'vector'} eq 'all' ||
 		$opt{'rcondition'} ){
@@ -4315,12 +4273,7 @@ sub PDL::msymeigenx {
 
 	$method = $opt{'method'} ?  $opt{'method'} : (@dims == 3) ? 'PDL::LinearAlgebra::Complex::cheevx' : 'PDL::LinearAlgebra::Real::syevx';
 
-	if ( $method =~ 'evx' && $jobv){
-		$support =  zeroes(long, $dims[1]);
-	}
-	elsif ($method =~ 'evr' && $jobv){
-		$support = zeroes(long, (2*$dims[1]));
-	}
+	$support = null;
 
 	if (@dims == 3){
 		$upper = $upper ? pdl(long,1) : pdl(long,0);
@@ -4493,7 +4446,7 @@ sub PDL::msymgeigenx {
 	$opt{type} = 1 unless (defined $opt{type});
 	$w = PDL->new_from_specification($type, $adims[1]);
 	$n = pdl(long,0);
-       	$info = pdl(long,0);
+       	$info = null;
 
 	if (!defined $opt{'abstol'}){
 		my ( $unfl, $ovfl );
@@ -4502,7 +4455,7 @@ sub PDL::msymgeigenx {
 		$unfl->labad($ovfl);
 		$opt{'abstol'} = $unfl + $unfl;
 	}
-	$support =  zeroes(long, $adims[1]) if $jobv;
+	$support = null;
 	$w = PDL->new_from_specification($type, $adims[1]);
 	$z = PDL::zeroes $a;
 	if (@adims ==3){
@@ -4700,7 +4653,7 @@ sub PDL::mgsvd {
 	barf("mgsvd: Require matrices with equal number of columns")
 		unless( @adims == 2 && @bdims == 2 && $adims[0] == $bdims[0] );
 
-	my ($U, $V, $Q, $alpha, $beta, $k, $l, $iwork, $info, $D2, $D1, $work, %ret, $X, $jobqx, $type);
+	my ($D1, $work);
 	if ($opt{all}){
 		$opt{'V'} = 1;
 		$opt{'U'} = 1;
@@ -4711,26 +4664,20 @@ sub PDL::mgsvd {
 		$opt{'R'} = 1;
 		$opt{'X'} = 1;
 	}
-	$type = $a->type;
-	$jobqx = ($opt{Q} || $opt{X}) ? 1 : 0;
+	my $type = $a->type;
+	my $jobqx = ($opt{Q} || $opt{X}) ? 1 : 0;
 	$a = $a->copy;
 	$b = $b->t->copy;
-	$k = null;
-	$l = null;
-	$alpha = zeroes($type, $adims[0]);
-	$beta = zeroes($type, $adims[0]);
+	my ($k, $l, $alpha, $beta, $iwork, $info) = map null, 1..6;
 
-	$U = $opt{U} ? zeroes($type, $adims[1], $adims[1]) : zeroes($type,1,1);
-	$V = $opt{V} ? zeroes($b->type, $bdims[1], $bdims[1]) : zeroes($b->type,1,1);
-	$Q = $jobqx ? zeroes($type, $adims[0], $adims[0]) : zeroes($type,1,1);
-	$iwork = zeroes(long, $adims[0]);
-	$info = pdl(long, 0);
+	my $U = $opt{U} ? zeroes($type, $adims[1], $adims[1]) : zeroes($type,1,1);
+	my $V = $opt{V} ? zeroes($b->type, $bdims[1], $bdims[1]) : zeroes($b->type,1,1);
+	my $Q = $jobqx ? zeroes($type, $adims[0], $adims[0]) : zeroes($type,1,1);
 	$a->t->ggsvd($opt{U}, $opt{V}, $jobqx, $b, $k, $l, $alpha, $beta, $U, $V, $Q, $iwork, $info);
 	laerror("mgsvd: The Jacobi procedure fails to converge") if $info;
 
-	$ret{rank} = $k + $l;
+	my %ret = (rank=>$k + $l, info=>$info);
 	warn "mgsvd: Effective rank of 0 in mgsvd" if (!$ret{rank} and $_laerror);
-	$ret{'info'} = $info;
 
 	if (%opt){
 		$Q = $Q->t->sever if $jobqx;
@@ -4746,7 +4693,7 @@ sub PDL::mgsvd {
 			}
 
 			if ($opt{'D1'}){
-				$D1 = zeroes($type, $adims[1], $adims[1]);
+				my $D1 = zeroes($type, $adims[1], $adims[1]);
 				$D1->diagonal(0,1) .= $alpha(:($adims[1]-1));
 				$D1 = $D1->t->reshape($adims[1] , ($k+$l))->t->sever;
 				$ret{'D1'} = $D1;
@@ -4759,7 +4706,7 @@ sub PDL::mgsvd {
 			}
 
 			if ($opt{'D1'}){
-				$D1 = zeroes($type, ($k + $l), ($k + $l));
+				my $D1 = zeroes($type, ($k + $l), ($k + $l));
 				$D1->diagonal(0,1) .=  $alpha(:($k+$l-1));
 				$D1->reshape(($k + $l), $adims[1]);
 				$ret{'D1'} = $D1;
@@ -4769,7 +4716,7 @@ sub PDL::mgsvd {
 		if ($opt{'D2'} && $ret{rank}){
 			$work = zeroes($b->type, $l, $l);
 			$work->diagonal(0,1) .=  $beta($k:($k+$l-1));
-			$D2 = zeroes($b->type, ($k + $l), $bdims[1]);
+			my $D2 = zeroes($b->type, ($k + $l), $bdims[1]);
 			$D2( $k:, :($l-1)  ) .= $work;
 			$ret{'D2'} = $D2;
 		}
@@ -4778,7 +4725,7 @@ sub PDL::mgsvd {
 			$work =  $a( -($k + $l):,);
 			$ret{R} = $work if $opt{R};
 			if ($opt{X}){
-				$X = zeroes($type, $adims[0], $adims[0]);
+				my $X = zeroes($type, $adims[0], $adims[0]);
 				$X->diagonal(0,1) .= 1 if ($adims[0] > ($k + $l));
 				$X ( -($k + $l): , -($k + $l): )  .=  mtriinv($work);
 				$ret{X} = $Q x $X;

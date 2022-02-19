@@ -183,8 +183,8 @@ its second element.
 
 pp_def("gesvd",
        HandleBad => 0,
-	RedoDimsCode => '$SIZE(r) =  $PDL(A)->ndims > 1 ? min($PDL(A)->dims[0], $PDL(A)->dims[1]) : 1;',
-	Pars => '[io,phys]A(m,n); int jobu(); int jobvt(); [o,phys]s(r); [o,phys]U(p,q); [o,phys]VT(s,t); int [o,phys]info()',
+	RedoDimsCode => '$SIZE(r) = PDLMIN($SIZE(m),$SIZE(n));',
+	Pars => '[io]A(m,n); int jobu(); int jobvt(); [o]s(r); [o]U(p,q); [o]VT(s,t); int [o]info()',
 	GenericTypes => [F,D],
 	Code => generate_code '
 		extern int $TFD(s,d)gesvd_(char *jobu, char *jobvt, integer *m, integer *n, $GENERIC() *a,
@@ -342,8 +342,8 @@ Note that the routine returns VT = V\', not V.
 ');
 pp_def("gesdd",
        HandleBad => 0,
-	RedoDimsCode => '$SIZE(r) =  $PDL(A)->ndims > 1 ? min($PDL(A)->dims[0], $PDL(A)->dims[1]) : 1;',
-	Pars => '[io,phys]A(m,n); int job(); [o,phys]s(r); [o,phys]U(p,q); [o,phys]VT(s,t); int [o,phys]info()',
+	RedoDimsCode => '$SIZE(r) = PDLMIN($SIZE(m),$SIZE(n));',
+	Pars => '[io]A(m,n); int job(); [o]s(r); [o]U(p,q); [o]VT(s,t); int [o]info()',
 	GenericTypes => [F,D],
 	Code => generate_code '
                 integer lwork;
@@ -2727,7 +2727,7 @@ workspace than syevx.
 
 pp_def("syevx",
        HandleBad => 0,
-	Pars => '[phys]A(n,n);  int jobz(); int range(); int uplo(); [phys]vl(); [phys]vu(); int [phys]il(); int [phys]iu(); [phys]abstol(); int [o,phys]m(); [o,phys]w(n); [o,phys]z(p,q);int [o,phys]ifail(r); int [o,phys]info()',
+	Pars => '[phys]A(n,n);  int jobz(); int range(); int uplo(); [phys]vl(); [phys]vu(); int [phys]il(); int [phys]iu(); [phys]abstol(); int [o,phys]m(); [o,phys]w(n); [o,phys]z(p,q);int [o,phys]ifail(n); int [o,phys]info()',
 	GenericTypes => [F,D],
 	Code => generate_code '
 		char jz = \'N\';
@@ -3439,7 +3439,7 @@ without guard digits, but we know of none.
 
 pp_def("sygvx",
        HandleBad => 0,
-	Pars => '[io,phys]A(n,n);int [phys]itype();int jobz();int range(); int uplo();[io,phys]B(n,n);[phys]vl();[phys]vu();int [phys]il();int [phys]iu();[phys]abstol();int [o,phys]m();[o,phys]w(n); [o,phys]Z(p,q);int [o,phys]ifail(r);int [o,phys]info()',
+	Pars => '[io,phys]A(n,n);int [phys]itype();int jobz();int range(); int uplo();[io,phys]B(n,n);[phys]vl();[phys]vu();int [phys]il();int [phys]iu();[phys]abstol();int [o,phys]m();[o,phys]w(n); [o,phys]Z(p,q);int [o,phys]ifail(n);int [o,phys]info()',
 	GenericTypes => [F,D],
 	Code => generate_code '
 		char jz = \'N\';
@@ -5129,6 +5129,7 @@ pp_def("gelsd",
        HandleBad => 0,
 	Pars => '[io,phys]A(m,n); [io,phys]B(p,q); [phys]rcond(); [o,phys]s(r); int [o,phys]rank();int [o,phys]info()',
 	GenericTypes => [F,D],
+	RedoDimsCode => '$SIZE(r) = PDLMIN($SIZE(m),$SIZE(n));',
 	Code => generate_code '
 		integer lwork = -1;
 		integer smlsiz, size_i, nlvl, *iwork;
@@ -5143,7 +5144,7 @@ pp_def("gelsd",
 
 		minmn = max(1,minmn);
 
-		smlsiz = ilaenv_(&c_nine, "SGELSD", " ", &c_zero, &c_zero, &c_zero, &c_zero, (ftnlen)6, (ftnlen)1);
+		smlsiz = ilaenv_(&c_nine, "DGELSD", " ", &c_zero, &c_zero, &c_zero, &c_zero, (ftnlen)6, (ftnlen)1);
 		size_i = (integer) (log(($GENERIC()) minmn / ($GENERIC()) (smlsiz + 1)) /log(2.)) + 1;
 		nlvl = max(size_i, 0);
 		iwork = (integer *)malloc((3 * minmn * nlvl + 11 * minmn) *  sizeof(integer));
@@ -5163,6 +5164,7 @@ pp_def("gelsd",
 		&lwork,
 		iwork,
 		$P(info));
+		if ($info() != 0) $CROAK("workspace query failed: info=%d", $info());
 
 		lwork = (integer )tmp_work;
 		{
@@ -5503,8 +5505,8 @@ problem
 # TODO IPIV = min(m,n)
 pp_def("getrf",
        HandleBad => 0,
-	RedoDimsCode => '$SIZE(p) =  $PDL(A)->ndims > 1 ? min($PDL(A)->dims[0], $PDL(A)->dims[1]) : 1;',
-	Pars => '[io,phys]A(m,n); int [o,phys]ipiv(p); int [o,phys]info()',
+	RedoDimsCode => '$SIZE(p) = PDLMIN($SIZE(m),$SIZE(n));',
+	Pars => '[io]A(m,n); int [o]ipiv(p); int [o]info()',
 	GenericTypes => [F,D],
 	Code => generate_code '
 		extern int $TFD(s,d)getrf_(integer *m, integer *n, $GENERIC() *a, integer *
@@ -5562,8 +5564,8 @@ This is the right-looking Level 3 BLAS version of the algorithm.
 
 pp_def("getf2",
        HandleBad => 0,
-	RedoDimsCode => '$SIZE(p) =  $PDL(A)->ndims > 1 ? min($PDL(A)->dims[0], $PDL(A)->dims[1]) : 1;',
-	Pars => '[io,phys]A(m,n); int [o,phys]ipiv(p); int [o,phys]info()',
+	RedoDimsCode => '$SIZE(p) = PDLMIN($SIZE(m),$SIZE(n));',
+	Pars => '[io]A(m,n); int [o]ipiv(p); int [o]info()',
 	GenericTypes => [F,D],
 	Code => generate_code '
 		extern int $TFD(s,d)getf2_(integer *m, integer *n, $GENERIC() *a, integer *
@@ -10654,7 +10656,7 @@ pp_def(
 	DefaultFlow => 1,
 	TwoWay => 1,
 	Pars => 'x(n); y(p);[o]out(q)',
-	RedoDimsCode => '$SIZE(q) = ( $PDL(x)->ndims > 0 ? $PDL(x)->dims[0] : 1) + ( $PDL(y)->ndims > 0 ? $PDL(y)->dims[0] : 1);',
+	RedoDimsCode => '$SIZE(q) = $SIZE(n) + $SIZE(p);',
 	Code => '
 	  register PDL_Indx i,j;
 
@@ -10696,7 +10698,7 @@ pp_def(
 	DefaultFlow => 1,
 	TwoWay => 1,
 	Pars => 'x(n,m);y(n,p);[o]out(n,q);',
-	RedoDimsCode => '$SIZE(q) = $PDL(x)->dims[1] + $PDL(y)->dims[1];',
+	RedoDimsCode => '$SIZE(q) = $SIZE(m) + $SIZE(p);',
 	Code => '
 	  register PDL_Indx i,j;
 	  loop(m)%{
@@ -10740,8 +10742,6 @@ This routine does backward and forward dataflow automatically.
 EOT
 
 );
-#	RedoDimsCode => '$SIZE(q) = $PDL(x)->dims[1] + $PDL(y)->dims[1];',
-
 
 pp_addhdr('
 float ftrace(int n, float *mat);
@@ -10749,8 +10749,8 @@ double dtrace(int n, double *mat);
 ');
 pp_def(
 	'charpol',
-	RedoDimsCode => '$SIZE(p) = $PDL(A)->dims[0] + 1;',
-	Pars => '[phys]A(n,n);[phys,o]Y(n,n);[phys,o]out(p);',
+	RedoDimsCode => '$SIZE(p) = $SIZE(n) + 1;',
+	Pars => 'A(n,n);[o]Y(n,n);[o]out(p);',
 	GenericTypes => [F,D],
 	Code => '
 	int i,j,k;
