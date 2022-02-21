@@ -26,6 +26,9 @@ extern Core *PDL;
   LEAVE ; \
   return retval;
 
+/* replace BLAS one so don't terminate on bad input */
+int xerbla_(char *sub, int *info) { return 0; }
+
 static SV *fselect_func;
 void fselect_func_set(SV* func) {
   fselect_func = func;

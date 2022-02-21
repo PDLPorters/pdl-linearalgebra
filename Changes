@@ -2,6 +2,8 @@
 - t, issym, tritosym method for complex now defaults to not conjugate
 - various memory-management bugs fixed
 - PDL::Complex::tricpy now alias to ctricpy
+- provide override xerbla_ to not insta-exit on bad input
+  (works with OpenBLAS and reference LAPACK, not ATLAS)
 
 0.26 2021-11-14
 - Reversible now called TwoWay

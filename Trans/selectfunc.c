@@ -9,6 +9,9 @@ extern Core *PDL;
 typedef PDL_Long integer;
 typedef struct { double r, i; } dcomplex;
 
+/* replace BLAS one so don't terminate on bad input */
+int xerbla_(char *sub, int *info) { return 0; }
+
 void dfunc_wrapper(dcomplex *p, integer n, SV* dfunc)
 {
    dSP ;
