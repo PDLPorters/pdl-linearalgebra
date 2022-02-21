@@ -3069,8 +3069,7 @@ Works on transposed array(s).
 =cut
 
 
-sub mpossolve {shift->mpossolve(@_)}
-
+*mpossolve = \&PDL::mpossolve;
 sub PDL::mpossolve {
 	&_square;
 	my $uplo = splice @_, 1, 1;
@@ -3079,32 +3078,10 @@ sub PDL::mpossolve {
 	my($a, $b) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
-	my ($info, $c);
        	$uplo = 1 - $uplo;
 	$a = $a->copy;
-	$c = $b->is_inplace ? $b->t :  $b->t->copy;
-	@adims = @adims[2..$#adims];
-	$info = @adims ? zeroes(long,@adims) : pdl(long,0);
-	$a->posv($uplo, $c, $info);
-	_error($info, "mpossolve: Can't solve system of linear equations: matrix (PDL(s) %s) is/are not positive definite(s)");
-	wantarray ? $b->is_inplace(0) ? ($b, $a,$info) : ($c->t->sever , $a,$info) : $b->is_inplace(0) ? $b : $c->t->sever;
-}
-
-sub PDL::Complex::mpossolve {
-	&_square;
-	my $uplo = splice @_, 1, 1;
-	&_matrices_match;
-	&_same_dims;
-	my($a, $b) = @_;
-	my(@adims) = $a->dims;
-	my(@bdims) = $b->dims;
-	my ($info, $c);
-       	$uplo = 1 - $uplo;
-	$a = $a->copy;
-	$c = $b->is_inplace ? $b->t :  $b->t->copy;
-	@adims = @adims[3..$#adims];
-	$info = @adims ? zeroes(long,@adims) : pdl(long,0);
-	$a->cposv($uplo, $c, $info);
+	my $c = $b->is_inplace ? $b->t :  $b->t->copy;
+	$a->_call_method('posv', $uplo, $c, my $info=null);
 	_error($info, "mpossolve: Can't solve system of linear equations: matrix (PDL(s) %s) is/are not positive definite(s)");
 	wantarray ? $b->is_inplace(0) ? ($b, $a,$info) : ($c->t->sever , $a,$info) : $b->is_inplace(0) ? $b : $c->t->sever;
 }
