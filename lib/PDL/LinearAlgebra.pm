@@ -223,6 +223,8 @@ sub PDL::_similar {
   ref($m)->new_from_specification($m->type, @di_vals, @vdims);
 }
 sub PDL::_similar_null { ref($_[0])->null }
+sub PDL::_is_complex { !$_[0]->type->real }
+sub PDL::Complex::_is_complex {1}
 
 sub t {shift->t(@_)}
 sub PDL::t {
@@ -321,7 +323,7 @@ sub PDL::issym {
 	my ($m, $tol, $conj) = @_;
 	$tol //= ($m->type >= double) ? 1e-8 : 1e-5;
 	$m = $m - $m->t($conj);
-        $m = $m->clump(2) if $m->isa('PDL::Complex');
+	$m = $m->clump(2) if $m->isa('PDL::Complex');
 	my ($min,$max) = PDL::Ufunc::minmaximum($m);
 	$min = $min->minimum;
 	$max = $max->maximum;
@@ -555,7 +557,7 @@ my %norm2arg = (0=>1, 1=>2, 3=>3);
 sub PDL::mnorm {
 	my ($m, $ord) = @_;
 	$ord //= 2;
-	$ord = $norms{$ord//''} if exists $norms{$ord};
+	$ord = $norms{$ord} if exists $norms{$ord};
 	return $m->_call_method('lange', $norm2arg{$ord}) if exists $norm2arg{$ord};
 	my $err = setlaerror(NO);
 	my ($sv, $info) = $m->msvd(0, 0);
@@ -588,16 +590,14 @@ from Lapack.
 sub PDL::mdet {
 	&_square;
 	my $di = $_[0]->dims_internal;
-	my $m = shift->copy;
+	my $m_orig = my $m = shift->copy;
 	$m->_call_method('getrf', my $ipiv = null, my $info = null);
 	$m = $m->diagonal($di,$di+1);
-	$m = $m->complex if $di>0;
+	$m = $m->complex if $m_orig->isa('PDL::Complex');
 	$m = $m->prodover;
 	$m = $m * ((PDL::Ufunc::sumover(sequence($ipiv->dim(0))->plus(1,0) != $ipiv)%2)*(-2)+1);
 	$info = which($info != 0);
-	unless ($info->isempty) {
-		$_->flat->index($info) .= 0 for $di>0 ? ($m->re, $m->im) : $m;
-	}
+	$m->flat->index($info) .= 0 if !$info->isempty;
 	$m;
 }
 
@@ -624,12 +624,11 @@ Uses L<potrf|PDL::LinearAlgebra::Real/potrf> or L<cpotrf|PDL::LinearAlgebra::Com
 *mposdet = \&PDL::mposdet;
 sub PDL::mposdet {
 	&_square;
-	my $di = $_[0]->dims_internal;
 	my ($m, $upper) = @_;
 	$m = $m->copy;
 	$m->_call_method('potrf', $upper, my $info = null);
 	_error($info, "mposdet: Matrix (PDL(s) %s) is/are not positive definite(s) (after potrf factorization)");
-	$m = $m->re if $di>0 or !$m->type->real;
+	$m = $m->re if $m->_is_complex;
 	$m = $m->diagonal(0,1)->prodover->pow(2);
 	return wantarray ? ($m, $info) : $m;
 }
@@ -2753,7 +2752,6 @@ sub PDL::msolve {
 	&_square;
 	&_matrices_match;
 	&_same_dims;
-	my $di = $_[0]->dims_internal;
 	my($a, $b) = @_;
 	$a = $a->t->copy;
 	my $c = $b->is_inplace ? $b->t : $b->t->copy;
