@@ -73,8 +73,8 @@ sub ecplx {
   my ($re, $im) = @_;
   return $re if UNIVERSAL::isa($re,'PDL::Complex');
   if (defined $im){
-	  $re = pdl($re) unless (UNIVERSAL::isa($re,'PDL'));
-	  $im = pdl($im) unless (UNIVERSAL::isa($im,'PDL'));
+	  $re = PDL->topdl($re);
+	  $im = PDL->topdl($im);
 	  my $ret =  PDL::Complex->new_from_specification($re->type, 2, $re->dims);
 	  $ret->slice('(0),') .= $re;
 	  $ret->slice('(1),') .= $im;
@@ -4174,9 +4174,9 @@ sub PDL::msymeigen {
 	&_square;
 	my($m, $upper, $jobv, $method) = @_;
 	my ($w, $info) = (null, null);
-	$method //= ($m->isa('PDL::Complex') || !$m->type->real) ? 'cheevd' :'syevd';
+	$method //= [ 'syevd', 'cheevd' ];
 	$m = $m->copy unless ($m->is_inplace(0) and $jobv);
-	$m->t->$method($jobv, $upper, $w, $info);
+	$m->t->_call_method($method, $jobv, $upper, $w, $info);
 	_error($info, "msymeigen: The algorithm failed to converge for PDL(s) %s");
 	$jobv ? wantarray ? ($w , $m, $info) : $w : wantarray ? ($w, $info) : $w;
 }
@@ -4366,11 +4366,11 @@ sub PDL::msymgeigen {
 	&_same_dims;
 	my($a, $b, $upper, $jobv, $type, $method) = @_;
 	$type ||= 1;
-	$method //= ($a->isa('PDL::Complex') || !$a->type->real) ? 'chegvd' :'sygvd';
+	$method //= [ 'sygvd', 'chegvd' ];
        	$upper = 1-$upper;
 	$a = $a->copy;
 	$b = $b->copy;
-	$a->$method($type, $jobv, $upper, $b, my $w = null, my $info = null);
+	$a->_call_method($method, $type, $jobv, $upper, $b, my $w = null, my $info = null);
 	_error($info, "msymgeigen: Can't compute eigenvalues/vectors: matrix (PDL(s) %s) is/are not positive definite(s) or the algorithm failed to converge");
 	return $jobv ? ($w , $a->t->sever, $info) : wantarray ? ($w, $info) : $w;
 }
