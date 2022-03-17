@@ -56,6 +56,19 @@ extern integer ilaenv_(integer *ispec, char *name__, char *opts, integer *n1,
 		integer *n2, integer *n3, integer *n4, ftnlen name_len, ftnlen
 		opts_len);
 
+#define PDL_MAYBE_SIZE(flagpdltype, flagpdl, flagcond, outpdl, outdim, indim) \
+if (outpdl->state & PDL_MYDIMS_TRANS) { \
+  PDL_Indx i; \
+  char gobig = 0; \
+  flagpdltype *datap = PDL_REPRP(flagpdl); \
+  for (i=0; i<flagpdl->nvals; i++) { \
+    flagpdltype tmp = datap[i]; /* [phys] means ignore incs and offs */ \
+    if (!(flagcond)) continue; \
+    gobig = 1; \
+    break; \
+  } \
+  outdim = gobig ? indim : 1; \
+}
 ');
 
 pp_addpm({At=>'Top'},<<'EOD');
@@ -490,7 +503,12 @@ It is much faster than the simple driver for large matrices, but uses more works
 
 pp_def("ggsvd",
        HandleBad => 0,
-	Pars => '[io,phys]A(m,n); int jobu(); int jobv(); int jobq(); [io,phys]B(p,n); int [o,phys]k(); int [o,phys]l();[o,phys]alpha(n);[o,phys]beta(n); [o,phys]U(q,r); [o,phys]V(s,t); [o,phys]Q(u,v); int [o,phys]iwork(n); int [o,phys]info()',
+	Pars => '[io]A(m,n); int jobu(); int jobv(); int jobq(); [io]B(p,n); int [o]k(); int [o]l();[o]alpha(n);[o]beta(n); [o]U(q,q); [o]V(r,r); [o]Q(s,s); int [o]iwork(n); int [o]info()',
+	RedoDimsCode => '
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobu), tmp, $PDL(U), $SIZE(q), $SIZE(m))
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobv), tmp, $PDL(V), $SIZE(r), $SIZE(p))
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobq), tmp, $PDL(Q), $SIZE(s), $SIZE(n))
+	',
 	GenericTypes => [F,D],
 	Code => generate_code '
 		char pjobu = \'N\';
@@ -535,9 +553,9 @@ pp_def("ggsvd",
 		$P(U),
 		&(integer){$SIZE(q)},
 		$P(V),
-		&(integer){$SIZE(s)},
+		&(integer){$SIZE(r)},
 		$P(Q),
-		&(integer){$SIZE(u)},
+		&(integer){$SIZE(s)},
 		&twork[0],
 		&lwork,
 		$P(iwork),
@@ -565,9 +583,9 @@ pp_def("ggsvd",
 		$P(U),
 		&(integer){$SIZE(q)},
 		$P(V),
-		&(integer){$SIZE(s)},
+		&(integer){$SIZE(r)},
 		$P(Q),
-		&(integer){$SIZE(u)},
+		&(integer){$SIZE(s)},
 		work,
 		&lwork,
 		$P(iwork),
@@ -746,7 +764,11 @@ form by taking the nonsingular matrix X as
 
 pp_def("geev",
        HandleBad => 0,
-	Pars => '[phys]A(n,n); int jobvl(); int jobvr(); [o,phys]wr(n); [o,phys]wi(n); [o,phys]vl(m,m); [o,phys]vr(p,p); int [o,phys]info()',
+	Pars => 'A(n,n); int jobvl(); int jobvr(); [o]wr(n); [o]wi(n); [o]vl(m,m); [o]vr(p,p); int [o]info()',
+	RedoDimsCode => '
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvl), tmp, $PDL(vl), $SIZE(m), $SIZE(n))
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvr), tmp, $PDL(vr), $SIZE(p), $SIZE(n))
+	',
 	GenericTypes => [F,D],
 	Code => generate_code '
 		char jvl = \'N\';
@@ -878,7 +900,13 @@ equal to 1 and largest component real.
 
 pp_def("geevx",
        HandleBad => 0,
-	Pars => '[io,phys]A(n,n);  int jobvl(); int jobvr(); int balance(); int sense(); [o,phys]wr(n); [o,phys]wi(n); [o,phys]vl(m,m); [o,phys]vr(p,p); int [o,phys]ilo(); int [o,phys]ihi(); [o,phys]scale(n); [o,phys]abnrm(); [o,phys]rconde(q); [o,phys]rcondv(r); int [o,phys]info()',
+	Pars => '[io]A(n,n);  int jobvl(); int jobvr(); int balance(); int sense(); [o]wr(n); [o]wi(n); [o]vl(m,m); [o]vr(p,p); int [o]ilo(); int [o]ihi(); [o]scale(n); [o]abnrm(); [o]rconde(q); [o]rcondv(r); int [o]info()',
+	RedoDimsCode => '
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvl), tmp, $PDL(vl), $SIZE(m), $SIZE(n))
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvr), tmp, $PDL(vr), $SIZE(p), $SIZE(n))
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(sense), tmp == 1 || tmp == 3, $PDL(rconde), $SIZE(q), $SIZE(n))
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(sense), tmp == 2 || tmp == 3, $PDL(rcondv), $SIZE(r), $SIZE(n))
+	',
 	GenericTypes => [F,D],
 	Code => generate_code '
 		char jvl = \'N\';
@@ -1137,8 +1165,12 @@ Users\' Guide.
 
 pp_def("ggev",
        HandleBad => 0,
-	Pars => 'A(n,n); int jobvl();int jobvr();B(n,n);[o]alphar(n);[o]alphai(n);[o]beta(n);[o]VL(m,m);[o]VR(p,p);int [o]info()',
+	Pars => 'A(n,n); int [phys]jobvl();int [phys]jobvr();B(n,n);[o]alphar(n);[o]alphai(n);[o]beta(n);[o]VL(m,m);[o]VR(p,p);int [o]info()',
 	GenericTypes => [F,D],
+	RedoDimsCode => '
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvl), tmp, $PDL(VL), $SIZE(m), $SIZE(n))
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvr), tmp, $PDL(VR), $SIZE(p), $SIZE(n))
+	',
 	Code => generate_code '
 		integer lwork = -1;
 		char pjobvl = \'N\', pjobvr = \'N\';
@@ -1284,7 +1316,6 @@ of (A,B) satisfies
             > N:  =N+1: other than QZ iteration failed in hgeqz.
                   =N+2: error return from tgevc.
 
-
 =for example
 
  $a = random(5,5);
@@ -1300,7 +1331,13 @@ of (A,B) satisfies
 
 pp_def("ggevx",
        HandleBad => 0,
-	Pars => '[io,phys]A(n,n);int balanc();int jobvl();int jobvr();int sense();[io,phys]B(n,n);[o,phys]alphar(n);[o,phys]alphai(n);[o,phys]beta(n);[o,phys]VL(m,m);[o,phys]VR(p,p);int [o,phys]ilo();int [o,phys]ihi();[o,phys]lscale(n);[o,phys]rscale(n);[o,phys]abnrm();[o,phys]bbnrm();[o,phys]rconde(r);[o,phys]rcondv(s);int [o,phys]info()',
+	Pars => '[io,phys]A(n,n);int balanc();int jobvl();int jobvr();int sense();[io,phys]B(n,n);[o]alphar(n);[o]alphai(n);[o]beta(n);[o]VL(m,m);[o]VR(p,p);int [o]ilo();int [o]ihi();[o]lscale(n);[o]rscale(n);[o]abnrm();[o]bbnrm();[o]rconde(r);[o]rcondv(s);int [o]info()',
+	RedoDimsCode => '
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvl), tmp, $PDL(VL), $SIZE(m), $SIZE(n))
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvr), tmp, $PDL(VR), $SIZE(p), $SIZE(n))
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(sense), tmp != 2, $PDL(rconde), $SIZE(r), $SIZE(n))
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(sense), tmp != 1, $PDL(rcondv), $SIZE(s), $SIZE(n))
+	',
 	GenericTypes => [F,D],
 	Code => generate_code '
 		integer lwork = -1, *iwork;
@@ -1637,7 +1674,10 @@ PDL_Long dselect_wrapper(double *wr, double *wi);
 
 pp_def("gees",
        HandleBad => 0,
-	Pars => '[io,phys]A(n,n);  int jobvs(); int sort(); [o,phys]wr(n); [o,phys]wi(n); [o,phys]vs(p,p); int [o,phys]sdim(); int [o,phys]info()',
+	Pars => '[io]A(n,n);  int jobvs(); int sort(); [o]wr(n); [o]wi(n); [o]vs(p,p); int [o]sdim(); int [o]info()',
+	RedoDimsCode => '
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvs), tmp, $PDL(vs), $SIZE(p), $SIZE(n))
+	',
 	OtherPars => "SV* select_func" ,
 	GenericTypes => [F,D],
 	Code => generate_code '
@@ -1804,7 +1844,10 @@ The eigenvalues of such a block are a +- sqrt(bc).
 
 pp_def("geesx",
        HandleBad => 0,
-	Pars => '[io,phys]A(n,n);  int jobvs(); int sort(); int sense(); [o,phys]wr(n); [o,phys]wi(n); [o,phys]vs(p,p); int [o,phys]sdim(); [o,phys]rconde();[o,phys]rcondv(); int [o,phys]info()',
+	Pars => '[io]A(n,n);  int jobvs(); int sort(); int sense(); [o]wr(n); [o]wi(n); [o]vs(p,p); int [o]sdim(); [o]rconde();[o]rcondv(); int [o]info()',
+	RedoDimsCode => '
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvs), tmp, $PDL(vs), $SIZE(p), $SIZE(n))
+	',
 	OtherPars => "SV* select_func" ,
 	GenericTypes => [F,D],
 	Code => generate_code '
@@ -2016,7 +2059,11 @@ PDL_Long dgselect_wrapper(double *zr, double *zi, double *d);
 
 pp_def("gges",
        HandleBad => 0,
-	Pars => '[io,phys]A(n,n); int jobvsl();int jobvsr();int sort();[io,phys]B(n,n);[o,phys]alphar(n);[o,phys]alphai(n);[o,phys]beta(n);[o,phys]VSL(m,m);[o,phys]VSR(p,p);int [o,phys]sdim();int [o,phys]info()',
+	Pars => '[io]A(n,n); int jobvsl();int jobvsr();int sort();[io]B(n,n);[o]alphar(n);[o]alphai(n);[o]beta(n);[o]VSL(m,m);[o]VSR(p,p);int [o]sdim();int [o]info()',
+	RedoDimsCode => '
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvsl), tmp, $PDL(VSL), $SIZE(m), $SIZE(n))
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvsr), tmp, $PDL(VSR), $SIZE(p), $SIZE(n))
+	',
 	OtherPars => "SV* select_func" ,
 	GenericTypes => [F,D],
 	Code => generate_code '
@@ -2237,7 +2284,11 @@ complex conjugate pair of generalized eigenvalues.
 
 pp_def("ggesx",
        HandleBad => 0,
-	Pars => '[io,phys]A(n,n); int jobvsl();int jobvsr();int sort();int sense();[io,phys]B(n,n);[o,phys]alphar(n);[o,phys]alphai(n);[o,phys]beta(n);[o,phys]VSL(m,m);[o,phys]VSR(p,p);int [o,phys]sdim();[o,phys]rconde(q);[o,phys]rcondv(r);int [o,phys]info()',
+	Pars => '[io]A(n,n); int jobvsl();int jobvsr();int sort();int sense();[io]B(n,n);[o]alphar(n);[o]alphai(n);[o]beta(n);[o]VSL(m,m);[o]VSR(p,p);int [o]sdim();[o]rconde(q=2);[o]rcondv(q=2);int [o]info()',
+	RedoDimsCode => '
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvsl), tmp, $PDL(VSL), $SIZE(m), $SIZE(n))
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvsr), tmp, $PDL(VSR), $SIZE(p), $SIZE(n))
+	',
 	OtherPars => "SV* select_func" ,
 	GenericTypes => [F,D],
 	Code => generate_code '
@@ -2727,7 +2778,10 @@ workspace than syevx.
 
 pp_def("syevx",
        HandleBad => 0,
-	Pars => '[phys]A(n,n);  int jobz(); int range(); int uplo(); [phys]vl(); [phys]vu(); int [phys]il(); int [phys]iu(); [phys]abstol(); int [o,phys]m(); [o,phys]w(n); [o,phys]z(p,q);int [o,phys]ifail(n); int [o,phys]info()',
+	Pars => 'A(n,n);  int jobz(); int range(); int uplo(); vl(); vu(); int il(); int iu(); abstol(); int [o]m(); [o]w(n); [o]z(p,p);int [o]ifail(n); int [o]info()',
+	RedoDimsCode => '
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobz), tmp, $PDL(z), $SIZE(p), $SIZE(n))
+	',
 	GenericTypes => [F,D],
 	Code => generate_code '
 		char jz = \'N\';
@@ -3439,7 +3493,12 @@ without guard digits, but we know of none.
 
 pp_def("sygvx",
        HandleBad => 0,
-	Pars => '[io,phys]A(n,n);int [phys]itype();int jobz();int range(); int uplo();[io,phys]B(n,n);[phys]vl();[phys]vu();int [phys]il();int [phys]iu();[phys]abstol();int [o,phys]m();[o,phys]w(n); [o,phys]Z(p,q);int [o,phys]ifail(n);int [o,phys]info()',
+	Pars => '[io]A(n,n); int itype(); int jobz(); int range();
+	  int uplo(); [io]B(n,n); vl(); vu(); int il(); int iu(); abstol();
+	  int [o]m(); [o]w(n); [o]Z(p,p); int [o]ifail(n); int [o]info()',
+	RedoDimsCode => '
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobz), tmp, $PDL(Z), $SIZE(p), $SIZE(n))
+	',
 	GenericTypes => [F,D],
 	Code => generate_code '
 		char jz = \'N\';
@@ -3735,7 +3794,11 @@ system of equations A * X = B.
 
 pp_def("gesvx",
        HandleBad => 0,
-	Pars => '[io,phys]A(n,n); int trans(); int fact(); [io,phys]B(n,m); [io,phys]af(n,n); int [io,phys]ipiv(n); int [io]equed(); [io,phys]r(n); [io,phys]c(n); [o]X(n,m); [o]rcond(); [o]ferr(m); [o]berr(m);[o]rpvgrw();int [o]info()',
+	Pars => '[io]A(n,n); int trans(); int fact(); [io]B(n,m); [io]af(n,n); int [io]ipiv(n); int [io]equed(); [o]r(p); [o]c(q); [o]X(n,m); [o]rcond(); [o]ferr(m); [o]berr(m);[o]rpvgrw();int [o]info()',
+	RedoDimsCode => '
+	  $SIZE(p) = $SIZE(n); /* Ubuntu LAPACK 3 writes to r anyway */
+	  $SIZE(q) = $SIZE(n); /* Ubuntu LAPACK 3 writes to c anyway */
+	',
 	GenericTypes => [F,D],
 	Code => generate_code '
 		char ptrans, pfact, pequed;
@@ -3819,7 +3882,6 @@ pp_def("gesvx",
 		free(iwork);
 ',
       Doc => '
-
 =for ref
 
 Uses the LU factorization to compute the solution to a real
@@ -4482,7 +4544,10 @@ equations A * X = B.
 
 pp_def("posvx",
        HandleBad => 0,
-	Pars => '[io,phys]A(n,n); int uplo(); int fact(); [io,phys]B(n,m); [io,phys]af(n,n); int [io]equed(); [io,phys]s(n); [o,phys]X(n,m); [o,phys]rcond(); [o,phys]ferr(m); [o,phys]berr(m); int [o,phys]info()',
+	Pars => '[io,phys]A(n,n); int uplo(); int fact(); [io,phys]B(n,m); [io,phys]af(n,n); int [io]equed(); [o]s(p); [o,phys]X(n,m); [o,phys]rcond(); [o,phys]ferr(m); [o,phys]berr(m); int [o,phys]info()',
+	RedoDimsCode => '
+	  $SIZE(p) = $SIZE(n); /* Ubuntu LAPACK 3 writes to s anyway */
+	',
 	GenericTypes => [F,D],
 	Code => generate_code '
 		char pfact;
@@ -10588,7 +10653,7 @@ pp_def(
 	Code => '
 	  register PDL_Indx i,j;
 	  if ($fortran() && $SIZE(n) != $SIZE(p))
-		  $CROAK("Fortran storage type needs square eigvec!");
+		  $CROAK("Fortran storage type needs square eigvec, but n=%"IND_FLAG", p=%"IND_FLAG, $SIZE(n), $SIZE(p));
 	  if ($fortran()) {
 		  for(i = 0; i < $SIZE(n);i++) {
 			 $cplx_val(c=>0,n=>i) = $eigreval(n=>i);

@@ -41,6 +41,20 @@ opts_len);
 
 static integer c_zero = 0;
 static integer c_nine = 9;
+
+#define PDL_MAYBE_SIZE(flagpdltype, flagpdl, flagcond, outpdl, outdim, indim) \
+if (outpdl->state & PDL_MYDIMS_TRANS) { \
+  PDL_Indx i; \
+  char gobig = 0; \
+  flagpdltype *datap = PDL_REPRP(flagpdl); \
+  for (i=0; i<flagpdl->nvals; i++) { \
+    flagpdltype tmp = datap[i]; /* [phys] means ignore incs and offs */ \
+    if (!(flagcond)) continue; \
+    gobig = 1; \
+    break; \
+  } \
+  outdim = gobig ? indim : 1; \
+}
 ');
 
 sub generate_code($){
@@ -430,7 +444,12 @@ pp_defc("ggsvd",
 		integer *info);
 EOF
        HandleBad => 0,
-	Pars => '[io,phys]A(2,m,n); int jobu(); int jobv(); int jobq(); [io,phys]B(2,p,n); int [o,phys]k(); int [o,phys]l();[o,phys]alpha(n);[o,phys]beta(n); [o,phys]U(2,q,r); [o,phys]V(2,s,t); [o,phys]Q(2,u,v); int [o,phys]iwork(n); int [o,phys]info()',
+	Pars => '[io]A(2,m,n); int jobu(); int jobv(); int jobq(); [io]B(2,p,n); int [o]k(); int [o]l();[o]alpha(n);[o]beta(n); [o]U(2,q,q); [o]V(2,r,r); [o]Q(2,s,s); int [o]iwork(n); int [o]info()',
+	RedoDimsCode => '
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobu), tmp, $PDL(U), $SIZE(q), $SIZE(m))
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobv), tmp, $PDL(V), $SIZE(r), $SIZE(p))
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobq), tmp, $PDL(Q), $SIZE(s), $SIZE(n))
+	',
 	Code => generate_code '
 		char pjobu = \'N\';
 		char pjobv = \'N\';		
@@ -464,9 +483,9 @@ EOF
 		$P(U),
 		&(integer){$SIZE(q)},
 		$P(V),
-		&(integer){$SIZE(s)},
+		&(integer){$SIZE(r)},
 		$P(Q),
-		&(integer){$SIZE(u)},
+		&(integer){$SIZE(s)},
 		&twork[0],
 		&lwork,
 		rwork,
@@ -496,9 +515,9 @@ EOF
 		$P(U),
 		&(integer){$SIZE(q)},
 		$P(V),
-		&(integer){$SIZE(s)},
+		&(integer){$SIZE(r)},
 		$P(Q),
-		&(integer){$SIZE(u)},
+		&(integer){$SIZE(s)},
 		work,
 		&lwork,
 		rwork,
@@ -515,7 +534,11 @@ pp_defc("geev",
 		integer *ldvr, $GENERIC() *work, integer *lwork, $GENERIC() *rwork, integer *info);
 EOF
        HandleBad => 0,
-	Pars => '[phys]A(2,n,n); int jobvl(); int jobvr(); [o,phys]w(2,n); [o,phys]vl(2,m,m); [o,phys]vr(2,p,p); int [o,phys]info()',
+	Pars => 'A(2,n,n); int jobvl(); int jobvr(); [o]w(2,n); [o]vl(2,m,m); [o]vr(2,p,p); int [o]info()',
+	RedoDimsCode => '
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvl), tmp, $PDL(vl), $SIZE(m), $SIZE(n))
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvr), tmp, $PDL(vr), $SIZE(p), $SIZE(n))
+	',
 	Code => generate_code '
 		char jvl = \'N\';
 		char jvr = \'N\';
@@ -577,7 +600,13 @@ pp_defc("geevx",
 		*work, integer *lwork, $GENERIC() *rwork, integer *info);
 EOF
        HandleBad => 0,
-	Pars => '[io,phys]A(2,n,n);  int jobvl(); int jobvr(); int balance(); int sense(); [o,phys]w(2,n); [o,phys]vl(2,m,m); [o,phys]vr(2,p,p); int [o,phys]ilo(); int [o,phys]ihi(); [o,phys]scale(n); [o,phys]abnrm(); [o,phys]rconde(q); [o,phys]rcondv(r); int [o,phys]info()',
+	Pars => '[io]A(2,n,n);  int jobvl(); int jobvr(); int balance(); int sense(); [o]w(2,n); [o]vl(2,m,m); [o]vr(2,p,p); int [o]ilo(); int [o]ihi(); [o]scale(n); [o]abnrm(); [o]rconde(q); [o]rcondv(r); int [o]info()',
+	RedoDimsCode => '
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvl), tmp, $PDL(vl), $SIZE(m), $SIZE(n))
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvr), tmp, $PDL(vr), $SIZE(p), $SIZE(n))
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(sense), tmp == 1 || tmp == 3, $PDL(rconde), $SIZE(q), $SIZE(n))
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(sense), tmp == 2 || tmp == 3, $PDL(rcondv), $SIZE(r), $SIZE(n))
+	',
 	Code => generate_code '
 		char jvl = \'N\';
 		char jvr = \'N\';
@@ -675,7 +704,11 @@ pp_defc("ggev",
 		$GENERIC() *rwork, integer *info);
 EOF
        HandleBad => 0,
-	Pars => '[phys]A(2,n,n); int jobvl();int jobvr();[phys]B(2,n,n);[o,phys]alpha(2,n);[o,phys]beta(2,n);[o,phys]VL(2,m,m);[o,phys]VR(2,p,p);int [o,phys]info()',
+	Pars => 'A(2,n,n); int [phys]jobvl();int [phys]jobvr();B(2,n,n);[o]alpha(2,n);[o]beta(2,n);[o]VL(2,m,m);[o]VR(2,p,p);int [o]info()',
+	RedoDimsCode => '
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvl), tmp, $PDL(VL), $SIZE(m), $SIZE(n))
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvr), tmp, $PDL(VR), $SIZE(p), $SIZE(n))
+	',
 	Code => generate_code '
 		integer lwork = -1;
 		char pjobvl = \'N\', pjobvr = \'N\';
@@ -745,7 +778,13 @@ pp_defc("ggevx",
 		bwork, integer *info);
 EOF
        HandleBad => 0,
-	Pars => '[io,phys]A(2,n,n);int balanc();int jobvl();int jobvr();int sense();[io,phys]B(2,n,n);[o,phys]alpha(2,n);[o,phys]beta(2,n);[o,phys]VL(2,m,m);[o,phys]VR(2,p,p);int [o,phys]ilo();int [o,phys]ihi();[o,phys]lscale(n);[o,phys]rscale(n);[o,phys]abnrm();[o,phys]bbnrm();[o,phys]rconde(r);[o,phys]rcondv(s);int [o,phys]info()',
+	Pars => '[io,phys]A(2,n,n);int balanc();int jobvl();int jobvr();int sense();[io,phys]B(2,n,n);[o]alpha(2,n);[o]beta(2,n);[o]VL(2,m,m);[o]VR(2,p,p);int [o]ilo();int [o]ihi();[o]lscale(n);[o]rscale(n);[o]abnrm();[o]bbnrm();[o]rconde(r);[o]rcondv(s);int [o]info()',
+	RedoDimsCode => '
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvl), tmp, $PDL(VL), $SIZE(m), $SIZE(n))
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvr), tmp, $PDL(VR), $SIZE(p), $SIZE(n))
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(sense), tmp != 2, $PDL(rconde), $SIZE(r), $SIZE(n))
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(sense), tmp != 1, $PDL(rcondv), $SIZE(s), $SIZE(n))
+	',
 	Code => generate_code '
 		integer lwork = -1, *iwork;
 		logical *bwork;
@@ -876,7 +915,10 @@ pp_defc("gees",
 		integer *lwork, $GENERIC() *rwork, logical *bwork, integer *info);
 EOF
        HandleBad => 0,
-	Pars => '[io,phys]A(2,n,n);  int jobvs(); int sort(); [o,phys]w(2,n); [o,phys]vs(2,p,p); int [o,phys]sdim(); int [o,phys]info()',
+	Pars => '[io]A(2,n,n);  int jobvs(); int sort(); [o]w(2,n); [o]vs(2,p,p); int [o]sdim(); int [o]info()',
+	RedoDimsCode => '
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvs), tmp, $PDL(vs), $SIZE(p), $SIZE(n))
+	',
 	OtherPars => "SV* select_func" ,
 	Code => generate_code '
 		char jvs = \'N\';
@@ -968,7 +1010,10 @@ pp_defc("geesx",
 		logical *bwork, integer *info);
 EOF
        HandleBad => 0,
-	Pars => '[io,phys]A(2,n,n);  int jobvs(); int sort(); int sense(); [o,phys]w(2,n);[o,phys]vs(2,p,p); int [o,phys]sdim(); [o,phys]rconde();[o,phys]rcondv(); int [o,phys]info()',
+	Pars => '[io]A(2,n,n);  int jobvs(); int sort(); int sense(); [o]w(2,n);[o]vs(2,p,p); int [o]sdim(); [o]rconde();[o]rcondv(); int [o]info()',
+	RedoDimsCode => '
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvs), tmp, $PDL(vs), $SIZE(p), $SIZE(n))
+	',
 	OtherPars => "SV* select_func" ,
 	Code => generate_code '
 		char jvs = \'N\';
@@ -1089,7 +1134,11 @@ pp_defc("gges",
 		logical *bwork, integer *info);
 EOF
        HandleBad => 0,
-	Pars => '[io,phys]A(2,n,n); int jobvsl();int jobvsr();int sort();[io,phys]B(2,n,n);[o,phys]alpha(2,n);[o,phys]beta(2,n);[o,phys]VSL(2,m,m);[o,phys]VSR(2,p,p);int [o,phys]sdim();int [o,phys]info()',
+	Pars => '[io]A(2,n,n); int jobvsl();int jobvsr();int sort();[io]B(2,n,n);[o]alpha(2,n);[o]beta(2,n);[o]VSL(2,m,m);[o]VSR(2,p,p);int [o]sdim();int [o]info()',
+	RedoDimsCode => '
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvsl), tmp, $PDL(VSL), $SIZE(m), $SIZE(n))
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvsr), tmp, $PDL(VSR), $SIZE(p), $SIZE(n))
+	',
 	OtherPars => "SV* select_func" ,
 	Code => generate_code '
 		integer lwork = -1;
@@ -1195,7 +1244,11 @@ pp_defc("ggesx",
 		integer *info);
 EOF
        HandleBad => 0,
-	Pars => '[io,phys]A(2,n,n); int jobvsl();int jobvsr();int sort();int sense();[io,phys]B(2,n,n);[o,phys]alpha(2,n);[o,phys]beta(2,n);[o,phys]VSL(2,m,m);[o,phys]VSR(2,p,p);int [o,phys]sdim();[o,phys]rconde(q);[o,phys]rcondv(r);int [o,phys]info()',
+	Pars => '[io]A(2,n,n); int jobvsl();int jobvsr();int sort();int sense();[io]B(2,n,n);[o]alpha(2,n);[o]beta(2,n);[o]VSL(2,m,m);[o]VSR(2,p,p);int [o]sdim();[o]rconde(q=2);[o]rcondv(q=2);int [o]info()',
+	RedoDimsCode => '
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvsl), tmp, $PDL(VSL), $SIZE(m), $SIZE(n))
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvsr), tmp, $PDL(VSR), $SIZE(p), $SIZE(n))
+	',
 	OtherPars => "SV* select_func" ,
 	Code => generate_code '
 		integer lwork, maxwrk;
@@ -1463,7 +1516,10 @@ pp_defc("heevx",
 		$GENERIC() *rwork, integer *iwork, integer *ifail, integer *info);
 EOF
        HandleBad => 0,
-	Pars => '[phys]A(2,n,n);  int jobz(); int range(); int uplo(); [phys]vl(); [phys]vu(); int [phys]il(); int [phys]iu(); [phys]abstol(); int [o,phys]m(); [o,phys]w(n); [o,phys]z(2,p,q);int [o,phys]ifail(n); int [o,phys]info()',
+	Pars => 'A(2,n,n);  int jobz(); int range(); int uplo(); vl(); vu(); int il(); int iu(); abstol(); int [o]m(); [o]w(n); [o]z(2,p,p);int [o]ifail(n); int [o]info()',
+	RedoDimsCode => '
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobz), tmp, $PDL(z), $SIZE(p), $SIZE(n))
+	',
 	Code => generate_code '
 		char jz = \'N\';
 		char puplo = \'U\';
@@ -1817,7 +1873,13 @@ pp_defc("hegvx",
 		integer *iwork, integer *ifail, integer *info);
 EOF
        HandleBad => 0,
-	Pars => '[io,phys]A(2,n,n);int [phys]itype();int jobz();int range(); int uplo();[io,phys]B(2,n,n);[phys]vl();[phys]vu();int [phys]il();int [phys]iu();[phys]abstol();int [o,phys]m();[o,phys]w(n); [o,phys]Z(2,p,q);int [o,phys]ifail(n);int [o,phys]info()',
+	Pars => '[io]A(2,n,n);int itype();int jobz();int range();
+	  int uplo();[io]B(2,n,n);vl();vu();int il();
+	  int iu();abstol();int [o]m();[o]w(n);
+	  [o]Z(2,p,p);int [o]ifail(n);int [o]info()',
+	RedoDimsCode => '
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobz), tmp, $PDL(Z), $SIZE(p), $SIZE(n))
+	',
 	Code => generate_code '
 		char jz = \'N\';
 		char puplo = \'U\';
@@ -1940,7 +2002,11 @@ pp_defc("gesvx",
 		rwork, integer *info);
 EOF
        HandleBad => 0,
-	Pars => '[io,phys]A(2,n,n); int trans(); int fact(); [io,phys]B(2,n,m); [io,phys]af(2,n,n); int [io,phys]ipiv(n); int [io]equed(); [io,phys]r(n); [io,phys]c(n); [o]X(2,n,m); [o]rcond(); [o]ferr(m); [o]berr(m); [o]rpvgrw(); int [o]info()',
+	Pars => '[io]A(2,n,n); int trans(); int fact(); [io]B(2,n,m); [io]af(2,n,n); int [io]ipiv(n); int [io]equed(); [o]r(p); [o]c(q); [o]X(2,n,m); [o]rcond(); [o]ferr(m); [o]berr(m); [o]rpvgrw(); int [o]info()',
+	RedoDimsCode => '
+	  $SIZE(p) = $SIZE(n); /* Ubuntu LAPACK 3 writes to r anyway */
+	  $SIZE(q) = $SIZE(n); /* Ubuntu LAPACK 3 writes to c anyway */
+	',
 	Code => generate_code '
 		char ptrans, pfact, pequed;
 
@@ -2333,7 +2399,10 @@ pp_defc("posvx",
 		berr, $GENERIC() *work, $GENERIC() *rwork, integer *info);
 EOF
        HandleBad => 0,
-	Pars => '[io,phys]A(2,n,n); int uplo(); int fact(); [io,phys]B(2,n,m); [io,phys]af(2,n,n); int [io]equed(); [io,phys]s(n); [o,phys]X(2,n,m); [o,phys]rcond(); [o,phys]ferr(m); [o,phys]berr(m); int [o,phys]info()',
+	Pars => '[io,phys]A(2,n,n); int uplo(); int fact(); [io,phys]B(2,n,m); [io,phys]af(2,n,n); int [io]equed(); [o]s(p); [o,phys]X(2,n,m); [o,phys]rcond(); [o,phys]ferr(m); [o,phys]berr(m); int [o,phys]info()',
+	RedoDimsCode => '
+	  $SIZE(p) = $SIZE(n); /* Ubuntu LAPACK 3 writes to s anyway */
+	',
 	Code => generate_code '
 		char pfact;
 		char pequed = \'N\';
