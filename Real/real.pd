@@ -1137,7 +1137,7 @@ Users\' Guide.
 
 pp_def("ggev",
        HandleBad => 0,
-	Pars => '[phys]A(n,n); int jobvl();int jobvr();[phys]B(n,n);[o,phys]alphar(n);[o,phys]alphai(n);[o,phys]beta(n);[o,phys]VL(m,m);[o,phys]VR(p,p);int [o,phys]info()',
+	Pars => 'A(n,n); int jobvl();int jobvr();B(n,n);[o]alphar(n);[o]alphai(n);[o]beta(n);[o]VL(m,m);[o]VR(p,p);int [o]info()',
 	GenericTypes => [F,D],
 	Code => generate_code '
 		integer lwork = -1;

@@ -17,10 +17,10 @@ sub runtest {
   my ($in, $method, $expected, $extra) = @_;
   ($expected, my $expected_cplx) = ref($expected) eq 'ARRAY' ? @$expected : ($expected, $expected);
   my ($got) = $in->$method(@{$extra||[]});
-  ok fapprox($got, $expected), $method or diag "got: $got";
+  ok fapprox($got, $expected), $method or diag "got(".ref($got)."): $got";
   $_ = PDL::Complex::r2C($_) for $in, $expected_cplx;
   ($got) = $in->$method(map ref() && ref() ne 'CODE' ? PDL::Complex::r2C($_) : $_, @{$extra||[]});
-  ok fapprox($got, $expected_cplx), "PDL::Complex $method" or diag "got: $got";
+  ok fapprox($got, $expected_cplx), "PDL::Complex $method" or diag "got(".ref($got)."): $got";
 }
 
 my $a = pdl([[1.7,3.2],[9.2,7.3]]);

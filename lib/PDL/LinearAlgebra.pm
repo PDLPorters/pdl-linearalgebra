@@ -87,7 +87,7 @@ sub ecplx {
 sub norm {
 	my ($m, $real, $trans) = @_;
 
-	# If trans == true => transpose output matrice
+	# If trans == true => transpose output matrix
 	# If real == true => rotate (complex as a vector)
 	# 		     such that max abs will be real
 
@@ -2836,7 +2836,7 @@ sub PDL::msolvex {
 	my(@adims) = $a->dims;
 	$a = $a->t->copy;
 	$b = $b->t->copy;
-	my $x = PDL::zeroes $b;
+	my $x = $a->_similar_null;
 	my $af = PDL::zeroes $a;
 	my ($info, $rcond, $rpvgrw, $ferr, $berr) = map null, 1..5;
 	my $equed = pdl(long, 0);
@@ -3010,7 +3010,7 @@ sub PDL::msymsolvex {
 	my(@adims) = $a->dims;
 	$uplo = 1 - $uplo;
 	$b = $b->t;
-	my $x = PDL::zeroes $b;
+	my $x = $a->_similar_null;
 	my $af =  PDL::zeroes $a;
 	my ($info, $rcond, $ferr, $berr) = map null, 1..4;
 	my $ipiv = zeroes(long, $adims[$di]);
@@ -3144,7 +3144,7 @@ sub PDL::mpossolvex {
 	my $equilibrate = $opt{'equilibrate'} ? 2: 1;
 	$a = $a->copy;
 	$b = $b->t->copy;
-	my $x = PDL::zeroes $b;
+	my $x = $a->_similar_null;
 	my $af = PDL::zeroes $a;
 	my $equed = pdl(long, 0);
 	my $s = zeroes($a->type, $adims[-2]);
@@ -4038,7 +4038,6 @@ sub PDL::mgeigenx {
 		$jobvl = pdl(long,0);
 		$vl = pdl($type,0);
 	}
-
 	if ($opt{'vector'} eq 'right' ||
 		$opt{'vector'} eq 'all' ||
 		$opt{'rcondition'} ){
@@ -4049,8 +4048,6 @@ sub PDL::mgeigenx {
 		$jobvr = pdl(long,0);
 		$vr = pdl($type,0);
 	}
-
-
 	if ( $opt{'rcondition'} eq 'value'){
 		$sense = pdl(long,1);
 		$rconde = zeroes($type, $adims[-1]);
@@ -4071,10 +4068,7 @@ sub PDL::mgeigenx {
 		$rconde = pdl($type,0);
 		$rcondv = pdl($type,0);
 	}
-
 	$balanc =  ($opt{'permute'} &&  $opt{'scale'} ) ? pdl(long,3) : $opt{'permute'} ? pdl(long,1) : $opt{'scale'} ? pdl(long,2) : pdl(long,0);
-
-
 	if (@adims == 2){
 		$a->t->ggevx($balanc, $jobvl, $jobvr, $sense, $b, $wr, $wi, $beta, $vl, $vr, $ilo, $ihi, $lscale, $rscale,
 					$abnrm, $bbnrm, $rconde, $rcondv, $info);
@@ -4085,7 +4079,6 @@ sub PDL::mgeigenx {
 		$a->t->cggevx($balanc, $jobvl, $jobvr, $sense, $b, $eigens, $beta, $vl, $vr, $ilo, $ihi, $lscale, $rscale,
 					$abnrm, $bbnrm, $rconde, $rcondv, $info);
 	}
-
 	if ( ($info > 0) && ($info < $adims[-1])){
 		laerror("mgeigenx: The QZ algorithm failed to converge");
 		print ("Returning converged eigenvalues\n") if $_laerror;
@@ -4093,22 +4086,17 @@ sub PDL::mgeigenx {
 	elsif($info){
 		laerror("mgeigenx: Error from hgeqz or tgevc");
 	}
-
 	$result{'aschur'} = $a if $opt{'schur'};
 	$result{'bschur'} = $b->t->sever if $opt{'schur'};
-
 	if ($opt{'permute'}){
 		my $balance = cat $ilo, $ihi;
 		$result{'balance'} =  $balance;
 	}
-
 	$result{'info'} =  $info;
 	$result{'rscale'} =  $rscale if $opt{'scale'};
 	$result{'lscale'} =  $lscale if $opt{'scale'};
-
 	$result{'anorm'} =  $abnrm;
 	$result{'bnorm'} =  $bbnrm;
-
 	# Doesn't use lacpy2 =(sqrt **2 , **2) without unnecessary overflow
 	if ( $opt{'rcondition'} eq 'vector' || $opt{'rcondition'} eq "all"){
 		$result{'rcondv'} =  $rcondv;
@@ -4124,7 +4112,6 @@ sub PDL::mgeigenx {
 			$result{'eerror'} = (lamch(pdl($type,0))* $abnrm /$rconde  );
 		}
 	}
-
 	if ($opt{'vector'} eq 'left'){
 		return ($eigens, $beta, $vl->t->sever, %result);
 	}
@@ -4760,16 +4747,10 @@ sub PDL::Complex::mgsvd {
 	$jobqx = ($opt{Q} || $opt{X}) ? 1 : 0;
 	$a = $a->copy;
 	$b = $b->t->copy;
-	$k = null;
-	$l = null;
-	$alpha = zeroes($type, $adims[1]);
-	$beta = zeroes($type, $adims[1]);
-
+	my ($k, $l, $alpha, $beta, $iwork, $info) = map null, 1..6;
 	$U = $opt{U} ? PDL::Complex->new_from_specification($type, 2,$adims[2], $adims[2]) : zeroes($type,1,1)->r2C;
 	$V = $opt{V} ? PDL::Complex->new_from_specification($b->type, 2,$bdims[2], $bdims[2]) : zeroes($b->type,1,1)->r2C;
 	$Q = $jobqx ? PDL::Complex->new_from_specification($type, 2,$adims[1], $adims[1]) : zeroes($type,1,1)->r2C;
-	$iwork = zeroes(long, $adims[1]);
-	$info = null;
 	$a->t->cggsvd($opt{U}, $opt{V}, $jobqx, $b, $k, $l, $alpha, $beta, $U, $V, $Q, $iwork, $info);
 	$k = $k->sclr;
 	$l = $l->sclr;
