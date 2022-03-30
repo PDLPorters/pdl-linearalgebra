@@ -3157,6 +3157,8 @@ Works on transposed arrays.
 *mlls = \&PDL::mlls;
 
 sub PDL::mlls {
+	my $di = $_[0]->dims_internal;
+	my $slice_prefix = ',' x $di;
 	&_matrices_matchrows;
 	my($a, $b, $trans) = @_;
 	my(@adims) = $a->dims;
@@ -3164,32 +3166,19 @@ sub PDL::mlls {
 	my $x;
 	$a = $a->copy;
 	my $type = $a->type;
-	if ( $adims[-1] < $adims[-2]){
-		if (@adims == 3){
-			$x = PDL::Complex->new_from_specification($type, 2,$adims[1], $bdims[1]);
-			$x(, :($bdims[2]-1), :($bdims[1]-1)) .= $b->t;
-		}
-		else{
-			$x = PDL->new_from_specification($type, $adims[0], $bdims[0]);
-			$x(:($bdims[1]-1), :($bdims[0]-1)) .= $b->t;
-		}
-	}
-	else{
+	if ( $adims[$di+1] < $adims[$di]) {
+		$x = $a->_similar($adims[$di], $bdims[$di]);
+		$x->slice("$slice_prefix:@{[$bdims[$di+1]-1]}, :@{[$bdims[$di]-1]}") .= $b->t;
+	} else {
 		$x = $b->t->copy;
 	}
 	$a->_call_method('gels', $trans ? 0 : 1, $x, my $info = null);
 	$x = $x->t;
-	if ( $adims[-1] <= $adims[-2]){
-		return $x->sever;
-	}
-	if(@adims == 2){
-		wantarray ? return($x(, :($adims[0]-1))->sever, $x(, $adims[0]:)->t->pow(2)->sumover) :
-					return $x(, :($adims[0]-1))->sever;
-	}
-	else{
-		wantarray ? return($x(,, :($adims[1]-1))->sever, PDL::Ufunc::sumover(PDL::Complex::Cpow($x(,, $adims[1]:),pdl($type,2,0))->reorder(2,0,1))) :
-					return $x(,, :($adims[1]-1))->sever;
-	}
+	return $x->sever if $adims[$di+1] <= $adims[$di];
+	my $sliced = $x->slice("$slice_prefix, :@{[$adims[$di]-1]}")->sever;
+	return $sliced if !wantarray;
+	my $power = $a->_similar(1); $power .= 2;
+	($sliced, ($x->slice("$slice_prefix, $adims[$di]:")->t ** $power)->sumover);
 }
 
 =head2 mllsy
@@ -3200,7 +3189,7 @@ Computes the minimum-norm solution to a real linear least squares problem
 using a complete orthogonal factorization.
 
 Uses L<gelsy|PDL::LinearAlgebra::Real/gelsy> or L<cgelsy|PDL::LinearAlgebra::Complex/cgelsy>
-from Lapack. Works on tranposed arrays.
+from Lapack. Works on transposed arrays.
 
 =for usage
 

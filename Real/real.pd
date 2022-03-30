@@ -9136,7 +9136,7 @@ eigenvector y of (A,B) corresponding to a generalized eigenvalue
 w are defined by:
 
 	(A - wB) * x = 0  and  y**H * (A - wB) = 0
-	where y**H denotes the conjugate tranpose of y.
+	where y**H denotes the conjugate transpose of y.
 
 If an eigenvalue w is determined by zero diagonal elements of both A
 and B, a unit vector is returned as the corresponding eigenvector.
