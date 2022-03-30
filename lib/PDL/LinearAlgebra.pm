@@ -963,7 +963,6 @@ sub PDL::mpinv{
 	my ($m, $tol) = @_;
 	my @dims = $m->dims;
 	my ($ind, $cind, $u, $s, $v, $info, $err);
-
 	$err = setlaerror(NO);
 	#TODO: don't transpose
 	($u, $s, $v, $info) = $m->mdsvd(2);
@@ -972,18 +971,12 @@ sub PDL::mpinv{
 	unless (defined $tol){
 		$tol =  ($dims[-1] > $dims[-2] ? $dims[-1] : $dims[-2]) * $s((0)) * lamch(pdl($m->type,3));
 	}
-
 	($ind, $cind) = which_both( $s > $tol );
 	$s->index($cind) .= 0 if defined $cind;
 	$s->index($ind)  .= 1/$s->index($ind) ;
-
-	$ind =  (@dims == 3) ? ($v->t *  $s->r2C ) x $u->t :
-			($v->t *  $s ) x $u->t;
+	$ind = ($v->t * ($m->_is_complex ? $s->r2C : $s)) x $u->t;
 	return wantarray ? ($ind, $info) : $ind;
-
 }
-
-
 
 =head2 mlu
 
