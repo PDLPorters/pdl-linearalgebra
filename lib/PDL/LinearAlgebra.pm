@@ -89,7 +89,7 @@ sub norm {
 
 	# If trans == true => transpose output matrix
 	# If real == true => rotate (complex as a vector)
-	# 		     such that max abs will be real
+	#		     such that max abs will be real
 
 	#require PDL::LinearAlgebra::Complex;
 	my $ret = PDL::LinearAlgebra::Complex::cnrm2($m);
@@ -539,10 +539,10 @@ Supports threading.
 
  PDL(norm) = mnorm(PDL, SCALAR(ord));
  ord :
- 	0|'inf' : Infinity norm
- 	1|'one' : One norm
- 	2|'two'	: norm 2 (default)
- 	3|'fro' : frobenius norm
+	0|'inf' : Infinity norm
+	1|'one' : One norm
+	2|'two'	: norm 2 (default)
+	3|'fro' : frobenius norm
 
 =for example
 
@@ -696,8 +696,8 @@ Works on transposed array(s)
 
  PDL = mrcond(PDL, SCALAR(ord))
  ord :
- 	0 : Infinity norm (default)
- 	1 : One norm
+	0 : Infinity norm (default)
+	1 : One norm
 
 =for example
 
@@ -1139,7 +1139,7 @@ Works on transposed array(s).
 		       (especially if the eigenvalue is ill-conditioned).
 		       All eigenvalues/vectors are selected if select_func is undefined.
  backtransform	     : Whether or not backtransforms eigenvectors to those of A.
- 		       Only supported if schur vectors are computed, default = 1.
+		       Only supported if schur vectors are computed, default = 1.
  norm                : Whether or not computed eigenvectors are normalized to have Euclidean norm equal to
 		       1 and largest component real, default = 1
 
@@ -1157,18 +1157,46 @@ Works on transposed array(s).
  my $a = random(10,10);
  my $schur  = mschur($a);
  sub select{
- 	my $m = shift;
+	my $m = shift;
 	# select "discrete time" eigenspace
- 	return $m->Cabs < 1 ? 1 : 0;
+	return $m->Cabs < 1 ? 1 : 0;
  }
  my ($schur,$eigen, $svectors,$evectors)  = mschur($a,1,1,0,\&select);
 
 =cut
 
-sub mschur {shift->mschur(@_)}
+sub _eigen_one {
+  my ($mm, $select_func, $jobv, $jobvl, $jobvr, $mult, $norm, $mdim, $sdim, @w) = @_;
+  my $job = $jobvr && $jobvl ? undef : $jobvl ? 2 : 1;
+  my $is_mult = $jobvl == 1 || $jobvr == 1 || $mult;
+  my ($vl, $vr) = map $mm->_similar_null, 1..2;
+  $mult = ($select_func && !$is_mult) ? 2 : !$jobv ? 0 : $mult;
+  my $sel = ($select_func && !$is_mult) ? zeroes($mdim) : undef;
+  $sel(:($sdim-1)) .= 1 if defined $sel;
+  $mm->_call_method('trevc', $job, $mult, $sel, $vl, $vr, $sdim, my $infos=null);
+  @w = map $is_mult || !$select_func ? $_ : $_(:($sdim-1)), @w if @w == 2;
+  my @ret;
+  for ([$jobvr,$vr], [$jobvl,$vl]) {
+    unshift(@ret, undef), next if !$_->[0];
+    my $val;
+    if (@w == 2) {
+      (undef,$val) = cplx_eigen(@w,$norm?($_->[1],1):($_->[1]->t,0));
+    } else {
+      $val = $_->[1];
+    }
+    unshift(@ret, $norm ? $val->norm(1,1) : $val), next if !$is_mult or !$select_func;
+    $val = $val(,,:($sdim-1))->sever if $_->[0] == 2;
+    $val = $val->norm(1,1) if $norm;
+    unshift @ret, $val;
+  }
+  @ret;
+}
+
+*mschur = \&PDL::mschur;
 sub PDL::mschur {
 	&_square;
 	my $di = $_[0]->dims_internal;
+	my $slice_prefix = ',' x $di;
 	my ($m, $jobv, $jobvl, $jobvr, $select_func, $mult, $norm) = @_;
 	my @dims = $m->dims;
 	barf("mschur: threading not supported for selected vectors")
@@ -1176,154 +1204,34 @@ sub PDL::mschur {
 		  && (grep $_ == 2, $jobv, $jobvl, $jobvr);
 	$mult //= 1;
 	$norm //= 1;
-       	$jobv = $jobvl = $jobvr = 0 unless wantarray;
+	$jobv = $jobvl = $jobvr = 0 unless wantarray;
 	my $type = $m->type;
 	my $mm = $m->is_inplace ? $m->t : $m->t->copy;
 	my $v = $m->_similar_null;
+	my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
+	my $select_f;
+	if ($select_func){
+		$select_f= $m->_is_complex ? $select_func : sub{
+			&$select_func(PDL::Complex::complex(pdl($type,@_[0..1])),pdl($_[2]));
+		};
+	}
 	$mm->_call_method('gees',
-		$jobv, $select_func ? 1 : 0,
-		my $wtmp = null, my $wi = null,
-		$v, my $sdim = null, my $info = null,
-		$select_func ? sub {
-			&$select_func(PDL::Complex::complex(pdl($type,@_[0..1])));
-		} : undef
+		$jobv, $select_func ? 1 : 0, @w,
+		$v, my $sdim = null, my $info = null, $select_f
 	);
 	_error_schur($info, $select_func, $dims[$di], 'mschur', 'QR');
 	my @ret = !$select_func || $sdim ? () : map PDL::Complex->null, grep $_ == 2, $jobvl, $jobvr;
 	push @ret, $sdim if $select_func;
 	$_ = 0 for grep $select_func && $_ == 2 && !$sdim, $jobvl, $jobvr;
+	my $w = @w == 2 ? PDL::Complex::ecplx(@w) : @w[0];
 	if ($jobvl || $jobvr){
-		my $job = $jobvr && $jobvl ? undef : $jobvl ? 2 : 1;
-		my $is_mult = $jobvl == 1 || $jobvr == 1 || $mult;
-		my ($vl, $vr) = map $m->_similar_null, 1..2;
-		$mult = ($select_func && !$is_mult) ? 2 : !$jobv ? 0 : $mult;
-		my $sel = ($select_func && !$is_mult) ? zeroes($dims[1]) : undef;
-		$sel(:($sdim-1)) .= 1 if defined $sel;
-		$mm->_call_method('trevc', $job, $mult, $sel, $vl, $vr, $sdim, my $infos=null);
-		my ($wtmpr, $wtmpi) = map $is_mult || !$select_func ? $_ : $_(:($sdim-1)), $wtmp, $wi;
-		for (grep $_->[0], [$jobvr,$vr], [$jobvl,$vl]) {
-			(undef,my $val) = $wtmpr->cplx_eigen($wtmpi,$norm?($_->[1],1):($_->[1]->t,0));
-			unshift(@ret, $norm ? $val->norm(1,1) : $val), next if !$is_mult or !$select_func;
-			$val = $val(,,:($sdim-1))->sever if $_->[0] == 2;
-			$val = $val->norm(1,1) if $norm;
-			unshift @ret, $val;
-		}
-	}
-	my $w = PDL::Complex::ecplx ($wtmp, $wi);
-	if ($jobv == 2 && $select_func) {
-		unshift @ret, $sdim > 0 ? $v->t->(:($sdim-1),)->sever : null;
-	}
-	elsif($jobv){
-		unshift @ret, $v->t->sever;
-	}
-	$m = $mm->t->sever unless $m->is_inplace(0);
-	return wantarray ? ($m, $w, @ret, $info) : $m;
-}
-
-sub PDL::Complex::mschur {
-	&_square;
-	my $di = $_[0]->dims_internal;
-	my($m, $jobv, $jobvl, $jobvr, $select_func, $mult, $norm) = @_;
-	my(@dims) = $m->dims;
-	barf("mschur: thread doesn't supported for selected vectors")
-		if ($select_func && @dims > 3 && ($jobv == 2 || $jobvl == 2 || $jobvr == 2));
-	my ($w, $info, $type, $select,$sdim, $vr,$vl, $mm, @ret);
-	$mult = 1 unless defined($mult);
-	$norm = 1 unless defined($norm);
-       	$jobv = $jobvl = $jobvr = 0 unless wantarray;
-	$type = $m->type;
-       	$select = $select_func ? pdl(long,1) : pdl(long,0);
-       	$info = null;
-       	$sdim = null;
-	$mm = $m->is_inplace ? $m->t : $m->t->copy;
-	$w = PDL::Complex->null;
-	my $v = $m->_similar_null;
-	$mm->_call_method('gees', $jobv, $select, $w, $v, $sdim, $info, $select_func);
-	_error_schur($info, $select_func, $dims[$di], 'mschur', 'QR');
-	if ($select_func){
-		if ($jobvl == 2){
-			if (!$sdim){
-				push @ret, PDL::Complex->null;
-				$jobvl = 0;
-			}
-		}
-		if ($jobvr == 2){
-			if (!$sdim){
-				push @ret, PDL::Complex->null;
-				$jobvr = 0;
-			}
-		}
-		push @ret, $sdim;
-	}
-	if ($jobvl || $jobvr){
-		my ($sel, $job, $sdims);
-		unless ($jobvr && $jobvl){
-			$job = $jobvl ? 2 : 1;
-		}
-		if ($select_func){
-			if ($jobvl == 1 || $jobvr == 1 || $mult){
-				$sdims = null;
-				if ($jobv){
-					$vr = $v->copy if $jobvr;
-					$vl = $v->copy if $jobvl;
-				}
-				else{
-					($vl, $vr) = map $m->_similar_null, 1..2;
-					$mult = 0;
-				}
-				$mm->ctrevc($job, $mult, $sel, $vl, $vr, $sdims, my $infos=null);
-				if ($jobvr){
-					if ($jobvr == 2){
-						unshift @ret, $norm ? $vr(,,:($sdim-1))->norm(1,1) :
-									$vr(,,:($sdim-1))->t->sever;
-					}
-					else{
-						unshift @ret, $norm ? $vr->norm(1,1) : $vr->t->sever;
-					}
-				}
-				if ($jobvl){
-					if ($jobvl == 2){
-						unshift @ret, $norm ? $vl(,,:($sdim-1))->norm(1,1) :
-									$vl(,,:($sdim-1))->t->sever;
-					}
-					else{
-						unshift @ret, $norm ? $vl->norm(1,1) : $vl->t->sever;
-					}
-				}
-			}
-			else{
-				($vl, $vr) = map $m->_similar_null, 1..2;
-				$sel = zeroes($dims[1]);
-				$sel(:($sdim-1)) .= 1;
-				$mm->ctrevc($job, 2, $sel, $vl, $vr, $sdim, my $infos=null);
-				if ($jobvr){
-					unshift @ret, $norm ? $vr->norm(1,1) : $vr->t->sever;
-				}
-				if ($jobvl){
-					unshift @ret, $norm ? $vl->norm(1,1) : $vl->t->sever;
-				}
-			}
-		}
-		else{
-			if ($jobv){
-				$vr = $v->copy if $jobvr;
-				$vl = $v->copy if $jobvl;
-			}
-			else{
-				($vl, $vr) = map $m->_similar_null, 1..2;
-				$mult = 0;
-			}
-			$mm->ctrevc($job, $mult, $sel, $vl, $vr, $sdim, my $infos=null);
-			if ($jobvl){
-				push @ret, $norm ? $vl->norm(1,1) : $vl->t->sever;
-			}
-			if ($jobvr){
-				push @ret, $norm ? $vr->norm(1,1) : $vr->t->sever;
-			}
-		}
+		unshift @ret, grep defined, _eigen_one(
+		  $mm, $select_func, $jobv, $jobvl, $jobvr,
+		  $mult, $norm, $dims[$di+1], $sdim, @w
+		);
 	}
 	if ($jobv == 2 && $select_func) {
-		unshift @ret, $sdim > 0 ? $v->t->(,:($sdim-1),) ->sever : PDL::Complex->null;
+		unshift @ret, $sdim > 0 ? $v->t->slice("$slice_prefix:@{[$sdim-1]}")->sever : $m->_similar_null;
 	}
 	elsif($jobv){
 		unshift @ret, $v->t->sever;
@@ -1362,7 +1270,7 @@ Works on transposed array.
 			3: Computed for both
 			If select_func is undefined, sense is not used.
  backtransform	     : Whether or not backtransforms eigenvectors to those of A.
- 		       Only supported if schur vector are computed, default = 1
+		       Only supported if schur vector are computed, default = 1
  norm                : Whether or not computed eigenvectors are normalized to have Euclidean norm equal to
 		       1 and largest component real, default = 1
 
@@ -1385,20 +1293,19 @@ Works on transposed array.
  my $a = random(10,10);
  my $schur  = mschurx($a);
  sub select{
- 	my $m = shift;
+	my $m = shift;
 	# select "discrete time" eigenspace
- 	return $m->Cabs < 1 ? 1 : 0;
+	return $m->Cabs < 1 ? 1 : 0;
  }
  my ($schur,$eigen, $vectors,%ret)  = mschurx($a,1,0,0,\&select);
 
 =cut
 
-
 *mschurx = \&PDL::mschurx;
-
 sub PDL::mschurx {
 	&_square;
 	my $di = $_[0]->dims_internal;
+	my $slice_prefix = ',' x $di;
 	my($m, $jobv, $jobvl, $jobvr, $select_func, $sense, $mult,$norm) = @_;
 	my(@dims) = $m->dims;
 	my ($w, $v, %ret, $vl, $vr);
@@ -1411,210 +1318,47 @@ sub PDL::mschurx {
 	my ($info, $sdim, $rconde, $rcondv) = map null, 1..4;
 	my $mm = $m->is_inplace ? $m->t : $m->t->copy;
 	my $v = $m->_similar_null;
-	if (@dims == 3){
-		$w = PDL::Complex->null;
-		$mm->cgeesx( $jobv, $select, $sense, $w, $v, $sdim, $rconde, $rcondv,$info, $select_func);
-		_error_schur($info, $select_func, $dims[$di], 'mschurx', 'QR');
-		if ($select_func){
-			if(!$sdim){
-				if ($jobvl == 2){
-					$ret{VL} = PDL::Complex->null;
-					$jobvl = 0;
-				}
-				if ($jobvr == 2){
-					$ret{VR} = PDL::Complex->null;
-					$jobvr = 0;
-				}
-			}
-			$ret{n} = $sdim;
-		}
-		if ($jobvl || $jobvr){
-			my ($sel, $job, $sdims);
-			unless ($jobvr && $jobvl){
-				$job = $jobvl ? 2 : 1;
-			}
-			if ($select_func){
-				if ($jobvl == 1 || $jobvr == 1 || $mult){
-					$sdims = null;
-					if ($jobv){
-						$vr = $v->copy if $jobvr;
-						$vl = $v->copy if $jobvl;
-					}
-					else{
-						($vl, $vr) = map $m->_similar_null, 1..2;
-						$mult = 0;
-					}
-					$mm->ctrevc($job, $mult, $sel, $vl, $vr, $sdims, my $infos=null);
-					if ($jobvr){
-						if ($jobvr == 2){
-							$ret{VR} = $norm ? $vr(,,:($sdim-1))->norm(1,1) :
-										$vr(,,:($sdim-1))->t->sever;
-						}
-						else{
-							$ret{VR} = $norm ? $vr->norm(1,1) : $vr->t->sever;
-						}
-					}
-					if ($jobvl){
-						if ($jobvl == 2){
-							$ret{VL} = $norm ? $vl(,,:($sdim-1))->norm(1,1) :
-										$vl(,,:($sdim-1))->t->sever;
-						}
-						else{
-							$ret{VL} = $norm ? $vl->norm(1,1) : $vl->t->sever;
-						}
-					}
-				}
-				else{
-					($vl, $vr) = map $m->_similar_null, 1..2;
-					$sel = zeroes($dims[1]);
-					$sel(:($sdim-1)) .= 1;
-					$mm->ctrevc($job, 2, $sel, $vl, $vr, $sdim, my $infos=null);
-					if ($jobvr){
-						$ret{VL} = $norm ? $vr->norm(1,1) : $vr->t->sever;
-					}
-					if ($jobvl){
-						$ret{VL} = $norm ? $vl->norm(1,1) : $vl->t->sever;
-					}
-				}
-			}
-			else{
-				if ($jobv){
-					$vr = $v->copy if $jobvr;
-					$vl = $v->copy if $jobvl;
-				}
-				else{
-					($vl, $vr) = map $m->_similar_null, 1..2;
-					$mult = 0;
-				}
-				$mm->ctrevc($job, $mult, $sel, $vl, $vr, $sdim, my $infos=null);
-				$ret{VL} = $norm ? $vl->norm(1,1) : $vl->t->sever if $jobvl;
-				$ret{VR} = $norm ? $vr->norm(1,1) : $vr->t->sever if $jobvr;
-			}
-		}
-		if ($jobv == 2 && $select_func) {
-			$v = $sdim > 0 ? $v->t->(,:($sdim-1),) ->sever : PDL::Complex->null;
-		}
-		elsif($jobv){
-			$v =  $v->t->sever;
-		}
+	my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
+	my $select_f;
+	if ($select_func){
+		$select_f= $m->_is_complex ? $select_func : sub{
+			&$select_func(PDL::Complex::complex(pdl($type,@_[0..1])),pdl($_[2]));
+		};
 	}
-	else{
-		my ($wi, $wtmp) = map null, 1..2;
-		my $select_f = $select_func ? sub {
-			no strict 'refs';
-			&$select_func(PDL::Complex::complex(pdl($type,@_[0,1])));
-		} : undef;
-		$mm->geesx( $jobv, $select, $sense, $wtmp, $wi, $v, $sdim, $rconde, $rcondv,$info, $select_f);
-		_error_schur($info, $select_func, $dims[$di], 'mschurx', 'QR');
-		if ($select_func){
-			if(!$sdim){
-				if ($jobvl == 2){
-					$ret{VL} = null;
-					$jobvl = 0;
-				}
-				if ($jobvr == 2){
-					$ret{VR} = null;
-					$jobvr = 0;
-				}
+	$mm->_call_method('geesx', $jobv, $select, $sense, @w, $v, $sdim, $rconde, $rcondv,$info, $select_f);
+	_error_schur($info, $select_func, $dims[$di], 'mschurx', 'QR');
+	if ($select_func){
+		if(!$sdim){
+			if ($jobvl == 2){
+				$ret{VL} = $m->_similar_null;
+				$jobvl = 0;
 			}
-			$ret{n} = $sdim;
-		}
-		if ($jobvl || $jobvr){
-			my ($sel, $job, $wtmpi, $wtmpr, $sdims);
-			unless ($jobvr && $jobvl){
-				$job = $jobvl ? 2 : 1;
-			}
-			if ($select_func){
-				if ($jobvl == 1 || $jobvr == 1 || $mult){
-					$sdims = null;
-					if ($jobv){
-						$vr = $v->copy if $jobvr;
-						$vl = $v->copy if $jobvl;
-					}
-					else{
-						($vl, $vr) = map $m->_similar_null, 1..2;
-						$mult = 0;
-					}
-					$mm->trevc($job, $mult, $sel, $vl, $vr, $sdims, my $infos=null);
-					if ($jobvr){
-						(undef,$vr) = $wtmp->cplx_eigen($wi,$norm?($vr,1):($vr->t,0));
-						if($norm){
-							$ret{VR} = $jobvr == 2 ? $vr(,,:($sdim-1))->norm(1,1) : $vr->norm(1,1);
-						}
-						else{
-							$ret{VR} = $jobvr == 2 ? $vr(,:($sdim-1))->sever : $vr;
-						}
-					}
-					if ($jobvl){
-						(undef,$vl) = $wtmp->cplx_eigen($wi,$norm?($vl,1):($vl->t,0));
-						if($norm){
-							$ret{VL}= $jobvl == 2 ? $vl(,,:($sdim-1))->norm(1,1) : $vl->norm(1,1);
-						}
-						else{
-							$ret{VL}= $jobvl == 2 ? $vl(,:($sdim-1))->sever : $vl;
-						}
-					}
-				}
-				else{
-					($vl, $vr) = map $m->_similar_null, 1..2;
-					$sel = zeroes($dims[1]);
-					$sel(:($sdim-1)) .= 1;
-					$mm->trevc($job, 2, $sel, $vl, $vr, $sdim, my $infos = null);
-					$wtmpr = $wtmp(:($sdim-1));
-					$wtmpi = $wi(:($sdim-1));
-					if ($jobvr){
-						(undef,$vr) = $wtmpr->cplx_eigen($wtmpi,$norm?($vr,1):($vr->t,0));
-						$ret{VR} = $norm?$vr->norm(1,1):$vr;
-					}
-					if ($jobvl){
-						(undef,$vl) = $wtmpr->cplx_eigen($wtmpi,$norm?($vl,1):($vl->t,0));
-						$ret{VL} = $norm?$vl->norm(1,1):$vl;
-					}
-				}
-			}
-			else{
-				if ($jobv){
-					$vr = $v->copy if $jobvr;
-					$vl = $v->copy if $jobvl;
-				}
-				else{
-					($vl, $vr) = map $m->_similar_null, 1..2;
-					$mult = 0;
-				}
-				$mm->trevc($job, $mult, $sel, $vl, $vr, $sdim, my $infos=null);
-				if ($jobvr){
-					(undef,$vr) = $wtmp->cplx_eigen($wi,$norm?($vr,1):($vr->t,0));
-					$ret{VR} = $norm?$vr->norm(1,1):$vr;
-				}
-				if ($jobvl){
-					(undef,$vl) = $wtmp->cplx_eigen($wi,$norm?($vl,1):($vl->t,0));
-					$ret{VL} = $norm?$vl->norm(1,1):$vl;
-				}
+			if ($jobvr == 2){
+				$ret{VR} = $m->_similar_null;
+				$jobvr = 0;
 			}
 		}
-		$w = PDL::Complex::ecplx ($wtmp, $wi);
-		if ($jobv == 2 && $select_func) {
-			$v = $sdim > 0 ? $v->t->(:($sdim-1),) ->sever : null;
-		}
-		elsif($jobv){
-			$v =  $v->t->sever;
-		}
+		$ret{n} = $sdim;
+	}
+	if ($jobvl || $jobvr){
+		my ($vl, $vr) = _eigen_one(
+		  $mm, $select_func, $jobv, $jobvl, $jobvr,
+		  $mult, $norm, $dims[$di+1], $sdim, @w
+		);
+		$ret{$_->[0]} = $_->[1] for grep defined $_->[1], ['VL',$vl], ['VR',$vr];
+	}
+	$w = PDL::Complex::ecplx(@w);
+	if ($jobv == 2 && $select_func) {
+		$v = $sdim > 0 ? $v->t->slice("$slice_prefix:@{[$sdim-1]},")->sever : $m->_similar_null;
+	}
+	elsif($jobv){
+		$v =  $v->t->sever;
 	}
 	$ret{info} = $info;
-	if ($sense){
-		if ($sense == 3){
-			$ret{rconde} = $rconde;
-			$ret{rcondv} = $rcondv;
-		}
-		else{
-			$ret{rconde} = $rconde if ($sense == 1);
-			$ret{rcondv} = $rcondv if ($sense == 2);
-		}
-	}
+	$ret{rconde} = $rconde if $sense & 1;
+	$ret{rcondv} = $rcondv if $sense & 2;
 	$m = $mm->t->sever unless $m->is_inplace(0);
-	return wantarray ? $jobv ? ($m, $w, $v, %ret) :
-				($m, $w, %ret) :
-			$m;
+	!wantarray ? $m : ($m, $w, ($jobv ? $v : ()), %ret);
 }
 
 # scale by max(abs(real)+abs(imag))
@@ -1659,8 +1403,8 @@ Works on transposed array.
 		       ordering may change the value of complex eigenvalues
 		       (especially if the eigenvalue is ill-conditioned).
 		       All eigenvalues/vectors are selected if select_func is undefined.
- backtransform 	     : Whether or not backtransforms eigenvectors to those of (A,B).
- 		       Only supported if right and/or left schur vector are computed,
+ backtransform	     : Whether or not backtransforms eigenvectors to those of (A,B).
+		       Only supported if right and/or left schur vector are computed,
  scale               : Whether or not computed eigenvectors are scaled so the largest component
 		       will have abs(real part) + abs(imag. part) = 1, default = 1
 
@@ -1682,222 +1426,76 @@ Works on transposed array.
  my $b = random(10,10);
  my ($S,$T) = mgschur($a,$b);
  sub select{
- 	my ($alpha,$beta) = @_;
- 	return $alpha->Cabs < abs($beta) ? 1 : 0;
+	my ($alpha,$beta) = @_;
+	return $alpha->Cabs < abs($beta) ? 1 : 0;
  }
  my ($S, $T, $alpha, $beta, %res)  = mgschur( $a, $b, 1, 1, 1, 1,\&select);
 
 =cut
 
-
-sub mgschur {shift->mgschur(@_)}
-sub PDL::mgschur{
-	my $di = $_[0]->dims_internal;
-	&_square_same;
-	my($m, $p, $jobvsl, $jobvsr, $jobvl, $jobvr, $select_func, $mult, $norm) = @_;
-	my @mdims  = $m->dims;
-	my @pdims  = $p->dims;
-	barf("mgschur: threading isn't supported for selected vectors")
-		if ($select_func && ((@mdims > 2+$di) || (@pdims > 2+$di)) &&
-			($jobvsl == 2 || $jobvsr == 2 || $jobvl == 2 || $jobvr == 2));
-
-
-       	my ($w, $vsl, $vsr, $info, $type, $select,$sdim, $vr,$vl, $mm, $pp, %ret, $beta);
-
-	$mult = 1 unless defined($mult);
-	$norm = 1 unless defined($norm);
-	$type = $m->type;
-       	$select = $select_func ? pdl(long,1) : pdl(long,0);
-
-       	$info = null;
-       	$sdim = null;
-	$mm = $m->is_inplace ? $m->t : $m->t->copy;
-	$pp = $p->is_inplace ? $p->t : $p->t->copy;
-
-	my ($select_f, $wi, $wtmp, $betai);
-	if ($select_func){
-	 	$select_f= sub{
-	 		&$select_func(PDL::Complex::complex(pdl($type,@_[0..1])),pdl($_[2]));
-		};
-	}
-	$wtmp = null;
-      	$wi = null;
-	$beta = null;
-
-	$vsl = $m->_similar_null;
-	$vsr = $m->_similar_null;
-	$mm->gges( $jobvsl, $jobvsr, $select, $pp, $wtmp, $wi, $beta, $vsl, $vsr, $sdim, $info, $select_f);
-
-	_error_schur($info, $select_func, $mdims[$di], 'mgschur', 'QZ');
-
-	if ($select_func){
-		if ($jobvl == 2){
-			if (!$sdim){
-				$ret{VL} = PDL::Complex->null;
-				$jobvl = 0;
-			}
-		}
-		if ($jobvr == 2){
-			if(!$sdim){
-				$ret{VR} = PDL::Complex->null;
-				$jobvr = 0;
-			}
-		}
-		$ret{n} = $sdim;
-	}
-
-	if ($jobvl || $jobvr){
-		my ($sel, $job, $wtmpi, $wtmpr, $sdims);
-		unless ($jobvr && $jobvl){
-			$job = $jobvl ? 2 : 1;
-		}
-		if ($select_func){
-			if ($jobvl == 1 || $jobvr == 1 || $mult){
-				$sdims = null;
-				if ($jobvl){
-					if ($jobvsl){
-						$vl = $vsl->copy;
-					}
-					else{
-						$vl = $m->_similar_null;
-						$mult = 0;
-					}
-				}
-				if ($jobvr){
-					if ($jobvsr){
-						$vr = $vsr->copy;
-					}
-					else{
-						$vr = $m->_similar_null;
-						$mult = 0;
-					}
-				}
-
-				$mm->tgevc($job, $mult, $pp, $sel, $vl, $vr, $sdims, my $infos=null);
-				if ($jobvr){
-					(undef,$vr) = $wtmp->cplx_eigen($wi,$norm?($vr,1):($vr->t,0));
-					if($norm){
-						$ret{VR} =  $jobvr == 2 ? magn_norm($vr(,,:($sdim-1)),1) : magn_norm($vr,1);
-
-					}
-					else{
-						$ret{VR} =  $jobvr == 2 ? $vr(,:($sdim-1))->sever : $vr;
-					}
-				}
-				if ($jobvl){
-					(undef,$vl) = $wtmp->cplx_eigen($wi,$norm?($vl,1):($vl->t,0));
-					if ($norm){
-						$ret{VL} = $jobvl == 2 ? magn_norm($vl(,,:($sdim-1)),1) : magn_norm($vl,1);
-
-					}
-					else{
-						$ret{VL} = $jobvl == 2 ? $vl(,:($sdim-1))->sever : $vl;
-					}
-				}
-			}
-			else{
-				($vl, $vr) = map $m->_similar_null, 1..2;
-				$sel = zeroes($mdims[1]);
-				$sel(:($sdim-1)) .= 1;
-				$mm->tgevc($job, 2, $pp, $sel, $vl, $vr, $sdim, my $infos = null);
-				$wtmpr = $wtmp(:($sdim-1));
-				$wtmpi = $wi(:($sdim-1));
-				if ($jobvr){
-					(undef,$vr) = $wtmpr->cplx_eigen($wtmpi,$norm?($vr,1):($vr->t,0));
-					$ret{VR} = $norm?magn_norm($vr,1):$vr;
-				}
-				if ($jobvl){
-					(undef,$vl) = $wtmpr->cplx_eigen($wtmpi,$norm?($vl,1):($vl->t,0));
-					$ret{VL} = $norm?magn_norm($vl,1):$vl;
-				}
-			}
-		}
-		else{
-			if ($jobvl){
-				if ($jobvsl){
-					$vl = $vsl->copy;
-				}
-				else{
-					$vl = $m->_similar_null;
-					$mult = 0;
-				}
-			}
-			if ($jobvr){
-				if ($jobvsr){
-					$vr = $vsr->copy;
-				}
-				else{
-					$vr = $m->_similar_null;
-					$mult = 0;
-				}
-			}
-
-			$mm->tgevc($job, $mult, $pp, $sel, $vl, $vr, $sdim, my $infos=null);
-			if ($jobvl){
-				(undef,$vl) = $wtmp->cplx_eigen($wi,$norm?($vl,1):($vl->t,0));
-				$ret{VL} = $norm?magn_norm($vl,1):$vl;
-			}
-			if ($jobvr){
-				(undef,$vr) = $wtmp->cplx_eigen($wi,$norm?($vr,1):($vr->t,0));
-				$ret{VR} = $norm?magn_norm($vr,1):$vr;
-			}
-		}
-	}
-	$w = PDL::Complex::ecplx ($wtmp, $wi);
-
-	if ($jobvsr == 2 && $select_func) {
-		$vsr = $sdim  ? $vsr->t->(:($sdim-1),) ->sever : null;
-		$ret{SR} = $vsr;
-	}
-	elsif($jobvsr){
-		$vsr =  $vsr->t->sever;
-		$ret{SR} = $vsr;
-	}
-
-	if ($jobvsl == 2 && $select_func) {
-		$vsl = $sdim  ? $vsl->t->(:($sdim-1),) ->sever : null;
-		$ret{SL} = $vsl;
-	}
-	elsif($jobvsl){
-		$vsl =  $vsl->t->sever;
-		$ret{SL} = $vsl;
-	}
-	$ret{info} = $info;
-	$m = $mm->t->sever unless $m->is_inplace(0);
-	$p = $pp->t->sever unless $p->is_inplace(0);
-	return ($m, $p, $w, $beta, %ret);
+sub _eigen_pair {
+  my (
+    $mm, $pp, $select_func, $jobvl, $jobvr, $jobvsl, $jobvsr, $vsl, $vsr,
+    $mult, $norm, $mdim, $sdim, @w
+  ) = @_;
+  my $job = !($jobvr && $jobvl) ? $jobvl ? 2 : 1 : undef;
+  my ($vl, $vr) = map $mm->_similar_null, 1..2;
+  $mult = 0 if ($jobvl && !$jobvsl) || ($jobvr && !$jobvsr);
+  if (!$select_func || ($jobvl == 1 || $jobvr == 1 || $mult)) {
+    $vl .= $vsl if $jobvl && $jobvsl;
+    $vr .= $vsr if $jobvr && $jobvsr;
+  }
+  my ($sdim_in, $sel) = $sdim;
+  if ($select_func) {
+    if ($jobvl == 1 || $jobvr == 1 || $mult) {
+      $sdim_in = null;
+    } else {
+      $sel = zeroes($mdim);
+      $sel(:($sdim-1)) .= 1;
+      $mult = 2;
+      @w = map $_(:($sdim-1)), @w;
+    }
+  }
+  $mm->_call_method('tgevc', $job, $mult, $pp, $sel, $vl, $vr, $sdim_in, my $infos=null);
+  if (@w == 2) {
+    (undef,$vl) = cplx_eigen(@w,$vl->t,0) if $jobvl;
+    (undef,$vr) = cplx_eigen(@w,$vr->t,0) if $jobvr;
+  }
+  if ($select_func && ($jobvl == 1 || $jobvr == 1 || $mult)) {
+    $vr = $vr(,:($sdim-1))->sever if $jobvr == 2;
+    $vl = $vl(,:($sdim-1))->sever if $jobvl == 2;
+  }
+  $vl = magn_norm($vl,1) if $jobvl and $norm;
+  $vr = magn_norm($vr,1) if $jobvr and $norm;
+  ($vl, $vr);
 }
 
-sub PDL::Complex::mgschur{
+*mgschur = \&PDL::mgschur;
+sub PDL::mgschur{
 	my $di = $_[0]->dims_internal;
+	my $slice_prefix = ',' x $di;
 	&_square_same;
 	my($m, $p, $jobvsl, $jobvsr, $jobvl, $jobvr, $select_func, $mult, $norm) = @_;
 	my @mdims  = $m->dims;
-	my @pdims  = $p->dims;
 	barf("mgschur: threading isn't supported for selected vectors")
-		if ($select_func && ((@mdims > 2+$di) || (@pdims > 2+$di)) &&
+		if ($select_func && ((@mdims > 2+$di) || ($p->ndims > 2+$di)) &&
 			($jobvsl == 2 || $jobvsr == 2 || $jobvl == 2 || $jobvr == 2));
-
-
-       	my ($w, $vsl, $vsr, $info, $type, $select,$sdim, $vr,$vl, $mm, $pp, %ret, $beta);
-
-	$mult = 1 unless defined($mult);
-	$norm = 1 unless defined($norm);
-	$type = $m->type;
-       	$select = $select_func ? pdl(long,1) : pdl(long,0);
-
-       	$info = null;
-       	$sdim = null;
-	$mm = $m->is_inplace ? $m->t : $m->t->copy;
-	$pp = $p->is_inplace ? $p->t : $p->t->copy;
-
-	$w = PDL::Complex->null;
-	$beta = PDL::Complex->null;
-	$vsl = $m->_similar_null;
-	$vsr = $m->_similar_null;
-	$mm->cgges( $jobvsl, $jobvsr, $select, $pp, $w, $beta, $vsl, $vsr, $sdim, $info, $select_func);
+	$mult //= 1;
+	$norm //= 1;
+	my $type = $m->type;
+	my $select = $select_func ? pdl(long,1) : pdl(long,0);
+	my ($info, $sdim) = map null, 1..2;
+	my ($mm, $pp) = map $_->is_inplace ? $_->t : $_->t->copy, $m, $p;
+	my ($select_f, %ret);
+	if ($select_func){
+		$select_f= $m->_is_complex ? $select_func : sub{
+			&$select_func(PDL::Complex::complex(pdl($type,@_[0..1])),pdl($_[2]));
+		};
+	}
+	my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
+	my ($beta, $vsl, $vsr) = map $m->_similar_null, 1..3;
+	$mm->_call_method('gges', $jobvsl, $jobvsr, $select, $pp, @w, $beta, $vsl, $vsr, $sdim, $info, $select_f);
 	_error_schur($info, $select_func, $mdims[$di], 'mgschur', 'QZ');
-
 	if ($select_func){
 		if ($jobvl == 2){
 			if (!$sdim){
@@ -1913,109 +1511,26 @@ sub PDL::Complex::mgschur{
 		}
 		$ret{n} = $sdim;
 	}
-
 	if ($jobvl || $jobvr){
-		my ($sel, $job, $sdims);
-		unless ($jobvr && $jobvl){
-			$job = $jobvl ? 2 : 1;
-		}
-		if ($select_func){
-			if ($jobvl == 1 || $jobvr == 1 || $mult){
-				$sdims = null;
-				if ($jobvl){
-					if ($jobvsl){
-						$vl = $vsl->copy;
-					}
-					else{
-						$vl = $m->_similar_null;
-						$mult = 0;
-					}
-				}
-				if ($jobvr){
-					if ($jobvsr){
-						$vr = $vsr->copy;
-					}
-					else{
-						$vr = $m->_similar_null;
-						$mult = 0;
-					}
-				}
-				$mm->ctgevc($job, $mult, $pp, $sel, $vl, $vr, $sdims, my $infos=null);
-				if ($jobvr){
-					if ($norm){
-						$ret{VR} = $jobvr == 2 ? magn_norm($vr(,,:($sdim-1)),1) : magn_norm($vr,1);
-					}
-					else{
-						$ret{VR} = $jobvr == 2 ? $vr(,,:($sdim-1))->t->sever : $vr->t->sever;
-					}
-				}
-				if ($jobvl){
-					if ($norm){
-						$ret{VL} = $jobvl == 2 ? magn_norm($vl(,,:($sdim-1)),1) : magn_norm($vl,1);
-					}
-					else{
-						$ret{VL} = $jobvl == 2 ? $vl(,,:($sdim-1))->t->sever : $vl->t->sever;
-					}
-				}
-			}
-			else{
-				($vl, $vr) = map $m->_similar_null, 1..2;
-				$sel = zeroes($mdims[1]);
-				$sel(:($sdim-1)) .= 1;
-				$mm->ctgevc($job, 2, $pp, $sel, $vl, $vr, $sdim, my $infos=null);
-				if ($jobvl){
-					$ret{VL} = $norm ? magn_norm($vl,1) : $vl->t->sever;
-				}
-				if ($jobvr){
-					$ret{VR} = $norm ? magn_norm($vr,1) : $vr->t->sever;
-				}
-			}
-		}
-		else{
-			if ($jobvl){
-				if ($jobvsl){
-					$vl = $vsl->copy;
-					}
-				else{
-					$vl = $m->_similar_null;
-					$mult = 0;
-				}
-			}
-			if ($jobvr){
-					if ($jobvsr){
-					$vr = $vsr->copy;
-				}
-				else{
-					$vr = $m->_similar_null;
-					$mult = 0;
-				}
-			}
-			$mm->ctgevc($job, $mult, $pp, $sel, $vl, $vr, $sdim, my $infos=null);
-			if ($jobvl){
-				$ret{VL} = $norm ? magn_norm($vl,1) : $vl->t->sever;
-			}
-			if ($jobvr){
-				$ret{VR} = $norm ? magn_norm($vr,1) : $vr->t->sever;
-			}
-		}
+		my ($vl, $vr) = _eigen_pair(
+		  $mm, $pp, $select_func, $jobvl, $jobvr, $jobvsl, $jobvsr, $vsl, $vsr,
+		  $mult, $norm, $mdims[$di+1], $sdim, @w
+		);
+		$ret{$_->[0]} = $_->[1] for grep defined $_->[1], ['VL',$vl], ['VR',$vr];
 	}
+	my $w = @w == 2 ? PDL::Complex::ecplx(@w) : @w[0];
 	if ($jobvsl == 2 && $select_func) {
-		$vsl = $sdim ? $vsl->t->(,:($sdim-1),) ->sever : PDL::Complex->null;
-		$ret{SL} = $vsl;
+		$ret{SL} = $sdim ? $vsl->t->slice("$slice_prefix:@{[$sdim-1]},")->sever : $m->_similar_null;
 	}
 	elsif($jobvsl){
-		$vsl =  $vsl->t->sever;
-		$ret{SL} = $vsl;
+		$ret{SL} = $vsl->t->sever;
 	}
 	if ($jobvsr == 2 && $select_func) {
-		$vsr = $sdim ? $vsr->t->(,:($sdim-1),) ->sever : PDL::Complex->null;
-		$ret{SR} = $vsr;
+		$ret{SR} = $sdim ? $vsr->t->slice("$slice_prefix:@{[$sdim-1]},")->sever : $m->_similar_null;
 	}
 	elsif($jobvsr){
-		$vsr =  $vsr->t->sever;
-		$ret{SR} = $vsr;
+		$ret{SR} = $vsr->t->sever;
 	}
-
 	$ret{info} = $info;
 	$m = $mm->t->sever unless $m->is_inplace(0);
 	$p = $pp->t->sever unless $p->is_inplace(0);
@@ -2057,8 +1572,8 @@ from Lapack. Works on transposed array.
 			3: Computed for both
 			If select_func is undefined, sense is not used.
 
- backtransform 	     : Whether or not backtransforms eigenvectors to those of (A,B).
- 		       Only supported if right and/or left schur vector are computed, default = 1
+ backtransform	     : Whether or not backtransforms eigenvectors to those of (A,B).
+		       Only supported if right and/or left schur vector are computed, default = 1
  scale               : Whether or not computed eigenvectors are scaled so the largest component
 		       will have abs(real part) + abs(imag. part) = 1, default = 1
 
@@ -2082,316 +1597,79 @@ from Lapack. Works on transposed array.
  my $b = random(10,10);
  my ($S,$T) = mgschurx($a,$b);
  sub select{
- 	my ($alpha,$beta) = @_;
- 	return $alpha->Cabs < abs($beta) ? 1 : 0;
+	my ($alpha,$beta) = @_;
+	return $alpha->Cabs < abs($beta) ? 1 : 0;
  }
  my ($S, $T, $alpha, $beta, %res)  = mgschurx( $a, $b, 1, 1, 1, 1,\&select,3);
-
-
 
 =cut
 
 *mgschurx = \&PDL::mgschurx;
-
 sub PDL::mgschurx{
 	my $di = $_[0]->dims_internal;
+	my $slice_prefix = ',' x $di;
 	&_square_same;
 	my($m, $p, $jobvsl, $jobvsr, $jobvl, $jobvr, $select_func, $sense, $mult, $norm) = @_;
 	my (@mdims) = $m->dims;
-	my (@pdims) = $p->dims;
-	my ($w, $vsl, $vsr, $type, %ret, $vl, $vr, $beta);
+	my ($vsl, $vsr, $type, %ret, $vl, $vr);
 	$mult //= 1;
 	$norm //= 1;
 	$type = $m->type;
 	my $select = $select_func ? 1 : 0;
 	$sense = 0 if !$select_func;
 	my ($info, $rconde, $rcondv, $sdim) = map null, 1..4;
-	my $mm = $m->is_inplace ? $m->t : $m->t->copy;
-	my $pp = $p->is_inplace ? $p->t : $p->t->copy;
-	$vsl = $m->_similar_null;
-	$vsr = $m->_similar_null;
-	if (@mdims == 3){
-		$w = PDL::Complex->null;
-		$beta = PDL::Complex->null;
-		$mm->cggesx( $jobvsl, $jobvsr, $select, $sense, $pp, $w, $beta, $vsl, $vsr, $sdim, $rconde, $rcondv,$info, $select_func);
-		_error_schur($info, $select_func, $mdims[$di], 'mgschurx', 'QZ');
-		if ($select_func){
-			if(!$sdim){
-				if ($jobvl == 2){
-					$ret{VL} = PDL::Complex->null;
-					$jobvl = 0;
-				}
-				if ($jobvr == 2){
-					$ret{VR} = PDL::Complex->null;
-					$jobvr = 0;
-				}
-			}
-			$ret{n} = $sdim;
-		}
-		if ($jobvl || $jobvr){
-			my ($sel, $job, $sdims);
-			unless ($jobvr && $jobvl){
-				$job = $jobvl ? 2 : 1;
-			}
-			if ($select_func){
-				if ($jobvl == 1 || $jobvr == 1 || $mult){
-					$sdims = null;
-					if ($jobvl){
-						if ($jobvsl){
-							$vl = $vsl->copy;
-						}
-						else{
-							$vl = $m->_similar_null;
-							$mult = 0;
-						}
-					}
-					if ($jobvr){
-						if ($jobvsr){
-							$vr = $vsr->copy;
-						}
-						else{
-							$vr = $m->_similar_null;
-							$mult = 0;
-						}
-					}
-					$mm->ctgevc($job, $mult, $pp, $sel, $vl, $vr, $sdims, my $infos=null);
-					if ($jobvr){
-						if ($norm){
-							$ret{VR} = $jobvr == 2 ? magn_norm($vr(,,:($sdim-1)),1) : magn_norm($vr,1);
-						}
-						else{
-							$ret{VR} = $jobvr == 2 ? $vr(,,:($sdim-1))->t->sever : $vr->t->sever;
-						}
-					}
-					if ($jobvl){
-						if ($norm){
-							$ret{VL} = $jobvl == 2 ? magn_norm($vl(,,:($sdim-1)),1) : magn_norm($vl,1);
-						}
-						else{
-							$ret{VL} = $jobvl == 2 ? $vl(,,:($sdim-1))->t->sever : $vl->t->sever;
-						}
-					}
-				}
-				else{
-					($vl, $vr) = map $m->_similar_null, 1..2;
-					$sel = zeroes($mdims[1]);
-					$sel(:($sdim-1)) .= 1;
-					$mm->ctgevc($job, 2, $pp, $sel, $vl, $vr, $sdim, my $infos=null);
-					if ($jobvl){
-						$ret{VL} = $norm ? magn_norm($vl,1) : $vl->t->sever;
-					}
-					if ($jobvr){
-						$ret{VR} = $norm ? magn_norm($vr,1) : $vr->t->sever;
-					}
-				}
-			}
-			else{
-				if ($jobvl){
-					if ($jobvsl){
-						$vl = $vsl->copy;
-					}
-					else{
-						$vl = $m->_similar_null;
-						$mult = 0;
-					}
-				}
-				if ($jobvr){
-					if ($jobvsr){
-						$vr = $vsr->copy;
-					}
-					else{
-						$vr = $m->_similar_null;
-						$mult = 0;
-					}
-				}
-				$mm->ctgevc($job, $mult, $pp,$sel, $vl, $vr, $sdim, my $infos=null);
-				if ($jobvl){
-					$ret{VL} = $norm ? magn_norm($vl,1) : $vl->t->sever;
-				}
-				if ($jobvr){
-					$ret{VR} = $norm ? magn_norm($vr,1) : $vr->t->sever;
-				}
-			}
-		}
-		if ($jobvsl == 2 && $select_func) {
-			$vsl = $sdim > 0 ? $vsl->t->(,:($sdim-1),) ->sever : PDL::Complex->null;
-			$ret{SL} = $vsl;
-		}
-		elsif($jobvsl){
-			$vsl =  $vsl->t->sever;
-			$ret{SL} = $vsl;
-		}
-		if ($jobvsr == 2 && $select_func) {
-			$vsr = $sdim > 0 ? $vsr->t->(,:($sdim-1),) ->sever : PDL::Complex->null;
-			$ret{SR} = $vsr;
-		}
-		elsif($jobvsr){
-			$vsr =  $vsr->t->sever;
-			$ret{SR} = $vsr;
-		}
+	my ($mm, $pp) = map $_->is_inplace ? $_->t : $_->t->copy, $m, $p;
+	my ($beta, $vsl, $vsr) = map $m->_similar_null, 1..3;
+	my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
+	my ($select_f);
+	if ($select_func){
+		no strict 'refs';
+		$select_f = $m->_is_complex ? $select_func : sub{
+			&$select_func(PDL::Complex::complex(pdl($type,$_[0],$_[1])), $_[2]);
+		};
 	}
-	else{
-		my ($select_f, $wi, $wtmp);
-		if ($select_func){
-			no strict 'refs';
-			$select_f= sub{
-				&$select_func(PDL::Complex::complex(pdl($type,$_[0],$_[1])), $_[2]);
-			};
-		}
-		$wi = null;
-		$wtmp = null;
-		$beta = null;
-		$mm->ggesx( $jobvsl, $jobvsr, $select, $sense, $pp, $wtmp, $wi, $beta, $vsl, $vsr, $sdim, $rconde, $rcondv,$info, $select_f);
-		_error_schur($info, $select_func, $mdims[$di], 'mgschurx', 'QZ');
-
-		if ($select_func){
-			if(!$sdim){
-				if ($jobvl == 2){
-					$ret{VL} = null;
-					$jobvl = 0;
-				}
-				if ($jobvr == 2){
-					$ret{VR} = null;
-					$jobvr = 0;
-				}
+	$mm->_call_method('ggesx', $jobvsl, $jobvsr, $select, $sense, $pp, @w, $beta, $vsl, $vsr, $sdim, $rconde, $rcondv,$info, $select_f);
+	_error_schur($info, $select_func, $mdims[$di], 'mgschurx', 'QZ');
+	if ($select_func){
+		if(!$sdim){
+			if ($jobvl == 2){
+				$ret{VL} = $m->_similar_null;
+				$jobvl = 0;
 			}
-			$ret{n} = $sdim;
-		}
-
-		if ($jobvl || $jobvr){
-			my ($sel, $job, $wtmpi, $wtmpr, $sdims);
-			unless ($jobvr && $jobvl){
-				$job = $jobvl ? 2 : 1;
-			}
-			if ($select_func){
-				$sdims = null;
-				if ($jobvl == 1 || $jobvr == 1 || $mult){
-					if ($jobvl){
-						if ($jobvsl){
-							$vl = $vsl->copy;
-						}
-						else{
-							$vl = $m->_similar_null;
-							$mult = 0;
-						}
-					}
-					if ($jobvr){
-						if ($jobvsr){
-							$vr = $vsr->copy;
-						}
-						else{
-							$vr = $m->_similar_null;
-							$mult = 0;
-						}
-					}
-
-					$mm->tgevc($job, $mult, $pp, $sel, $vl, $vr, $sdims, my $infos=null);
-					if ($jobvr){
-						(undef,$vr) = $wtmp->cplx_eigen($wi,$norm?($vr,1):($vr->t,0));
-						if($norm){
-							$ret{VR} =  $jobvr == 2 ? magn_norm($vr(,,:($sdim-1)),1) : magn_norm($vr,1);
-						}
-						else{
-							$ret{VR} =  $jobvr == 2 ? $vr(,:($sdim-1))->sever : $vr;
-						}
-					}
-					if ($jobvl){
-						(undef,$vl) = $wtmp->cplx_eigen($wi,$norm?($vl,1):($vl->t,0));
-						if ($norm){
-							$ret{VL} = $jobvl == 2 ? magn_norm($vl(,,:($sdim-1)),1) : magn_norm($vl,1);
-						}
-						else{
-							$ret{VL} = $jobvl == 2 ? $vl(,:($sdim-1))->sever : $vl;
-						}
-					}
-				}
-				else{
-					($vl, $vr) = map $m->_similar_null, 1..2;
-					$sel = zeroes($mdims[1]);
-					$sel(:($sdim-1)) .= 1;
-					$mm->tgevc($job, 2, $pp, $sel, $vl, $vr, $sdim, my $infos = null);
-					$wtmpr = $wtmp(:($sdim-1));
-					$wtmpi = $wi(:($sdim-1));
-					if ($jobvr){
-						(undef,$vr) = $wtmpr->cplx_eigen($wtmpi,$norm?($vr,1):($vr->t,0));
-						$ret{VR} = $norm?magn_norm($vr,1):$vr;
-					}
-					if ($jobvl){
-						(undef,$vl) = $wtmpr->cplx_eigen($wtmpi,$norm?($vl,1):($vl->t,0));
-						$ret{VL} = $norm?magn_norm($vl,1):$vl;
-					}
-				}
-			}
-			else{
-				if ($jobvl){
-					if ($jobvsl){
-						$vl = $vsl->copy;
-					}
-					else{
-						$vl = $m->_similar_null;
-						$mult = 0;
-					}
-				}
-				if ($jobvr){
-					if ($jobvsr){
-						$vr = $vsr->copy;
-					}
-					else{
-						$vr = $m->_similar_null;
-						$mult = 0;
-					}
-				}
-
-				$mm->tgevc($job, $mult, $pp, $sel, $vl, $vr, $sdim, my $infos=null);
-				if ($jobvl){
-					(undef,$vl) = $wtmp->cplx_eigen($wi,$norm?($vl,1):($vl->t,0));
-					$ret{VL} = $norm?magn_norm($vl,1):$vl;
-				}
-				if ($jobvr){
-					(undef,$vr) = $wtmp->cplx_eigen($wi,$norm?($vr,1):($vr->t,0));
-					$ret{VR} = $norm?magn_norm($vr,1):$vr;
-				}
+			if ($jobvr == 2){
+				$ret{VR} = $m->_similar_null;
+				$jobvr = 0;
 			}
 		}
-		$w = PDL::Complex::ecplx ($wtmp, $wi);
-
-		if ($jobvsr == 2 && $select_func) {
-			$vsr = $sdim > 0 ? $vsr->t->(:($sdim-1),) ->sever : null;
-			$ret{SR} = $vsr;
-		}
-		elsif($jobvsr){
-			$vsr =  $vsr->t->sever;
-			$ret{SR} = $vsr;
-		}
-
-		if ($jobvsl == 2 && $select_func) {
-			$vsl = $sdim > 0 ? $vsl->t->(:($sdim-1),) ->sever : null;
-			$ret{SL} = $vsl;
-		}
-		elsif($jobvsl){
-			$vsl =  $vsl->t->sever;
-			$ret{SL} = $vsl;
-		}
-
+		$ret{n} = $sdim;
 	}
-
-
+	if ($jobvl || $jobvr) {
+		my ($vl, $vr) = _eigen_pair(
+		  $mm, $pp, $select_func, $jobvl, $jobvr, $jobvsl, $jobvsr, $vsl, $vsr,
+		  $mult, $norm, $mdims[$di+1], $sdim, @w
+		);
+		$ret{$_->[0]} = $_->[1] for grep defined $_->[1], ['VL',$vl], ['VR',$vr];
+	}
+	if ($jobvsl == 2 && $select_func) {
+		$ret{SL} = $sdim ? $vsl->t->slice("$slice_prefix:@{[$sdim-1]},")->sever : $m->_similar_null;
+	}
+	elsif($jobvsl){
+		$ret{SL} = $vsl->t->sever;
+	}
+	if ($jobvsr == 2 && $select_func) {
+		$ret{SR} = $sdim ? $vsr->t->slice("$slice_prefix:@{[$sdim-1]},")->sever : $m->_similar_null;
+	}
+	elsif($jobvsr){
+		$ret{SR} = $vsr->t->sever;
+	}
+	my $w = @w == 2 ? PDL::Complex::ecplx(@w) : @w[0];
 	$ret{info} = $info;
-	if ($sense){
-		if ($sense == 3){
-			$ret{rconde} = $rconde;
-			$ret{rcondv} = $rcondv;
-		}
-		else{
-			$ret{rconde} = $rconde if ($sense == 1);
-			$ret{rcondv} = $rcondv if ($sense == 2);
-		}
-	}
+	$ret{rconde} = $rconde if $sense & 1;
+	$ret{rcondv} = $rcondv if $sense & 2;
 	$m = $mm->t->sever unless $m->is_inplace(0);
 	$p = $pp->t->sever unless $p->is_inplace(0);
 	return ($m, $p, $w, $beta, %ret);
 }
-
 
 =head2 mqr
 
@@ -2726,7 +2004,7 @@ Works on transposed arrays.
 		column scale factors are returned in HASH{'column'}
 		0: false
 		1: true
- LU:    	returns lu decomposition in HASH{LU}
+ LU:		returns lu decomposition in HASH{LU}
 		0: false
 		1: true
  A:		returns scaled A if equilibration was done in HASH{A}
@@ -2738,25 +2016,25 @@ Works on transposed arrays.
  Returned values:
 		X (SCALAR CONTEXT),
 		HASH{'pivot'}:
-	    	 Pivot indice from LU factorization
+		 Pivot indice from LU factorization
 		HASH{'rcondition'}:
-	    	 Reciprocal condition of the matrix
+		 Reciprocal condition of the matrix
 		HASH{'ferror'}:
-	    	 Forward error bound
+		 Forward error bound
 		HASH{'berror'}:
 		 Componentwise relative backward error
 		HASH{'rpvgrw'}:
 		 Reciprocal pivot growth factor
 		HASH{'info'}:
-	    	 Info: output from gesvx
+		 Info: output from gesvx
 
 =for example
 
  my $a = random(10,10);
  my $b = random(5,10);
  my %options = (
- 		LU=>1,
- 		equilibrate => 1,
+		LU=>1,
+		equilibrate => 1,
 		);
  my( $X, %result) = msolvex($a,$b,%options);
 
@@ -2883,7 +2161,7 @@ sub PDL::msymsolve {
 	&_matrices_match;
 	&_same_dims;
 	my($a, $b) = @_;
-       	$uplo = 1 - $uplo;
+	$uplo = 1 - $uplo;
 	$a = $a->copy;
 	my $c = $b->is_inplace ? $b->t : $b->t->copy;
 	$a->_call_method('sysv', $uplo, $c, my $ipiv = null, my $info = null);
@@ -2908,21 +2186,21 @@ from Lapack. Works on transposed array.
  (PDL, (HASH(result))) = msymsolvex(PDL(A), SCALAR (uplo), PDL(B), SCALAR(d))
  uplo : UPPER  = 0 | LOWER = 1, default = 0
  d    : whether return diagonal matrix d and pivot vector
- 	FALSE  = 0 | TRUE = 1, default = 0
+	FALSE  = 0 | TRUE = 1, default = 0
  Returned values:
 		X (SCALAR CONTEXT),
 		HASH{'D'}:
 		 Block diagonal matrix D (and the multipliers) (if requested)
 		HASH{'pivot'}:
-	    	 Pivot indice from LU factorization (if requested)
+		 Pivot indice from LU factorization (if requested)
 		HASH{'rcondition'}:
-	    	 Reciprocal condition of the matrix
+		 Reciprocal condition of the matrix
 		HASH{'ferror'}:
-	    	 Forward error bound
+		 Forward error bound
 		HASH{'berror'}:
 		 Componentwise relative backward error
 		HASH{'info'}:
-	    	 Info: output from sysvx
+		 Info: output from sysvx
 
 =for example
 
@@ -3000,7 +2278,7 @@ sub PDL::mpossolve {
 	&_matrices_match;
 	&_same_dims;
 	my($a, $b) = @_;
-       	$uplo = 1 - $uplo;
+	$uplo = 1 - $uplo;
 	$a = $a->copy;
 	my $c = $b->is_inplace ? $b->t :  $b->t->copy;
 	$a->_call_method('posv', $uplo, $c, my $info=null);
@@ -3034,7 +2312,7 @@ Works on transposed array(s).
 		scale factors are returned in HASH{'scale'}
 		0: false
 		1: true
- U|L:    	returns Cholesky factorization in HASH{U} or HASH{L}
+ U|L:		returns Cholesky factorization in HASH{U} or HASH{L}
 		0: false
 		1: true
  A:		returns scaled A if equilibration was done in HASH{A}
@@ -3046,13 +2324,13 @@ Works on transposed array(s).
  Returned values:
 		X (SCALAR CONTEXT),
 		HASH{'rcondition'}:
-	    	 Reciprocal condition of the matrix
+		 Reciprocal condition of the matrix
 		HASH{'ferror'}:
-	    	 Forward error bound
+		 Forward error bound
 		HASH{'berror'}:
 		 Componentwise relative backward error
 		HASH{'info'}:
-	    	 Info: output from gesvx
+		 Info: output from gesvx
 
 =for example
 
@@ -3060,7 +2338,7 @@ Works on transposed array(s).
  my $a = random(10,10);
  my $b = random(5,10);
  my %options = (U=>1,
- 		equilibrate => 1,
+		equilibrate => 1,
 		);
  my ($X, %result) = msolvex($a, 0, $b,%opt);
 
@@ -3174,11 +2452,11 @@ from Lapack. Works on transposed arrays.
  Returned values:
 		X (SCALAR CONTEXT),
 		HASH{'A'}:
-	    	 complete orthogonal factorization of A
+		 complete orthogonal factorization of A
 		HASH{'jpvt'}:
-	    	 details of columns interchanges
+		 details of columns interchanges
 		HASH{'rank'}:
-	    	 effective rank of A
+		 effective rank of A
 
 =for example
 
@@ -3246,19 +2524,19 @@ Works on transposed arrays.
 
  ( PDL(X), ( HASH(result) ) )= mllss(PDL(A), PDL(B), SCALAR(method))
  method: specifies which method to use (see Lapack for further details)
- 	'(c)gelss' or '(c)gelsd', default = '(c)gelsd'
+	'(c)gelss' or '(c)gelsd', default = '(c)gelsd'
  Returned values:
 		X (SCALAR CONTEXT),
 		HASH{'V'}:
-	    	 if method = (c)gelss, the right singular vectors, stored columnwise
+		 if method = (c)gelss, the right singular vectors, stored columnwise
 		HASH{'s'}:
-	    	 singular values from SVD
+		 singular values from SVD
 		HASH{'res'}:
 		 if A has full rank the residual sum-of-squares for the solution
 		HASH{'rank'}:
-	    	 effective rank of A
+		 effective rank of A
 		HASH{'info'}:
-	    	 info output from method
+		 info output from method
 
 =for example
 
@@ -3417,8 +2695,8 @@ from Lapack. Works on transposed arrays.
 
  (PDL(x), PDL(res2)) = mlse(PDL(a), PDL(b), PDL(c), PDL(d))
  where
- c 	: The right hand side vector for the
- 	  least squares part of the LSE problem.
+ c	: The right hand side vector for the
+	  least squares part of the LSE problem.
  d	: The right hand side vector for the
 	  constrained equation.
  x	: The solution of the LSE problem.
@@ -3572,16 +2850,16 @@ Works on transposed arrays.
  error:      specifies whether or not it computes the error bounds (returned in HASH{'eerror'} and HASH{'verror'})
 	     error bound = EPS * One-norm / rcond(e|v)
 	     (reciprocal condition numbers for eigenvalues or eigenvectors must be computed).
- 		1: returns error bounds
- 		0: not computed
+		1: returns error bounds
+		0: not computed
  scale:      specifies whether or not it diagonaly scales the entry matrix
 	     (scale details returned in HASH : 'scale')
- 		1: scales
- 		0: Doesn't scale (default)
+		1: scales
+		0: Doesn't scale (default)
  permute:    specifies whether or not it permutes row and columns
 	     (permute details returned in HASH{'balance'})
- 		1: permutes
- 		0: Doesn't permute (default)
+		1: permutes
+		0: Doesn't permute (default)
  schur:      specifies whether or not it returns the Schur form (returned in HASH{'schur'})
 		1: returns Schur form
 		0: not returned
@@ -3590,10 +2868,10 @@ Works on transposed arrays.
 	    left eigenvectors if requested,
 	    right eigenvectors if requested,
 	    HASH{'norm'}:
-	    	One-norm of the matrix
+		One-norm of the matrix
 	    HASH{'info'}:
-	    	Info: if > 0, the QR algorithm failed to compute all the eigenvalues
-	    	(see syevx for further details)
+		Info: if > 0, the QR algorithm failed to compute all the eigenvalues
+		(see syevx for further details)
 
 
 =for example
@@ -3731,13 +3009,13 @@ sub PDL::Complex::mgeigen {
 	&_square_same;
 	&_same_dims;
 	my($a, $b,$jobvl,$jobvr) = @_;
-       	my ($vl, $vr, $info, $beta, $type, $eigens);
-       	$type = $a->type;
+	my ($vl, $vr, $info, $beta, $type, $eigens);
+	$type = $a->type;
 	$b = $b->t;
 	$eigens = PDL::Complex->null;
 	$beta = PDL::Complex->null;
 	my ($vl, $vr) = map $a->_similar_null, 1..2;
-       	$info = null;
+	$info = null;
 	$a->t->cggev($jobvl,$jobvr, $b, $eigens, $beta, $vl, $vr, $info);
 	_error($info, "mgeigen: Can't compute eigenvalues/vectors for PDL(s) %s");
 	$jobvl? $jobvr? ($eigens, $beta, $vl->t->sever, $vr->t->sever, $info):($eigens, $beta, $vl->t->sever, $info) :
@@ -3772,16 +3050,16 @@ Works on transposed arrays.
  error:      specifies whether or not it computes the error bounds (returned in HASH{'eerror'} and HASH{'verror'})
 	     error bound = EPS * sqrt(one-norm(a)**2 + one-norm(b)**2) / rcond(e|v)
 	     (reciprocal condition numbers for eigenvalues or eigenvectors must be computed).
- 		1: returns error bounds
- 		0: not computed
+		1: returns error bounds
+		0: not computed
  scale:      specifies whether or not it diagonaly scales the entry matrix
 	     (scale details returned in HASH : 'lscale' and 'rscale')
- 		1: scales
- 		0: doesn't scale (default)
+		1: scales
+		0: doesn't scale (default)
  permute:    specifies whether or not it permutes row and columns
 	     (permute details returned in HASH{'balance'})
- 		1: permutes
- 		0: Doesn't permute (default)
+		1: permutes
+		0: Doesn't permute (default)
  schur:      specifies whether or not it returns the Schur forms (returned in HASH{'aschur'} and HASH{'bschur'})
 	     (right or left eigenvectors must be computed).
 		1: returns Schur forms
@@ -3792,10 +3070,10 @@ Works on transposed arrays.
 	    left eigenvectors if requested,
 	    right eigenvectors if requested,
 	    HASH{'anorm'}, HASH{'bnorm'}:
-	    	One-norm of the matrix A and B
+		One-norm of the matrix A and B
 	    HASH{'info'}:
-	    	Info: if > 0, the QR algorithm failed to compute all the eigenvalues
-	    	(see syevx for further details)
+		Info: if > 0, the QR algorithm failed to compute all the eigenvalues
+		(see syevx for further details)
 
 =for example
 
@@ -3955,21 +3233,21 @@ or L<cheevr|PDL::LinearAlgebra::Complex/cheevr> for complex. Works on transposed
 		indice:  range of indices
 		interval: range of values
 		0: find all eigenvalues and optionally all vectors
- range: 	PDL(2), lower and upper bounds interval or smallest and largest indices
- 		1<=range<=N for indice
+ range:		PDL(2), lower and upper bounds interval or smallest and largest indices
+		1<=range<=N for indice
  abstol:        specifies error tolerance for eigenvalues
  method:        specifies which method to use (see Lapack for further details)
- 		'syevx' (default)
- 		'syevr'
- 		'cheevx' (default)
- 		'cheevr'
+		'syevx' (default)
+		'syevr'
+		'cheevx' (default)
+		'cheevr'
  Returned values:
- 		eigenvalues (SCALAR CONTEXT),
- 		eigenvectors if requested,
- 		total number of eigenvalues found (n),
- 		info
+		eigenvalues (SCALAR CONTEXT),
+		eigenvectors if requested,
+		total number of eigenvalues found (n),
+		info
 		issupz or ifail (support) according to method used and returned info,
- 		for (sy|che)evx returns support only if info != 0
+		for (sy|che)evx returns support only if info != 0
 
 
 =for example
@@ -3980,8 +3258,8 @@ or L<cheevr|PDL::LinearAlgebra::Complex/cheevr> for complex. Works on transposed
  my $range = cat pdl(0),$overflow;
  my $abstol = pdl(1.e-5);
  my %options = (range_type=>'interval',
- 		range => $range,
- 		abstol => $abstol,
+		range => $range,
+		abstol => $abstol,
 		method=>'syevd');
  my ( $eigenvalues, $eigenvectors, $n, $isuppz )  = msymeigenx($a,0,1, %options);
 
@@ -4121,7 +3399,7 @@ from Lapack. Works on transposed arrays.
  vector : FALSE = 0 | TRUE = 1, default = 0
  where options are:
  type :         Specifies the problem type to be solved
- 		1: A * x = (lambda) * B * x
+		1: A * x = (lambda) * B * x
 		2: A * B * x = (lambda) * x
 		3: B * A * x = (lambda) * x
 		default = 1
@@ -4129,14 +3407,14 @@ from Lapack. Works on transposed arrays.
 		indice:  range of indices
 		interval: range of values
 		0: find all eigenvalues and optionally all vectors
- range: 	PDL(2), lower and upper bounds interval or smallest and largest indices
- 		1<=range<=N for indice
+ range:		PDL(2), lower and upper bounds interval or smallest and largest indices
+		1<=range<=N for indice
  abstol:        specifies error tolerance for eigenvalues
  Returned values:
- 		eigenvalues (SCALAR CONTEXT),
- 		eigenvectors if requested,
- 		total number of eigenvalues found (n),
- 		info
+		eigenvalues (SCALAR CONTEXT),
+		eigenvectors if requested,
+		total number of eigenvalues found (n),
+		info
 		ifail according to returned info (support).
 
 =for example
@@ -4149,9 +3427,9 @@ from Lapack. Works on transposed arrays.
  my $range = cat pdl(0),$overflow;
  my $abstol = pdl(1.e-5);
  my %options = (range_type=>'interval',
- 		range => $range,
- 		abstol => $abstol,
- 		type => 1);
+		range => $range,
+		abstol => $abstol,
+		type => 1);
  my ( $eigenvalues, $eigenvectors, $n, $isuppz )  = msymgeigenx($a, $b, 0,1, %options);
 
 =cut
@@ -4174,7 +3452,7 @@ sub PDL::msymgeigenx {
 	$opt{type} = 1 unless (defined $opt{type});
 	$w = null;
 	$n = pdl(long,0);
-       	$info = null;
+	$info = null;
 	if (!defined $opt{'abstol'}){
 		my ( $unfl, $ovfl );
 		$unfl = lamch(pdl($type,1));
@@ -4189,11 +3467,11 @@ sub PDL::msymgeigenx {
 	$b = $b->copy;
 	if (@adims ==3){
 		$a->chegvx($opt{type}, $jobv, $range, $upper, $b, $opt{range}->(0), $opt{range}->(1),$opt{range}->(0),$opt{range}->(1),
-	 		$opt{'abstol'}, $n, $w, $z ,$support, $info);
+			$opt{'abstol'}, $n, $w, $z ,$support, $info);
 	}
 	else{
 		$a->sygvx($opt{type}, $jobv, $range, $upper, $b, $opt{range}->(0), $opt{range}->(1),$opt{range}->(0),$opt{range}->(1),
-	 		$opt{'abstol'}, $n, $w, $z ,$support, $info);
+			$opt{'abstol'}, $n, $w, $z ,$support, $info);
 	}
 	if ( ($info > 0) && ($info < $adims[-1])){
 		laerror("msymgeigenx: The algorithm failed to converge");
@@ -4237,7 +3515,7 @@ Uses L<gesdd|PDL::LinearAlgebra::Real/gesdd> or L<cgesdd|PDL::LinearAlgebra::Com
 
  (PDL(U), (PDL(s), PDL(V)), PDL(info)) = mdsvd(PDL, SCALAR(job))
  job :  0 = computes only singular values
- 	1 = computes full SVD (square U and V)
+	1 = computes full SVD (square U and V)
 	2 = computes SVD (singular values, right and left singular vectors)
 	default = 1
 
@@ -4293,11 +3571,11 @@ Uses L<gesvd|PDL::LinearAlgebra::Real/gesvd> or L<cgesvd|PDL::LinearAlgebra::Com
 
  ( (PDL(U)), PDL(s), (PDL(V), PDL(info)) = msvd(PDL, SCALAR(jobu), SCALAR(jobv))
  jobu : 0 = Doesn't compute U
- 	1 = computes full SVD (square U)
+	1 = computes full SVD (square U)
 	2 = computes right singular vectors
 	default = 1
  jobv : 0 = Doesn't compute V
- 	1 = computes full SVD (square V)
+	1 = computes full SVD (square V)
 	2 = computes left singular vectors
 	default = 1
 
@@ -4355,7 +3633,7 @@ L<cggsvd|PDL::LinearAlgebra::Complex/cggsvd> from Lapack. Works on transposed ar
  X:    whether or not computes X (boolean, returned in HASH{'X'})
  all:  whether or not computes all the above.
  Returned value:
- 	 sa,sb		: singular value pairs of A and B (generalized singular values = sa/sb)
+	 sa,sb		: singular value pairs of A and B (generalized singular values = sa/sb)
 	 $ret{'rank'}   : effective numerical rank of (A',B')'
 	 $ret{'info'}   : info from (c)ggsvd
 
