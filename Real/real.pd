@@ -8881,11 +8881,15 @@ matrix Q:  A = Q*H*Q**T = (QZ)*T*(QZ)**T.
 
 pp_def("trevc",
        HandleBad => 0,
-	Pars => '[io,phys]T(n,n); int side();int howmny();int [phys]select(q);[io,phys]VL(m,r); [io,phys]VR(p,s);int [o,phys]m(); int [o,phys]info()',
+	Pars => '[io]T(n,n); int side();int howmny();int select(q);[o]VL(m,m); [o]VR(p,p);int [o]m(); int [o]info()',
+	RedoDimsCode => '
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(side), tmp != 1, $PDL(VL), $SIZE(m), $SIZE(n))
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(side), tmp != 2, $PDL(VR), $SIZE(p), $SIZE(n))
+	',
 	GenericTypes => [F,D],
 	Code => generate_code '
 		char pside,phowmny;
-		integer mm = 0;
+		integer mm = PDLMAX($SIZE(m),$SIZE(p));
 
 		extern int $TFD(s,d)trevc_(char *side, char *howmny, logical *select,
 		integer *n, $GENERIC() *t, integer *ldt, $GENERIC() *vl, integer *
@@ -8905,13 +8909,10 @@ pp_def("trevc",
 		switch ($side())
 		{
 			case 1: pside = \'R\';
-				mm = $SIZE(s);
 				break;
 			case 2: pside = \'L\';
-				mm = $SIZE(r);
 				break;
 			default:pside = \'B\';
-				mm = $SIZE(s);
 		}
 
 		$TFD(strevc_,dtrevc_)(
@@ -9071,11 +9072,15 @@ magnitude has magnitude 1; here the magnitude of a complex number
 
 pp_def("tgevc",
        HandleBad => 0,
-	Pars => '[io,phys]A(n,n); int side();int howmny();[io,phys]B(n,n);int [phys]select(q);[io,phys]VL(m,r); [io,phys]VR(p,s);int [o,phys]m(); int [o,phys]info()',
+	Pars => '[io]A(n,n); int side();int howmny();[io]B(n,n);int select(q);[o]VL(m,m); [o]VR(p,p);int [o]m(); int [o]info()',
+	RedoDimsCode => '
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(side), tmp != 1, $PDL(VL), $SIZE(m), $SIZE(n))
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(side), tmp != 2, $PDL(VR), $SIZE(p), $SIZE(n))
+	',
 	GenericTypes => [F,D],
 	Code => generate_code '
 		char pside,phowmny;
-		integer mm = 0;
+		integer mm = PDLMAX($SIZE(m),$SIZE(p));
 
 		extern int $TFD(s,d)tgevc_(char *side, char *howmny, logical *select,
 		integer *n, $GENERIC() *a, integer *lda, $GENERIC() *b,integer *ldb,
@@ -9095,13 +9100,10 @@ pp_def("tgevc",
 		switch ($side())
 		{
 			case 1: pside = \'R\';
-				mm = $SIZE(s);
 				break;
 			case 2: pside = \'L\';
-				mm = $SIZE(r);
 				break;
 			default:pside = \'B\';
-				mm = $SIZE(s);
 		}
 
 		$TFD(stgevc_,dtgevc_)(

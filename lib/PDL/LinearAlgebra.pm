@@ -1195,10 +1195,7 @@ sub PDL::mschur {
 	if ($jobvl || $jobvr){
 		my $job = $jobvr && $jobvl ? undef : $jobvl ? 2 : 1;
 		my $is_mult = $jobvl == 1 || $jobvr == 1 || $mult;
-		my ($vr, $vl) = map !$_ ? undef :
-			(!$is_mult && $select_func) ? $m->_similar($dims[1+$di], $sdim) :
-			$jobv ? $v->copy : $m->_similar(@dims[1+$di,1+$di..$#dims]),
-				$jobvr, $jobvl;
+		my ($vl, $vr) = map $m->_similar_null, 1..2;
 		$mult = ($select_func && !$is_mult) ? 2 : !$jobv ? 0 : $mult;
 		my $sel = ($select_func && !$is_mult) ? zeroes($dims[1]) : undef;
 		$sel(:($sdim-1)) .= 1 if defined $sel;
@@ -1271,8 +1268,7 @@ sub PDL::Complex::mschur {
 					$vl = $v->copy if $jobvl;
 				}
 				else{
-					$vr = PDL::Complex->new_from_specification($type, 2, $dims[1], $dims[1],@dims[3..$#dims]) if $jobvr;
-					$vl = PDL::Complex->new_from_specification($type, 2, $dims[1], $dims[1],@dims[3..$#dims]) if $jobvl;
+					($vl, $vr) = map $m->_similar_null, 1..2;
 					$mult = 0;
 				}
 				$mm->ctrevc($job, $mult, $sel, $vl, $vr, $sdims, my $infos=null);
@@ -1296,8 +1292,7 @@ sub PDL::Complex::mschur {
 				}
 			}
 			else{
-				$vr = PDL::Complex->new_from_specification($type, 2,$dims[1], $sdim) if $jobvr;
-				$vl = PDL::Complex->new_from_specification($type, 2, $dims[1], $sdim) if $jobvl;
+				($vl, $vr) = map $m->_similar_null, 1..2;
 				$sel = zeroes($dims[1]);
 				$sel(:($sdim-1)) .= 1;
 				$mm->ctrevc($job, 2, $sel, $vl, $vr, $sdim, my $infos=null);
@@ -1315,8 +1310,7 @@ sub PDL::Complex::mschur {
 				$vl = $v->copy if $jobvl;
 			}
 			else{
-				$vr = PDL::Complex->new_from_specification($type, 2, $dims[1], $dims[1],@dims[3..$#dims]) if $jobvr;
-				$vl = PDL::Complex->new_from_specification($type, 2, $dims[1], $dims[1],@dims[3..$#dims]) if $jobvl;
+				($vl, $vr) = map $m->_similar_null, 1..2;
 				$mult = 0;
 			}
 			$mm->ctrevc($job, $mult, $sel, $vl, $vr, $sdim, my $infos=null);
@@ -1447,8 +1441,7 @@ sub PDL::mschurx {
 						$vl = $v->copy if $jobvl;
 					}
 					else{
-						$vr = PDL::Complex->new_from_specification($type, 2, $dims[1], $dims[1]) if $jobvr;
-						$vl = PDL::Complex->new_from_specification($type, 2, $dims[1], $dims[1]) if $jobvl;
+						($vl, $vr) = map $m->_similar_null, 1..2;
 						$mult = 0;
 					}
 					$mm->ctrevc($job, $mult, $sel, $vl, $vr, $sdims, my $infos=null);
@@ -1472,8 +1465,7 @@ sub PDL::mschurx {
 					}
 				}
 				else{
-					$vr = PDL::Complex->new_from_specification($type, 2,$dims[1], $sdim) if $jobvr;
-					$vl = PDL::Complex->new_from_specification($type, 2, $dims[1], $sdim) if $jobvl;
+					($vl, $vr) = map $m->_similar_null, 1..2;
 					$sel = zeroes($dims[1]);
 					$sel(:($sdim-1)) .= 1;
 					$mm->ctrevc($job, 2, $sel, $vl, $vr, $sdim, my $infos=null);
@@ -1491,8 +1483,7 @@ sub PDL::mschurx {
 					$vl = $v->copy if $jobvl;
 				}
 				else{
-					$vr = PDL::Complex->new_from_specification($type, 2, $dims[1], $dims[1]) if $jobvr;
-					$vl = PDL::Complex->new_from_specification($type, 2, $dims[1], $dims[1]) if $jobvl;
+					($vl, $vr) = map $m->_similar_null, 1..2;
 					$mult = 0;
 				}
 				$mm->ctrevc($job, $mult, $sel, $vl, $vr, $sdim, my $infos=null);
@@ -1541,8 +1532,7 @@ sub PDL::mschurx {
 						$vl = $v->copy if $jobvl;
 					}
 					else{
-						$vr = PDL->new_from_specification($type, $dims[1], $dims[1]) if $jobvr;
-						$vl = PDL->new_from_specification($type, $dims[1], $dims[1]) if $jobvl;
+						($vl, $vr) = map $m->_similar_null, 1..2;
 						$mult = 0;
 					}
 					$mm->trevc($job, $mult, $sel, $vl, $vr, $sdims, my $infos=null);
@@ -1566,8 +1556,7 @@ sub PDL::mschurx {
 					}
 				}
 				else{
-					$vr = PDL->new_from_specification($type, $dims[1], $sdim) if $jobvr;
-					$vl = PDL->new_from_specification($type, $dims[1], $sdim) if $jobvl;
+					($vl, $vr) = map $m->_similar_null, 1..2;
 					$sel = zeroes($dims[1]);
 					$sel(:($sdim-1)) .= 1;
 					$mm->trevc($job, 2, $sel, $vl, $vr, $sdim, my $infos = null);
@@ -1589,8 +1578,7 @@ sub PDL::mschurx {
 					$vl = $v->copy if $jobvl;
 				}
 				else{
-					$vr = PDL->new_from_specification($type, $dims[1], $dims[1]) if $jobvr;
-					$vl = PDL->new_from_specification($type, $dims[1], $dims[1]) if $jobvl;
+					($vl, $vr) = map $m->_similar_null, 1..2;
 					$mult = 0;
 				}
 				$mm->trevc($job, $mult, $sel, $vl, $vr, $sdim, my $infos=null);
@@ -1771,7 +1759,7 @@ sub PDL::mgschur{
 						$vl = $vsl->copy;
 					}
 					else{
-						$vl = PDL->new_from_specification($type, $mdims[1], $mdims[1],@mdims[2..$#mdims]);
+						$vl = $m->_similar_null;
 						$mult = 0;
 					}
 				}
@@ -1780,7 +1768,7 @@ sub PDL::mgschur{
 						$vr = $vsr->copy;
 					}
 					else{
-						$vr = PDL->new_from_specification($type, $mdims[1], $mdims[1],@mdims[2..$#mdims]);
+						$vr = $m->_similar_null;
 						$mult = 0;
 					}
 				}
@@ -1808,8 +1796,7 @@ sub PDL::mgschur{
 				}
 			}
 			else{
-				$vr = PDL->new_from_specification($type, $mdims[1], $sdim) if $jobvr;
-				$vl = PDL->new_from_specification($type, $mdims[1], $sdim) if $jobvl;
+				($vl, $vr) = map $m->_similar_null, 1..2;
 				$sel = zeroes($mdims[1]);
 				$sel(:($sdim-1)) .= 1;
 				$mm->tgevc($job, 2, $pp, $sel, $vl, $vr, $sdim, my $infos = null);
@@ -1831,7 +1818,7 @@ sub PDL::mgschur{
 					$vl = $vsl->copy;
 				}
 				else{
-					$vl = PDL->new_from_specification($type, $mdims[1], $mdims[1],@mdims[2..$#mdims]);
+					$vl = $m->_similar_null;
 					$mult = 0;
 				}
 			}
@@ -1840,7 +1827,7 @@ sub PDL::mgschur{
 					$vr = $vsr->copy;
 				}
 				else{
-					$vr = PDL->new_from_specification($type, $mdims[1], $mdims[1],@mdims[2..$#mdims]);
+					$vr = $m->_similar_null;
 					$mult = 0;
 				}
 			}
@@ -1940,7 +1927,7 @@ sub PDL::Complex::mgschur{
 						$vl = $vsl->copy;
 					}
 					else{
-						$vl = PDL::Complex->new_from_specification($type, 2, $mdims[1], $mdims[1],@mdims[3..$#mdims]);
+						$vl = $m->_similar_null;
 						$mult = 0;
 					}
 				}
@@ -1949,7 +1936,7 @@ sub PDL::Complex::mgschur{
 						$vr = $vsr->copy;
 					}
 					else{
-						$vr = PDL::Complex->new_from_specification($type, 2, $mdims[1], $mdims[1],@mdims[3..$#mdims]);
+						$vr = $m->_similar_null;
 						$mult = 0;
 					}
 				}
@@ -1972,9 +1959,8 @@ sub PDL::Complex::mgschur{
 				}
 			}
 			else{
-				$vr = PDL::Complex->new_from_specification($type, 2,$mdims[1], $sdim) if $jobvr;;
-				$vl = PDL::Complex->new_from_specification($type, 2, $mdims[1], $sdim) if $jobvl;;
-					$sel = zeroes($mdims[1]);
+				($vl, $vr) = map $m->_similar_null, 1..2;
+				$sel = zeroes($mdims[1]);
 				$sel(:($sdim-1)) .= 1;
 				$mm->ctgevc($job, 2, $pp, $sel, $vl, $vr, $sdim, my $infos=null);
 				if ($jobvl){
@@ -1991,7 +1977,7 @@ sub PDL::Complex::mgschur{
 					$vl = $vsl->copy;
 					}
 				else{
-					$vl = PDL::Complex->new_from_specification($type, 2, $mdims[1], $mdims[1],@mdims[3..$#mdims]);
+					$vl = $m->_similar_null;
 					$mult = 0;
 				}
 			}
@@ -2000,7 +1986,7 @@ sub PDL::Complex::mgschur{
 					$vr = $vsr->copy;
 				}
 				else{
-					$vr = PDL::Complex->new_from_specification($type, 2, $mdims[1], $mdims[1],@mdims[3..$#mdims]);
+					$vr = $m->_similar_null;
 					$mult = 0;
 				}
 			}
@@ -2155,7 +2141,7 @@ sub PDL::mgschurx{
 							$vl = $vsl->copy;
 						}
 						else{
-							$vl = PDL::Complex->new_from_specification($type, 2, $mdims[1], $mdims[1]);
+							$vl = $m->_similar_null;
 							$mult = 0;
 						}
 					}
@@ -2164,7 +2150,7 @@ sub PDL::mgschurx{
 							$vr = $vsr->copy;
 						}
 						else{
-							$vr = PDL::Complex->new_from_specification($type, 2, $mdims[1], $mdims[1]);
+							$vr = $m->_similar_null;
 							$mult = 0;
 						}
 					}
@@ -2187,8 +2173,7 @@ sub PDL::mgschurx{
 					}
 				}
 				else{
-					$vr = PDL::Complex->new_from_specification($type, 2,$mdims[1], $sdim) if $jobvr;
-					$vl = PDL::Complex->new_from_specification($type, 2, $mdims[1], $sdim) if $jobvl;
+					($vl, $vr) = map $m->_similar_null, 1..2;
 					$sel = zeroes($mdims[1]);
 					$sel(:($sdim-1)) .= 1;
 					$mm->ctgevc($job, 2, $pp, $sel, $vl, $vr, $sdim, my $infos=null);
@@ -2206,7 +2191,7 @@ sub PDL::mgschurx{
 						$vl = $vsl->copy;
 					}
 					else{
-						$vl = PDL::Complex->new_from_specification($type, 2, $mdims[1], $mdims[1]);
+						$vl = $m->_similar_null;
 						$mult = 0;
 					}
 				}
@@ -2215,7 +2200,7 @@ sub PDL::mgschurx{
 						$vr = $vsr->copy;
 					}
 					else{
-						$vr = PDL::Complex->new_from_specification($type, 2, $mdims[1], $mdims[1]);
+						$vr = $m->_similar_null;
 						$mult = 0;
 					}
 				}
@@ -2286,7 +2271,7 @@ sub PDL::mgschurx{
 							$vl = $vsl->copy;
 						}
 						else{
-							$vl = PDL->new_from_specification($type, $mdims[1], $mdims[1]);
+							$vl = $m->_similar_null;
 							$mult = 0;
 						}
 					}
@@ -2295,7 +2280,7 @@ sub PDL::mgschurx{
 							$vr = $vsr->copy;
 						}
 						else{
-							$vr = PDL->new_from_specification($type, $mdims[1], $mdims[1]);
+							$vr = $m->_similar_null;
 							$mult = 0;
 						}
 					}
@@ -2321,8 +2306,7 @@ sub PDL::mgschurx{
 					}
 				}
 				else{
-					$vr = PDL->new_from_specification($type, $mdims[1], $sdim) if $jobvr;
-					$vl = PDL->new_from_specification($type, $mdims[1], $sdim) if $jobvl;
+					($vl, $vr) = map $m->_similar_null, 1..2;
 					$sel = zeroes($mdims[1]);
 					$sel(:($sdim-1)) .= 1;
 					$mm->tgevc($job, 2, $pp, $sel, $vl, $vr, $sdim, my $infos = null);
@@ -2344,7 +2328,7 @@ sub PDL::mgschurx{
 						$vl = $vsl->copy;
 					}
 					else{
-						$vl = PDL->new_from_specification($type, $mdims[1], $mdims[1]);
+						$vl = $m->_similar_null;
 						$mult = 0;
 					}
 				}
@@ -2353,7 +2337,7 @@ sub PDL::mgschurx{
 						$vr = $vsr->copy;
 					}
 					else{
-						$vr = PDL->new_from_specification($type, $mdims[1], $mdims[1]);
+						$vr = $m->_similar_null;
 						$mult = 0;
 					}
 				}
@@ -3647,7 +3631,7 @@ sub PDL::meigenx {
 	my $jobvr = $vector2jobvr{$opt{vector}} || $opt{rcondition} ? 1 : 0;
 	my $sense = $rcondition2sense{$opt{rcondition}} || 0;
 	if (@dims == 3){
-		$w = PDL::Complex->new_from_specification($type, 2, $dims[1]);
+		$w = $m->_similar_null;
 		$m->t->cgeevx( $jobvl, $jobvr, $balanc,$sense,$w, $vl, $vr, $ilo, $ihi, $scale, $abnrm, $rconde, $rcondv, $info);
 
 	}

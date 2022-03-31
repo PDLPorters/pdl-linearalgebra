@@ -4514,10 +4514,14 @@ pp_defc("trevc",
 		$GENERIC() *work, $GENERIC() *rwork, integer *info);
 EOF
        HandleBad => 0,
-	Pars => '[io,phys]T(2,n,n); int side();int howmny();int [phys]select(q);[io,phys]VL(2,m,r); [io,phys]VR(2,p,s);int [o,phys]m(); int [o,phys]info()',
+	Pars => '[io]T(2,n,n); int side();int howmny();int [phys]select(q);[o]VL(2,m,m); [o]VR(2,p,p);int [o]m(); int [o]info()',
+	RedoDimsCode => '
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(side), tmp != 1, $PDL(VL), $SIZE(m), $SIZE(n))
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(side), tmp != 2, $PDL(VR), $SIZE(p), $SIZE(n))
+	',
 	Code => generate_code '
 		char pside,phowmny;
-		integer mm = 0;
+		integer mm = PDLMAX($SIZE(m),$SIZE(p));
 		$GENERIC() *work = ($GENERIC() *) malloc(5 * $SIZE(n) *sizeof($GENERIC()));
 
 		switch ($howmny())
@@ -4532,13 +4536,10 @@ EOF
 		switch ($side())
 		{
 			case 1: pside = \'R\';
-				mm = $SIZE(s);
 				break;
 			case 2: pside = \'L\';
-				mm = $SIZE(r);
 				break;
 			default:pside = \'B\';
-				mm = $SIZE(s);
 		}
 
 		$TFD(ctrevc_,ztrevc_)(
@@ -4569,10 +4570,14 @@ pp_defc("tgevc",
 		integer *mm, integer *m, $GENERIC() *work, $GENERIC() *rwork, integer *info);
 EOF
        HandleBad => 0,
-	Pars => '[io,phys]A(2,n,n); int side();int howmny(); [io,phys]B(2,n,n);int [phys]select(q);[io,phys]VL(2,m,r); [io,phys]VR(2,p,s);int [o,phys]m(); int [o,phys]info()',
+	Pars => '[io]A(2,n,n); int side();int howmny(); [io]B(2,n,n);int select(q);[o]VL(2,m,m); [o]VR(2,p,p);int [o]m(); int [o]info()',
+	RedoDimsCode => '
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(side), tmp != 1, $PDL(VL), $SIZE(m), $SIZE(n))
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(side), tmp != 2, $PDL(VR), $SIZE(p), $SIZE(n))
+	',
 	Code => generate_code '
 		char pside,phowmny;
-		integer mm = 0;
+		integer mm = PDLMAX($SIZE(m),$SIZE(p));
 		$GENERIC() *work = ($GENERIC() *) malloc(6 * $SIZE(n) *sizeof($GENERIC()));
 
 		switch ($howmny())
@@ -4587,13 +4592,10 @@ EOF
 		switch ($side())
 		{
 			case 1: pside = \'R\';
-				mm = $SIZE(s);
 				break;
 			case 2: pside = \'L\';
-				mm = $SIZE(r);
 				break;
 			default:pside = \'B\';
-				mm = $SIZE(s);
 		}
 
 		$TFD(ctgevc_,ztgevc_)(
