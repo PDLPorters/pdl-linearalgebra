@@ -2853,42 +2853,18 @@ Works on transposed arrays.
 
 =cut
 
-sub mgeigen {shift->mgeigen(@_)}
+*mgeigen = \&PDL::mgeigen;
 sub PDL::mgeigen {
 	&_square_same;
 	&_same_dims;
-	my($a, $b,$jobvl,$jobvr) = @_;
-	my $type = $a->type;
-	$b = $b->t;
-	my ($vl, $vr) = map $a->_similar_null, 1..2;
-	$a->t->ggev($jobvl,$jobvr, $b, my $wtmp = null, my $wi = null, my $beta = null, $vl, $vr, my $info = null);
+	my ($a,$b,$jobvl,$jobvr) = @_;
+	my ($info, $sdim) = map null, 1..2;
+	my @w = map $a->_similar_null, $a->_is_complex ? 1 : 1..2;
+	my ($vl, $vr, $beta) = map $a->_similar_null, 1..3;
+	$a->t->_call_method('ggev', $jobvl, $jobvr, $b->t, @w, $beta, $vl, $vr, $info);
 	_error($info, "mgeigen: Can't compute eigenvalues/vectors for PDL(s) %s");
-	my $w = PDL::Complex::ecplx ($wtmp, $wi);
-	if ($jobvl){
-		(undef, $vl) = cplx_eigen($wtmp, $wi, $vl, 1);
-	}
-	if ($jobvr){
-		(undef, $vr) = cplx_eigen($wtmp, $wi, $vr, 1);
-	}
-	$jobvl? $jobvr? ($w, $beta, $vl->t->sever, $vr->t->sever, $info):($w, $beta, $vl->t->sever, $info) :
-					$jobvr? ($w, $beta, $vr->t->sever, $info): ($w, $beta, $info);
-}
-
-sub PDL::Complex::mgeigen {
-	&_square_same;
-	&_same_dims;
-	my($a, $b,$jobvl,$jobvr) = @_;
-	my ($vl, $vr, $info, $beta, $type, $eigens);
-	$type = $a->type;
-	$b = $b->t;
-	$eigens = PDL::Complex->null;
-	$beta = PDL::Complex->null;
-	my ($vl, $vr) = map $a->_similar_null, 1..2;
-	$info = null;
-	$a->t->cggev($jobvl,$jobvr, $b, $eigens, $beta, $vl, $vr, $info);
-	_error($info, "mgeigen: Can't compute eigenvalues/vectors for PDL(s) %s");
-	$jobvl? $jobvr? ($eigens, $beta, $vl->t->sever, $vr->t->sever, $info):($eigens, $beta, $vl->t->sever, $info) :
-					$jobvr? ($eigens, $beta, $vr->t->sever, $info): ($eigens, $beta, $info);
+	(my $w, $vl, $vr) = _eigen_extract($jobvl, $jobvr, $vl, $vr, @w);
+	($w, $beta, ($jobvl?$vl->t->sever:()), ($jobvr?$vr->t->sever:()), $info);
 }
 
 =head2 mgeigenx
