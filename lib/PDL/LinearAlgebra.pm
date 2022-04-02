@@ -2536,83 +2536,39 @@ Works on transposed arrays.
 
 sub PDL::mllss {
 	my $di = $_[0]->dims_internal;
+	my $slice_prefix = ',' x $di;
 	&_matrices_matchrows;
 	my($a, $b, $method) = @_;
-	my(@adims) = $a->dims;
-	my(@bdims) = $b->dims;
-	my ($info, $x, $rcond, $rank, $s, $min, $type);
-	$type = $a->type;
+	my @adims = $a->dims;
+	my @bdims = $b->dims;
 	#TODO: Add this in option
-	$rcond = lamch(0);
+	my $type = $a->type;
+	my $rcond = lamch(0);
 	$rcond = $rcond->sqrt - ($rcond->sqrt - $rcond) / 2;
 	$a = $a->t->copy;
+	my $x;
 	if ($adims[1+$di] < $adims[0+$di]){
-		if (@adims == 3){
-			$x = PDL::Complex->new_from_specification($type, 2, $adims[1], $bdims[1]);
-			$x(, :($bdims[2]-1), :($bdims[1]-1)) .= $b->t;
-		}
-		else{
-			$x = PDL->new_from_specification($type, $adims[0], $bdims[0]);
-			$x(:($bdims[1]-1), :($bdims[0]-1)) .= $b->t;
-		}
+		$x = $a->_similar($adims[$di], $bdims[$di]);
+		$x->slice("$slice_prefix:@{[$bdims[$di+1]-1]}, :@{[$bdims[$di]-1]}") .= $b->t;
 	}
 	else{
 		$x = $b->t->copy;
 	}
-	$info = pdl(long,0);
-	$rank = null;
-	$min =  ($adims[$di] > $adims[-1]) ? $adims[-1] : $adims[$di];
-	$s = null;
-	unless ($method) {
-		$method = (@adims == 3) ? 'cgelsd' : 'gelsd';
-	}
-	$a->$method($x,  $rcond, $s, $rank, $info);
+	my ($info, $rank, $s) = map null, 1..3;
+	my $min = ($adims[$di] > $adims[$di+1]) ? $adims[$di+1] : $adims[$di];
+	$method ||= 'gelsd';
+	$a->_call_method($method, $x,  $rcond, $s, $rank, $info);
 	laerror("mllss: The algorithm for computing the SVD failed to converge\n") if $info;
 	$x = $x->t;
-	if ($adims[1+$di] <= $adims[0+$di]){
-		if (wantarray){
-			$method =~ /gelsd/ ? return ($x->sever, ('rank' => $rank, 's'=>$s, 'info'=>$info)):
-					(return ($x, ('V'=> $a, 'rank' => $rank, 's'=>$s, 'info'=>$info)) );
-		}
-		else{return $x;}
+	my %ret = !wantarray ? () : (rank => $rank, s=>$s, info=>$info);
+	$ret{V} = $a if wantarray and $method =~ /gelss/;
+	return wantarray ? ($x->sever, %ret) : $x->sever if $adims[1+$di] <= $adims[0+$di];
+	if (wantarray and $rank == $min) {
+		my $power = $a->_similar(1); $power .= 2;
+		$ret{res} = ($x->slice("$slice_prefix, $adims[$di]:")->t ** $power)->sumover;
 	}
-	elsif (wantarray){
-		if ($rank == $min){
-			if (@adims == 3){
-				my $res = PDL::Ufunc::sumover(PDL::Complex::Cpow($x(,, $adims[1]:),pdl($type,2,0))->reorder(2,0,1));
-				if ($method =~ /gelsd/){
-					return ($x(,, :($adims[1]-1))->sever,
-						('res' => $res, 'rank' => $rank, 's'=>$s, 'info'=>$info));
-				}
-				else{
-					return ($x(,, :($adims[1]-1))->sever,
-						('res' => $res, 'V'=> $a, 'rank' => $rank, 's'=>$s, 'info'=>$info));
-				}
-			}
-			else{
-				my $res = $x(, $adims[0]:)->t->pow(2)->sumover;
-				if ($method =~ /gelsd/){
-					return ($x(, :($adims[0]-1))->sever,
-						('res' => $res, 'rank' => $rank, 's'=>$s, 'info'=>$info));
-				}
-				else{
-					return ($x(, :($adims[0]-1))->sever,
-						('res' => $res, 'V'=> $a, 'rank' => $rank, 's'=>$s, 'info'=>$info));
-				}
-			}
-		}
-		else {
-			if (@adims == 3){
-				$method =~ /gelsd/ ? return ($x(,, :($adims[1]-1))->sever, ('rank' => $rank, 's'=>$s, 'info'=>$info))
-				: ($x(,, :($adims[1]-1))->sever, ('v'=> $a, 'rank' => $rank, 's'=>$s, 'info'=>$info));
-			}
-			else{
-				$method =~ /gelsd/ ? return ($x(, :($adims[0]-1))->sever, ('rank' => $rank, 's'=>$s, 'info'=>$info))
-				: ($x(, :($adims[0]-1))->sever, ('v'=> $a, 'rank' => $rank, 's'=>$s, 'info'=>$info));
-			}
-		}
-	}
-	else{return (@adims == 3) ? $x(,, :($adims[1]-1))->sever : $x(, :($adims[0]-1))->sever;}
+	$x = $x->slice("$slice_prefix, :@{[$adims[$di]-1]}")->sever;
+	wantarray ? ($x->sever, %ret) : $x->sever;
 }
 
 =head2 mglm
