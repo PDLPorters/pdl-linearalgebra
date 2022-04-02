@@ -523,7 +523,7 @@ sub PDL::mrank {
 	barf("mrank: SVD algorithm did not converge\n") if $info;
 
 	unless (defined $tol){
-		$tol =  ($dims[-1] > $dims[-2] ? $dims[-1] : $dims[-2]) * $sv((0)) * lamch(pdl($m->type,3));
+		$tol =  ($dims[-1] > $dims[-2] ? $dims[-1] : $dims[-2]) * $sv((0)) * lamch(3);
 	}
 	(which($sv > $tol))->dim(0);
 }
@@ -969,7 +969,7 @@ sub PDL::mpinv{
 	setlaerror($err);
 	_error($info, "mpinv: SVD algorithm did not converge (PDL %s)");
 	unless (defined $tol){
-		$tol =  ($dims[-1] > $dims[-2] ? $dims[-1] : $dims[-2]) * $s((0)) * lamch(pdl($m->type,3));
+		$tol =  ($dims[-1] > $dims[-2] ? $dims[-1] : $dims[-2]) * $s((0)) * lamch(3);
 	}
 	($ind, $cind) = which_both( $s > $tol );
 	$s->index($cind) .= 0 if defined $cind;
@@ -2467,47 +2467,33 @@ from Lapack. Works on transposed arrays.
 =cut
 
 *mllsy = \&PDL::mllsy;
-
 sub PDL::mllsy {
 	my $di = $_[0]->dims_internal;
+	my $slice_prefix = ',' x $di;
 	&_matrices_matchrows;
 	my($a, $b) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my $type = $a->type;
-	my $rcond = lamch(pdl($type,0));
+	my $rcond = lamch(0);
 	$rcond = $rcond->sqrt - ($rcond->sqrt - $rcond) / 2;
 	$a = $a->t->copy;
 	my ($x);
 	if ( $adims[1+$di] < $adims[0+$di]){
-		if (@adims == 3){
-			$x = PDL::Complex->new_from_specification($type, 2, $adims[1], $bdims[1]);
-			$x(, :($bdims[2]-1), :($bdims[1]-1)) .= $b->t;
-		}
-		else{
-			$x = PDL->new_from_specification($type, $adims[0], $bdims[0]);
-			$x(:($bdims[1]-1), :($bdims[0]-1)) .= $b->t;
-		}
+		$x = $a->_similar($adims[$di], $bdims[$di]);
+		$x->slice("$slice_prefix:@{[$bdims[$di+1]-1]}, :@{[$bdims[$di]-1]}") .= $b->t;
 	}
 	else{
 		$x = $b->t->copy;
 	}
 	my $info = null;
 	my $rank = null;
-	my $jpvt = zeroes(long, $adims[-2]);
+	my $jpvt = zeroes(long, $adims[$di]);
 	$a->_call_method('gelsy', $x,  $rcond, $jpvt, $rank, $info);
-	if ( $adims[-1] <= $adims[-2]){
-		wantarray ? return ($x->t->sever, ('A'=> $a->t->sever, 'rank' => $rank, 'jpvt'=>$jpvt)) :
-				return $x->t->sever;
-	}
-	if (@adims == 3){
-		wantarray ? return ($x->t->(,, :($adims[1]-1))->sever, ('A'=> $a->t->sever, 'rank' => $rank, 'jpvt'=>$jpvt)) :
-				$x->t->(, :($adims[1]-1))->sever;
-	}
-	else{
-		wantarray ? return ($x->t->(, :($adims[0]-1))->sever, ('A'=> $a->t->sever, 'rank' => $rank, 'jpvt'=>$jpvt)) :
-				$x->t->(, :($adims[0]-1))->sever;
-	}
+	my %ret = !wantarray ? () : ('A'=> $a->t->sever, 'rank' => $rank, 'jpvt'=>$jpvt);
+	return wantarray ? ($x->t->sever, %ret) : $x->t->sever if $adims[$di+1] <= $adims[$di];
+	$x = $x->t->slice("$slice_prefix, :@{[$adims[$di]-1]}")->sever;
+	wantarray ? ($x, %ret) : $x;
 }
 
 =head2 mllss
@@ -2557,11 +2543,9 @@ sub PDL::mllss {
 	my ($info, $x, $rcond, $rank, $s, $min, $type);
 	$type = $a->type;
 	#TODO: Add this in option
-	$rcond = lamch(pdl($type,0));
+	$rcond = lamch(0);
 	$rcond = $rcond->sqrt - ($rcond->sqrt - $rcond) / 2;
-
 	$a = $a->t->copy;
-
 	if ($adims[1+$di] < $adims[0+$di]){
 		if (@adims == 3){
 			$x = PDL::Complex->new_from_specification($type, 2, $adims[1], $bdims[1]);
@@ -2571,26 +2555,20 @@ sub PDL::mllss {
 			$x = PDL->new_from_specification($type, $adims[0], $bdims[0]);
 			$x(:($bdims[1]-1), :($bdims[0]-1)) .= $b->t;
 		}
-
 	}
 	else{
 		$x = $b->t->copy;
 	}
-
 	$info = pdl(long,0);
 	$rank = null;
-	$min =  ($adims[-2] > $adims[-1]) ? $adims[-1] : $adims[-2];
+	$min =  ($adims[$di] > $adims[-1]) ? $adims[-1] : $adims[$di];
 	$s = null;
-
 	unless ($method) {
 		$method = (@adims == 3) ? 'cgelsd' : 'gelsd';
 	}
-
 	$a->$method($x,  $rcond, $s, $rank, $info);
 	laerror("mllss: The algorithm for computing the SVD failed to converge\n") if $info;
-
 	$x = $x->t;
-
 	if ($adims[1+$di] <= $adims[0+$di]){
 		if (wantarray){
 			$method =~ /gelsd/ ? return ($x->sever, ('rank' => $rank, 's'=>$s, 'info'=>$info)):
@@ -2603,7 +2581,6 @@ sub PDL::mllss {
 			if (@adims == 3){
 				my $res = PDL::Ufunc::sumover(PDL::Complex::Cpow($x(,, $adims[1]:),pdl($type,2,0))->reorder(2,0,1));
 				if ($method =~ /gelsd/){
-
 					return ($x(,, :($adims[1]-1))->sever,
 						('res' => $res, 'rank' => $rank, 's'=>$s, 'info'=>$info));
 				}
@@ -2615,7 +2592,6 @@ sub PDL::mllss {
 			else{
 				my $res = $x(, $adims[0]:)->t->pow(2)->sumover;
 				if ($method =~ /gelsd/){
-
 					return ($x(, :($adims[0]-1))->sever,
 						('res' => $res, 'rank' => $rank, 's'=>$s, 'info'=>$info));
 				}
@@ -2635,7 +2611,6 @@ sub PDL::mllss {
 				: ($x(, :($adims[0]-1))->sever, ('v'=> $a, 'rank' => $rank, 's'=>$s, 'info'=>$info));
 			}
 		}
-
 	}
 	else{return (@adims == 3) ? $x(,, :($adims[1]-1))->sever : $x(, :($adims[0]-1))->sever;}
 }
@@ -2938,11 +2913,11 @@ sub PDL::meigenx {
 
 	if ( $opt{'rcondition'} eq 'vector' || $opt{'rcondition'} eq "all"){
 		$result{'rcondv'} =  $rcondv;
-		$result{'verror'} = (lamch(pdl($type,0))* $abnrm /$rcondv  ) if $opt{'error'};
+		$result{'verror'} = (lamch(0)* $abnrm /$rcondv  ) if $opt{'error'};
 	}
 	if ( $opt{'rcondition'} eq 'value' || $opt{'rcondition'} eq "all"){
 		$result{'rconde'} =  $rconde;
-		$result{'eerror'} = (lamch(pdl($type,0))* $abnrm /$rconde  ) if $opt{'error'};
+		$result{'eerror'} = (lamch(0)* $abnrm /$rconde  ) if $opt{'error'};
 	}
 
 	if ($opt{'vector'} eq "left"){
@@ -3149,14 +3124,14 @@ sub PDL::mgeigenx {
 		$result{'rcondv'} =  $rcondv;
 		if ($opt{'error'}){
 			$abnrm = sqrt ($abnrm->pow(2) + $bbnrm->pow(2));
-			$result{'verror'} = (lamch(pdl($type,0))* $abnrm /$rcondv  );
+			$result{'verror'} = (lamch(0)* $abnrm /$rcondv  );
 		}
 	}
 	if ( $opt{'rcondition'} eq 'value' || $opt{'rcondition'} eq "all"){
 		$result{'rconde'} =  $rconde;
 		if ($opt{'error'}){
 			$abnrm = sqrt ($abnrm->pow(2) + $bbnrm->pow(2));
-			$result{'eerror'} = (lamch(pdl($type,0))* $abnrm /$rconde  );
+			$result{'eerror'} = (lamch(0)* $abnrm /$rconde  );
 		}
 	}
 	if ($opt{'vector'} eq 'left'){
@@ -3291,8 +3266,8 @@ sub PDL::msymeigenx {
 	my $z = $m->_similar_null;
 	if (!defined $opt{'abstol'})
 	{
-		my $unfl = lamch(pdl($type,1));
-		$unfl->labad(lamch(pdl($type,9)));
+		my $unfl = lamch(1);
+		$unfl->labad(lamch(9));
 		$opt{'abstol'} = $unfl + $unfl;
 	}
 	my $method = $opt{'method'} || ['syevx','cheevx'];
@@ -3455,8 +3430,8 @@ sub PDL::msymgeigenx {
 	$info = null;
 	if (!defined $opt{'abstol'}){
 		my ( $unfl, $ovfl );
-		$unfl = lamch(pdl($type,1));
-		$ovfl = lamch(pdl($type,9));
+		$unfl = lamch(1);
+		$ovfl = lamch(9);
 		$unfl->labad($ovfl);
 		$opt{'abstol'} = $unfl + $unfl;
 	}
