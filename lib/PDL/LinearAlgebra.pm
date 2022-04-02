@@ -2699,46 +2699,26 @@ Works on transposed arrays.
 
 =cut
 
-sub meigen {shift->meigen(@_)}
+*meigen = \&PDL::meigen;
 sub PDL::meigen {
 	&_square;
-	my($m,$jobvl,$jobvr) = @_;
-	my(@dims) = $m->dims;
+	my ($m,$jobvl,$jobvr) = @_;
+	my ($info, $sdim) = map null, 1..2;
+	my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
+	my ($vl, $vr) = map $m->_similar_null, 1..2;
+	$m->t->_call_method('geev', $jobvl, $jobvr, @w, $vl, $vr, $info);
+	_error($info, "meigen: The QR algorithm failed to converge for PDL(s) %s");
 	my $w;
-	my $type = $m->type;
-	my $info = null;
-	my $wr = null;
-	my $wi = null;
-	my $vl = $m->_similar_null;
-	my $vr = $m->_similar_null;
-	$m->t->geev( $jobvl,$jobvr, $wr, $wi, $vl, $vr, $info);
-	if ($jobvl){
-		($w, $vl) = cplx_eigen($wr, $wi, $vl, 1);
+	if (@w == 2) {
+		($w, $vl) = cplx_eigen(@w, $vl, 1) if $jobvl;
+		($w, $vr) = cplx_eigen(@w, $vr, 1) if $jobvr;
+		$w = PDL::Complex::ecplx(@w) if !defined $w;
+	} else {
+		$w = $w[0];
 	}
-	if ($jobvr){
-		($w, $vr) = cplx_eigen($wr, $wi, $vr, 1);
-	}
-	$w = PDL::Complex::ecplx( $wr, $wi ) unless $jobvr || $jobvl;
-	_error($info, "meigen: The QR algorithm failed to converge for PDL(s) %s");
-	$jobvl? $jobvr ? ($w, $vl->t->sever, $vr->t->sever, $info):($w, $vl->t->sever, $info) :
-					$jobvr? ($w, $vr->t->sever, $info) : wantarray ? ($w, $info) : $w;
+	return $w if !wantarray;
+	($w, ($jobvl?$vl->t->sever:()), ($jobvr?$vr->t->sever:()), $info);
 }
-
-sub PDL::Complex::meigen {
-	&_square;
-	my($m,$jobvl,$jobvr) = @_;
-	my(@dims) = $m->dims;
-	my $type = $m->type;
-	my $info = null;
-	my $w = PDL::Complex->null;
-	my $vl = $m->_similar_null;
-	my $vr = $m->_similar_null;
-	$m->t->cgeev( $jobvl,$jobvr, $w, $vl, $vr, $info);
-	_error($info, "meigen: The QR algorithm failed to converge for PDL(s) %s");
-	$jobvl? $jobvr ? ($w, $vl->t->sever, $vr->t->sever, $info):($w, $vl->t->sever, $info) :
-					$jobvr? ($w, $vr->t->sever, $info) : wantarray ? ($w, $info) : $w;
-}
-
 
 =head2 meigenx
 
