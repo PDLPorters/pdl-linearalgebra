@@ -2542,7 +2542,6 @@ sub PDL::mllss {
 	my @adims = $a->dims;
 	my @bdims = $b->dims;
 	#TODO: Add this in option
-	my $type = $a->type;
 	my $rcond = lamch(0);
 	$rcond = $rcond->sqrt - ($rcond->sqrt - $rcond) / 2;
 	$a = $a->t->copy;
@@ -2649,40 +2648,29 @@ from Lapack. Works on transposed arrays.
 
 sub PDL::mlse {
 	my $di = $_[0]->dims_internal;
+	my $slice_prefix = ',' x $di;
 	my($a, $b, $c, $d) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
 	my(@cdims) = $c->dims;
 	my(@ddims) = $d->dims;
-
-	my($x, $info);
-
 	barf("mlse: Require 2 matrices with equal number of columns")
 		unless( ((@adims == 2+$di && @bdims == 2+$di)) &&
 		$adims[$di] == $bdims[$di]);
-
 	barf("mlse: Require 1D vector C with size equal to number of A rows")
 		unless( (@cdims == $di+1)&& $adims[$di+2] == $cdims[$di+2]);
-
 	barf("mlse: Require 1D vector D with size equal to number of B rows")
 		unless( (@ddims == $di+1)&& $bdims[$di+2] == $ddims[$di+2]);
-
 	barf "mlse: Require that row(B) <= column(A) <= row(A) + row(B)" unless
 		( ($bdims[$di+1] <= $adims[$di] ) && ($adims[$di] <= ($adims[$di+1]+ $bdims[$di+1])) );
-
 	$a = $a->t->copy;
 	$b = $b->t->copy;
 	$c = $c->copy;
 	$d = $d->copy;
-	($x , $info) = (@adims == 3) ?  $a->cgglse($b, $c, $d) : $a->gglse($b, $c, $d);
-
-	if (@adims == 3){
-		wantarray ? ($x, PDL::Ufunc::sumover(PDL::Complex::Cpow($c(,($adims[1]-$bdims[2]):($adims[2]-1)),pdl($a->type,2,0))->t)) : $x;
-	}
-	else{
-		wantarray ? ($x, $c(($adims[0]-$bdims[1]):($adims[1]-1))->pow(2)->sumover) : $x;
-	}
-
+	my ($x, $info) = $a->_call_method('gglse', $b, $c, $d);
+	my $power = $a->_similar(1); $power .= 2;
+	my $sumsq = ($c->slice("$slice_prefix @{[$adims[$di]-$bdims[$di+1]]}:@{[$adims[$di+1]-1]}") ** $power)->sumover;
+	wantarray ? ($x, $sumsq) : $x;
 }
 
 =head2 meigen
