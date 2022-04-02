@@ -1165,6 +1165,16 @@ Works on transposed array(s).
 
 =cut
 
+sub _eigen_extract {
+  my ($jobvl, $jobvr, $vl, $vr, @w) = @_;
+  return ($w[0], $vl, $vr) if @w == 1;
+  my $w;
+  ($w, $vl) = cplx_eigen(@w, $vl, 1) if $jobvl;
+  ($w, $vr) = cplx_eigen(@w, $vr, 1) if $jobvr;
+  $w = PDL::Complex::ecplx(@w) if !defined $w;
+  ($w, $vl, $vr);
+}
+
 sub _eigen_one {
   my ($mm, $select_func, $jobv, $jobvl, $jobvr, $mult, $norm, $mdim, $sdim, @w) = @_;
   my $job = $jobvr && $jobvl ? undef : $jobvl ? 2 : 1;
@@ -2708,14 +2718,7 @@ sub PDL::meigen {
 	my ($vl, $vr) = map $m->_similar_null, 1..2;
 	$m->t->_call_method('geev', $jobvl, $jobvr, @w, $vl, $vr, $info);
 	_error($info, "meigen: The QR algorithm failed to converge for PDL(s) %s");
-	my $w;
-	if (@w == 2) {
-		($w, $vl) = cplx_eigen(@w, $vl, 1) if $jobvl;
-		($w, $vr) = cplx_eigen(@w, $vr, 1) if $jobvr;
-		$w = PDL::Complex::ecplx(@w) if !defined $w;
-	} else {
-		$w = $w[0];
-	}
+	(my $w, $vl, $vr) = _eigen_extract($jobvl, $jobvr, $vl, $vr, @w);
 	return $w if !wantarray;
 	($w, ($jobvl?$vl->t->sever:()), ($jobvr?$vr->t->sever:()), $info);
 }
@@ -2772,7 +2775,6 @@ Works on transposed arrays.
 		Info: if > 0, the QR algorithm failed to compute all the eigenvalues
 		(see syevx for further details)
 
-
 =for example
 
  my $a = random(10,10);
@@ -2788,74 +2790,42 @@ Works on transposed arrays.
 
 =cut
 
-
-*meigenx = \&PDL::meigenx;
-
 my %rcondition2sense = (value => 1, vector => 2, all => 3);
 my %vector2jobvl = (left => 1, all => 1);
 my %vector2jobvr = (right => 1, all => 1);
+*meigenx = \&PDL::meigenx;
 sub PDL::meigenx {
 	&_square;
 	my($m, %opt) = @_;
 	my(@dims) = $m->dims;
-	my (%result, $w);
-	my $type = $m->type;
-	my $balanc =  ($opt{'permute'} &&  $opt{'scale'} ) ? 3 : $opt{'permute'} ? 1 : $opt{'scale'} ? 2:0;
+	my (%result);
 	$m = $m->copy;
 	my ($info, $ilo, $ihi, $abnrm, $scale, $rconde, $rcondv) = map null, 1..8;
 	my ($vl, $vr) = map $m->_similar_null, 1..2;
+	my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
+	my $balanc = ($opt{'scale'}?2:0) | ($opt{permute}?1:0);
 	my $jobvl = $vector2jobvl{$opt{vector}} || $opt{rcondition} ? 1 : 0;
 	my $jobvr = $vector2jobvr{$opt{vector}} || $opt{rcondition} ? 1 : 0;
 	my $sense = $rcondition2sense{$opt{rcondition}} || 0;
-	if (@dims == 3){
-		$w = $m->_similar_null;
-		$m->t->cgeevx( $jobvl, $jobvr, $balanc,$sense,$w, $vl, $vr, $ilo, $ihi, $scale, $abnrm, $rconde, $rcondv, $info);
-
-	}
-	else{
-		my ($wr, $wi) = map null, 1..2;
-		$m->t->geevx( $jobvl, $jobvr, $balanc,$sense,$wr, $wi, $vl, $vr, $ilo, $ihi, $scale, $abnrm, $rconde, $rcondv, $info);
-		if ($jobvl){
-			($w, $vl) = cplx_eigen($wr, $wi, $vl, 1);
-		}
-		if ($jobvr){
-			($w, $vr) = cplx_eigen($wr, $wi, $vr, 1);
-		}
-		$w = PDL::Complex::complex(t(cat $wr, $wi)) unless $jobvr || $jobvl;
-	}
-
+	$m->t->_call_method('geevx', $jobvl, $jobvr, $balanc, $sense, @w, $vl, $vr, $ilo, $ihi, $scale, $abnrm, $rconde, $rcondv, $info);
+	(my $w, $vl, $vr) = _eigen_extract($jobvl, $jobvr, $vl, $vr, @w);
 	if ($info){
 		laerror("meigenx: The QR algorithm failed to converge");
 		print "Returning converged eigenvalues\n" if $_laerror;
 	}
-
 	$result{'schur'} = $m if $opt{'schur'};
 	$result{'balance'} = cat $ilo, $ihi if $opt{'permute'};
-	$result{'info'} =  $info;
+	@result{qw(info norm)} = ($info, $abnrm);
 	$result{'scale'} =  $scale if $opt{'scale'};
-	$result{'norm'} =  $abnrm;
-
-	if ( $opt{'rcondition'} eq 'vector' || $opt{'rcondition'} eq "all"){
+	if ($sense & 2) {
 		$result{'rcondv'} =  $rcondv;
 		$result{'verror'} = (lamch(0)* $abnrm /$rcondv  ) if $opt{'error'};
 	}
-	if ( $opt{'rcondition'} eq 'value' || $opt{'rcondition'} eq "all"){
+	if ($sense & 1) {
 		$result{'rconde'} =  $rconde;
 		$result{'eerror'} = (lamch(0)* $abnrm /$rconde  ) if $opt{'error'};
 	}
-
-	if ($opt{'vector'} eq "left"){
-		return ($w, $vl->t->sever, %result);
-	}
-	elsif ($opt{'vector'} eq "right"){
-		return ($w, $vr->t->sever, %result);
-	}
-	elsif ($opt{'vector'} eq "all"){
-		$w, $vl->t->sever, $vr->t->sever, %result;
-	}
-	else{
-		return ($w, %result);
-	}
+	($w, ($vector2jobvl{$opt{vector}}?$vl->t->sever:()), ($vector2jobvr{$opt{vector}}?$vr->t->sever:()), %result);
 }
 
 =head2 mgeigen
