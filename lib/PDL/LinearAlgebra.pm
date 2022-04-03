@@ -3294,29 +3294,16 @@ Uses L<gesdd|PDL::LinearAlgebra::Real/gesdd> or L<cgesdd|PDL::LinearAlgebra::Com
 *mdsvd = \&PDL::mdsvd;
 sub PDL::mdsvd {
 	my $di = $_[0]->dims_internal;
-	my($m, $job) = @_;
+	my($m, $jobz) = @_;
 	my(@dims) = $m->dims;
 	my $type = $m->type;
-	$job = !wantarray ? 0 : $job // 1;
+	$jobz = !wantarray ? 0 : $jobz // 1;
 	my $min = $dims[$di] > $dims[1+$di] ? $dims[1+$di]: $dims[$di];
 	$m = $m->copy;
-	my ($u, $v);
-	if ($job){
-		if ($job == 2){
-			$u = $m->_similar($min, @dims[1+$di..$#dims]);
-			$v = $m->_similar($dims[$di],$min,@dims[2+$di..$#dims]);
-		}
-		else{
-			$u = $m->_similar(@dims[1+$di,1+$di..$#dims]);
-			$v = $m->_similar(@dims[$di,$di,2+$di..$#dims]);
-		}
-	}else{
-		$u = $m->_similar(1,1);
-		$v = $m->_similar(1,1);
-	}
-	$m->_call_method('gesdd', $job, my $s = null, $v, $u, my $info = null);
-	_error($info, "mdsvd: Matrix (PDL(s) %s) is/are singular(s)");
-	return ($u, $s, $v, $info) if $job;
+	my ($u, $v) = map $m->_similar_null, 1..2;
+	$m->_call_method('gesdd', $jobz, my $s = null, $v, $u, my $info = null);
+	_error($info, "mdsvd: Matrix (PDL(s) %s) is/are singular");
+	return ($u, $s, $v, $info) if $jobz;
 	wantarray ? ($s, $info) : $s;
 }
 
@@ -3327,7 +3314,7 @@ sub PDL::mdsvd {
 Computes SVD.
 Can compute singular values, either U or V or neither.
 Return singular values in scalar context else left (U),
-singular values, right (V' (hermitian for complex) singulars vector and info.
+singular values, right (V' (hermitian for complex) singular vector and info.
 Supports threading.
 If only singular values are requested, info is returned in array context.
 Uses L<gesvd|PDL::LinearAlgebra::Real/gesvd> or L<cgesvd|PDL::LinearAlgebra::Complex/cgesvd> from Lapack.
@@ -3434,7 +3421,7 @@ sub PDL::mgsvd {
 	$a = $a->copy;
 	$b = $b->t->copy;
 	my ($k, $l, $alpha, $beta, $iwork, $info) = map null, 1..6;
-	my ($U, $V, $Q) = map $a->_similar_null, 1..6;
+	my ($U, $V, $Q) = map $a->_similar_null, 1..3;
 	$a->t->ggsvd($opt{U}, $opt{V}, $jobqx, $b, $k, $l, $alpha, $beta, $U, $V, $Q, $iwork, $info);
 	laerror("mgsvd: The Jacobi procedure fails to converge") if $info;
 

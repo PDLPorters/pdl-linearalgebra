@@ -356,7 +356,12 @@ Note that the routine returns VT = V\', not V.
 pp_def("gesdd",
        HandleBad => 0,
 	RedoDimsCode => '$SIZE(r) = PDLMIN($SIZE(m),$SIZE(n));',
-	Pars => '[io]A(m,n); int job(); [o]s(r); [o]U(p,q); [o]VT(s,t); int [o]info()',
+	Pars => '[io]A(m,n); int jobz(); [o]s(minmn); [o]U(p,p); [o]VT(s,s); int [o]info()',
+	RedoDimsCode => '
+	  $SIZE(minmn) = PDLMIN($SIZE(m),$SIZE(n));
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobz), tmp==1 || (tmp==2) || (tmp==3 && $SIZE(m)<$SIZE(n)), $PDL(U), $SIZE(p), $SIZE(minmn))
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobz), tmp==1 || (tmp==2) || (tmp==3 && $SIZE(m)>=$SIZE(n)), $PDL(VT), $SIZE(s), $SIZE(minmn))
+	',
 	GenericTypes => [F,D],
 	Code => generate_code '
                 integer lwork;
@@ -370,11 +375,10 @@ pp_def("gesdd",
 
 		$GENERIC() tmp_work;
 
-		lwork = ($SIZE(m) < $SIZE(n)) ? 8*$SIZE(m) : 8*$SIZE(n);
-		iwork = (integer *)malloc(lwork * sizeof(integer));
+		iwork = (integer *)malloc(8*$SIZE(minmn) * sizeof(integer));
 		lwork = -1;
 
-		switch ($job())
+		switch ($jobz())
 		{
 
 			case 1: tra = \'A\';
@@ -442,7 +446,7 @@ M-by-N matrix A.
 This routine use the Coppen\'s divide and conquer algorithm.
 It is much faster than the simple driver for large matrices, but uses more workspace.
 
-    job:    Specifies options for computing all or part of matrix:
+    jobz:    Specifies options for computing all or part of matrix:
 
             = 0:  no columns of U or rows of V\' are computed;
 	    = 1:  all M columns of U and all N rows of V\' are
@@ -459,28 +463,28 @@ It is much faster than the simple driver for large matrices, but uses more works
 
     A:      On entry, the M-by-N matrix A.
             On exit,
-            if job = 3,  A is overwritten with the first N columns
+            if jobz = 3,  A is overwritten with the first N columns
                             of U (the left singular vectors, stored
                             columnwise) if M >= N;
                             A is overwritten with the first M rows
                             of V\' (the right singular vectors, stored
                             rowwise) otherwise.
-            if job != 3, the contents of A are destroyed.
+            if jobz != 3, the contents of A are destroyed.
 
     s:      The singular values of A, sorted so that s(i) >= s(i+1).
 
-    U:      If job = 1 or job = 3 and M < N, U contains the M-by-M
+    U:      If jobz = 1 or jobz = 3 and M < N, U contains the M-by-M
             orthogonal matrix U;
-            if job = 2, U contains the first min(M,N) columns of U
+            if jobz = 2, U contains the first min(M,N) columns of U
             (the left singular vectors, stored columnwise);
-            if job = 3 and M >= N, or job = 0, U is not referenced.
+            if jobz = 3 and M >= N, or jobz = 0, U is not referenced.
             Min size  = [1,1].
 
-    VT:     If job = 1 or job = 3 and M >= N, VT contains the
+    VT:     If jobz = 1 or jobz = 3 and M >= N, VT contains the
             N-by-N orthogonal matrix V\';
-            if job = 2, VT contains the first min(M,N) rows of
+            if jobz = 2, VT contains the first min(M,N) rows of
             V\' (the right singular vectors, stored rowwise);
-            if job = 3 and M < N, or job = 0, VT is not referenced.
+            if jobz = 3 and M < N, or jobz = 0, VT is not referenced.
             Min size  = [1,1].
 
     info:   = 0:  successful exit.
