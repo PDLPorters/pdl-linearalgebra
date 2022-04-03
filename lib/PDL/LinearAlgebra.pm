@@ -3229,64 +3229,39 @@ from Lapack. Works on transposed arrays.
 
 sub PDL::msymgeigenx {
 	&_square_same;
+	my $di = $_[0]->dims_internal;
 	my($a, $b, $upper, $jobv, %opt) = @_;
 	my(@adims) = $a->dims;
-	my ($w, $info, $n, $support, $z, $range, $type);
-	$type = $a->type;
-	$range = ($opt{'range_type'} eq 'interval') ? pdl(long, 1) :
-		($opt{'range_type'} eq 'indice')? pdl(long, 2) : pdl(long, 0);
+	my $range = $range_type2range{$opt{range_type}} || 0;
 	if (!UNIVERSAL::isa($opt{range},'PDL')){
-		$opt{range} = pdl($type,[0,0]);
-		$range = pdl(long, 0);
+		$opt{range} = pdl([0,0]);
+		$range = 0;
 	}
-	$opt{type} = 1 unless (defined $opt{type});
-	$w = null;
-	$n = pdl(long,0);
-	$info = null;
+	$opt{type} //= 1;
+	my ($w, $n, $support, $info) = map null, 1..4;
 	if (!defined $opt{'abstol'}){
-		my ( $unfl, $ovfl );
-		$unfl = lamch(1);
-		$ovfl = lamch(9);
+		my $unfl = lamch(1);
+		my $ovfl = lamch(9);
 		$unfl->labad($ovfl);
 		$opt{'abstol'} = $unfl + $unfl;
 	}
-	$support = null;
-	$z = $a->_similar_null;
-	$upper = $upper ? pdl(long,0) : pdl(long,1);
+	my $z = $a->_similar_null;
+	$upper = $upper ? 0 : 1;
 	$a = $a->copy;
 	$b = $b->copy;
-	if (@adims ==3){
-		$a->chegvx($opt{type}, $jobv, $range, $upper, $b, $opt{range}->(0), $opt{range}->(1),$opt{range}->(0),$opt{range}->(1),
-			$opt{'abstol'}, $n, $w, $z ,$support, $info);
-	}
-	else{
-		$a->sygvx($opt{type}, $jobv, $range, $upper, $b, $opt{range}->(0), $opt{range}->(1),$opt{range}->(0),$opt{range}->(1),
-			$opt{'abstol'}, $n, $w, $z ,$support, $info);
-	}
-	if ( ($info > 0) && ($info < $adims[-1])){
+	$a->_call_method(['sygvx','chegvx'], $opt{type}, $jobv, $range, $upper,
+	  $b, $opt{range}->(0), $opt{range}->(1),$opt{range}->(0),$opt{range}->(1),
+	  $opt{'abstol'}, $n, $w, $z ,$support, $info);
+	if ( ($info > 0) && ($info < $adims[$di+1])){
 		laerror("msymgeigenx: The algorithm failed to converge");
 		print("see support for details\n") if $_laerror;
 	}
 	elsif($info){
-		$info = $info - $adims[-1] - 1;
+		$info = $info - $adims[$di+1] - 1;
 		barf("msymgeigenx: The leading minor of order $info of B is not positive definite\n");
 	}
-	if ($jobv){
-		if ($info){
-			return ($w , $z->t->sever, $n, $info, $support) ;
-		}
-		else{
-			return ($w , $z->t->sever, $n, $info);
-		}
-	}
-	else{
-		if ($info){
-			wantarray ?  ($w, $n, $info, $support) : $w;
-		}
-		else{
-			wantarray ?  ($w, $n, $info) : $w;
-		}
-	}
+	return $w if !wantarray;
+	($w, $jobv?$z->t->sever:(), $n, $info, $info?$support:());
 }
 
 
