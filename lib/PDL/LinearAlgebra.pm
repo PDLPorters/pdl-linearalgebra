@@ -318,6 +318,11 @@ sub _error_schur {
       " or underflow (PDL(s) @{[$index->list]})\n");
   }
 }
+sub PDL::_wrap_select_func {
+  my ($m, $select_func) = @_;
+  return $select_func if !defined $select_func or $m->_is_complex;
+  sub { &$select_func(PDL::Complex::ecplx(@_[0,1]), @_>2 ? PDL->topdl($_[2]) : ()) };
+}
 
 *issym = \&PDL::issym;
 sub PDL::issym {
@@ -1120,6 +1125,7 @@ Works on transposed array(s).
  select_func	     : Select_func is used to select eigenvalues to sort
 		       to the top left of the Schur form.
 		       An eigenvalue is selected if PerlInt select_func(PDL::Complex(w)) is true;
+		       (the inputs are converted to complex ndarrays for you)
 		       Note that a selected complex eigenvalue may no longer
 		       satisfy select_func(PDL::Complex(w)) = 1 after ordering, since
 		       ordering may change the value of complex eigenvalues
@@ -1144,11 +1150,11 @@ Works on transposed array(s).
  my $a = random(10,10);
  my $schur  = mschur($a);
  sub select{
-	my $m = shift;
+	my $w = shift;
 	# select "discrete time" eigenspace
-	return $m->Cabs < 1 ? 1 : 0;
+	return $w->Cabs < 1 ? 1 : 0;
  }
- my ($schur,$eigen, $svectors,$evectors)  = mschur($a,1,1,0,\&select);
+ my ($schur,$eigen,$svectors,$evectors)  = mschur($a,1,1,0,\&select);
 
 =cut
 
@@ -1206,12 +1212,7 @@ sub PDL::mschur {
 	my $mm = $m->is_inplace ? $m->t : $m->t->copy;
 	my $v = $m->_similar_null;
 	my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
-	my $select_f;
-	if ($select_func){
-		$select_f= $m->_is_complex ? $select_func : sub{
-			&$select_func(PDL::Complex::complex(pdl($type,@_[0..1])),pdl($_[2]));
-		};
-	}
+	my $select_f = $m->_wrap_select_func($select_func);
 	$mm->_call_method('gees',
 		$jobv, $select_func ? 1 : 0, @w,
 		$v, my $sdim = null, my $info = null, $select_f
@@ -1255,6 +1256,7 @@ Works on transposed array.
  select_func         : Select_func is used to select eigenvalues to sort
 		       to the top left of the Schur form.
 		       An eigenvalue is selected if PerlInt select_func(PDL::Complex(w)) is true;
+		       (the inputs are converted to complex ndarrays for you)
 		       Note that a selected complex eigenvalue may no longer
 		       satisfy select_func(PDL::Complex(w)) = 1 after ordering, since
 		       ordering may change the value of complex eigenvalues
@@ -1316,12 +1318,7 @@ sub PDL::mschurx {
 	my $mm = $m->is_inplace ? $m->t : $m->t->copy;
 	my $v = $m->_similar_null;
 	my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
-	my $select_f;
-	if ($select_func){
-		$select_f= $m->_is_complex ? $select_func : sub{
-			&$select_func(PDL::Complex::complex(pdl($type,@_[0..1])),pdl($_[2]));
-		};
-	}
+	my $select_f = $m->_wrap_select_func($select_func);
 	$mm->_call_method('geesx', $jobv, $select, $sense, @w, $v, $sdim, $rconde, $rcondv,$info, $select_f);
 	_error_schur($info, $select_func, $dims[$di], 'mschurx', 'QR');
 	if ($select_func){
@@ -1395,6 +1392,7 @@ Works on transposed array.
 		       to the top left of the Schur form.
 		       An eigenvalue w = wr(j)+sqrt(-1)*wi(j) is selected if
 		       PerlInt select_func(PDL::Complex(alpha),PDL | PDL::Complex (beta)) is true;
+		       (the inputs are converted to complex ndarrays for you)
 		       Note that a selected complex eigenvalue may no longer
 		       satisfy select_func = 1 after ordering, since
 		       ordering may change the value of complex eigenvalues
@@ -1483,16 +1481,12 @@ sub PDL::mgschur{
 	my $select = $select_func ? pdl(long,1) : pdl(long,0);
 	$_ = null for my ($info, $sdim);
 	my ($mm, $pp) = map $_->is_inplace ? $_->t : $_->t->copy, $m, $p;
-	my ($select_f, %ret);
-	if ($select_func){
-		$select_f= $m->_is_complex ? $select_func : sub{
-			&$select_func(PDL::Complex::complex(pdl($type,@_[0..1])),pdl($_[2]));
-		};
-	}
+	my $select_f = $m->_wrap_select_func($select_func);
 	my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
 	$_ = $m->_similar_null for my ($beta, $vsl, $vsr);
 	$mm->_call_method('gges', $jobvsl, $jobvsr, $select, $pp, @w, $beta, $vsl, $vsr, $sdim, $info, $select_f);
 	_error_schur($info, $select_func, $mdims[$di], 'mgschur', 'QZ');
+	my %ret;
 	if ($select_func){
 		if ($jobvl == 2){
 			if (!$sdim){
@@ -1557,6 +1551,7 @@ from Lapack. Works on transposed array.
 		       to the top left of the Schur form.
 		       An eigenvalue w = wr(j)+sqrt(-1)*wi(j) is selected if
 		       PerlInt select_func(PDL::Complex(alpha),PDL | PDL::Complex (beta)) is true;
+		       (the inputs are converted to complex ndarrays for you)
 		       Note that a selected complex eigenvalue may no longer
 		       satisfy select_func = 1 after ordering, since
 		       ordering may change the value of complex eigenvalues
@@ -1618,13 +1613,7 @@ sub PDL::mgschurx{
 	my ($mm, $pp) = map $_->is_inplace ? $_->t : $_->t->copy, $m, $p;
 	$_ = $m->_similar_null for my ($beta, $vsl, $vsr);
 	my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
-	my ($select_f);
-	if ($select_func){
-		no strict 'refs';
-		$select_f = $m->_is_complex ? $select_func : sub{
-			&$select_func(PDL::Complex::complex(pdl($type,$_[0],$_[1])), $_[2]);
-		};
-	}
+	my $select_f = $m->_wrap_select_func($select_func);
 	$mm->_call_method('ggesx', $jobvsl, $jobvsr, $select, $sense, $pp, @w, $beta, $vsl, $vsr, $sdim, $rconde, $rcondv,$info, $select_f);
 	_error_schur($info, $select_func, $mdims[$di], 'mgschurx', 'QZ');
 	if ($select_func){
