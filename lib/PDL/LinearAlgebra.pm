@@ -2797,10 +2797,9 @@ my %vector2jobvr = (right => 1, all => 1);
 sub PDL::meigenx {
 	&_square;
 	my($m, %opt) = @_;
-	my(@dims) = $m->dims;
 	my (%result);
 	$m = $m->copy;
-	my ($info, $ilo, $ihi, $abnrm, $scale, $rconde, $rcondv) = map null, 1..8;
+	my ($info, $ilo, $ihi, $abnrm, $scale, $rconde, $rcondv) = map null, 1..7;
 	my ($vl, $vr) = map $m->_similar_null, 1..2;
 	my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
 	my $balanc = ($opt{'scale'}?2:0) | ($opt{permute}?1:0);
@@ -2936,86 +2935,47 @@ Works on transposed arrays.
 
 =cut
 
-
 *mgeigenx = \&PDL::mgeigenx;
-
 sub PDL::mgeigenx {
 	&_square_same;
-	my($a, $b,%opt) = @_;
-	my(@adims) = $a->dims;
-	my(@bdims) = $b->dims;
-	my (%result, $wr, $wi, $eigens);
-	my ($vr, $vl, $beta) = map $a->_similar_null, 1..3;
+	my $di = $_[0]->dims_internal;
+	my ($a, $b, %opt) = @_;
+	my @adims = $a->dims;
+	my (%result);
+	my ($vl, $vr, $beta) = map $a->_similar_null, 1..3;
 	$a = $a->copy;
 	$b = $b->t->copy;
-	if (@adims ==3){
-		$eigens = PDL::Complex->null;
-	}
-	else{
-		$wr = null;
-		$wi = null;
-	}
-	my $type = $a->type;
+	my @w = map $a->_similar_null, $a->_is_complex ? 1 : 1..2;
 	my ($rconde, $rcondv, $info, $ilo, $ihi, $rscale, $lscale, $abnrm, $bbnrm) = map null, 1..9;
 	my $jobvl = $vector2jobvl{$opt{vector}} || $opt{rcondition} ? 1 : 0;
 	my $jobvr = $vector2jobvr{$opt{vector}} || $opt{rcondition} ? 1 : 0;
 	my $sense = $rcondition2sense{$opt{rcondition}} || 0;
-	my $balanc =  ($opt{'permute'} &&  $opt{'scale'} ) ? pdl(long,3) : $opt{'permute'} ? pdl(long,1) : $opt{'scale'} ? pdl(long,2) : pdl(long,0);
-	if (@adims == 2){
-		$a->t->ggevx($balanc, $jobvl, $jobvr, $sense, $b, $wr, $wi, $beta, $vl, $vr, $ilo, $ihi, $lscale, $rscale,
-					$abnrm, $bbnrm, $rconde, $rcondv, $info);
-		$eigens = PDL::Complex::ecplx($wr, $wi);
-	}
-	else{
-		$_ = $_->r2C for $vl, $vr;
-		$a->t->cggevx($balanc, $jobvl, $jobvr, $sense, $b, $eigens, $beta, $vl, $vr, $ilo, $ihi, $lscale, $rscale,
-					$abnrm, $bbnrm, $rconde, $rcondv, $info);
-	}
-	if ( ($info > 0) && ($info < $adims[-1])){
+	my $balanc = ($opt{'scale'}?2:0) | ($opt{permute}?1:0);
+	$a->t->_call_method('ggevx', $balanc, $jobvl, $jobvr, $sense, $b, @w,
+	  $beta, $vl, $vr, $ilo, $ihi, $lscale, $rscale,
+	  $abnrm, $bbnrm, $rconde, $rcondv, $info);
+	(my $w, $vl, $vr) = _eigen_extract($jobvl, $jobvr, $vl, $vr, @w);
+	if ($info > 0 && $info < $adims[$di+1]) {
 		laerror("mgeigenx: The QZ algorithm failed to converge");
-		print ("Returning converged eigenvalues\n") if $_laerror;
-	}
-	elsif($info){
+		print "Returning converged eigenvalues\n" if $_laerror;
+	} elsif ($info) {
 		laerror("mgeigenx: Error from hgeqz or tgevc");
 	}
 	$result{'aschur'} = $a if $opt{'schur'};
 	$result{'bschur'} = $b->t->sever if $opt{'schur'};
-	if ($opt{'permute'}){
-		my $balance = cat $ilo, $ihi;
-		$result{'balance'} =  $balance;
-	}
-	$result{'info'} =  $info;
-	$result{'rscale'} =  $rscale if $opt{'scale'};
-	$result{'lscale'} =  $lscale if $opt{'scale'};
-	$result{'anorm'} =  $abnrm;
-	$result{'bnorm'} =  $bbnrm;
+	$result{'balance'} = cat $ilo, $ihi if $opt{'permute'};
+	@result{qw(info anorm bnorm)} = ($info, $abnrm, $bbnrm);
+	@result{qw(lscale rscale)} =  ($lscale, $rscale) if $opt{'scale'};
 	# Doesn't use lacpy2 =(sqrt **2 , **2) without unnecessary overflow
-	if ( $opt{'rcondition'} eq 'vector' || $opt{'rcondition'} eq "all"){
+	if ($sense & 2) {
 		$result{'rcondv'} =  $rcondv;
-		if ($opt{'error'}){
-			$abnrm = sqrt ($abnrm->pow(2) + $bbnrm->pow(2));
-			$result{'verror'} = (lamch(0)* $abnrm /$rcondv  );
-		}
+		$result{'verror'} = lamch(0) * sqrt($abnrm->pow(2) + $bbnrm->pow(2)) /$rcondv if $opt{'error'};
 	}
-	if ( $opt{'rcondition'} eq 'value' || $opt{'rcondition'} eq "all"){
+	if ($sense & 1) {
 		$result{'rconde'} =  $rconde;
-		if ($opt{'error'}){
-			$abnrm = sqrt ($abnrm->pow(2) + $bbnrm->pow(2));
-			$result{'eerror'} = (lamch(0)* $abnrm /$rconde  );
-		}
+		$result{'eerror'} = lamch(0) * sqrt($abnrm->pow(2) + $bbnrm->pow(2)) /$rconde if $opt{'error'};
 	}
-	if ($opt{'vector'} eq 'left'){
-		return ($eigens, $beta, $vl->t->sever, %result);
-	}
-	elsif ($opt{'vector'} eq 'right'){
-		return ($eigens, $beta, $vr->t->sever, %result);
-	}
-	elsif ($opt{'vector'} eq 'all'){
-		return ($eigens, $beta, $vl->t->sever, $vr->t->sever, %result);
-	}
-	else{
-		return ($eigens, $beta, %result);
-	}
+	($w, $beta, ($vector2jobvl{$opt{vector}}?$vl->t->sever:()), ($vector2jobvr{$opt{vector}}?$vr->t->sever:()), %result);
 }
 
 =head2 msymeigen
@@ -3285,7 +3245,6 @@ sub PDL::msymgeigenx {
 	&_square_same;
 	my($a, $b, $upper, $jobv, %opt) = @_;
 	my(@adims) = $a->dims;
-	my(@bdims) = $b->dims;
 	my ($w, $info, $n, $support, $z, $range, $type);
 	$type = $a->type;
 	$range = ($opt{'range_type'} eq 'interval') ? pdl(long, 1) :
