@@ -3340,25 +3340,14 @@ Uses L<gesvd|PDL::LinearAlgebra::Real/gesvd> or L<cgesvd|PDL::LinearAlgebra::Com
 
 *msvd = \&PDL::msvd;
 sub PDL::msvd {
-	my $di = $_[0]->dims_internal;
-	my($m, $jobu, $jobv) = @_;
-	my(@dims) = $m->dims;
-	my $type = $m->type;
+	my ($m, $jobu, $jobv) = @_;
 	$jobu = !wantarray ? 0 : $jobu // 1;
 	$jobv = !wantarray ? 0 : $jobv // 1;
 	$m = $m->copy;
-	my $min = $dims[$di] > $dims[1+$di] ? $dims[1+$di]: $dims[$di];
-	my $v = !$jobv ? $m->_similar(1,1):
-		$jobv == 1 ? $m->_similar(@dims[$di,$di,2+$di..$#dims]):
-		$m->_similar($dims[$di],$min,@dims[2+$di..$#dims]);
-	my $u = !$jobu ? $m->_similar(1,1):
-		$jobu == 1 ? $m->_similar(@dims[1+$di,1+$di..$#dims]):
-		$m->_similar($min, @dims[1+$di..$#dims]);
+	$_ = $m->_similar_null for my ($u, $v);
 	$m->_call_method('gesvd', $jobv, $jobu,my $s = null, $v, $u, my $info = null);
 	_error($info, "msvd: Matrix (PDL(s) %s) is/are singular(s)");
-	return $jobv ? ($u, $s, $v, $info) : ($u, $s, $info) if $jobu;
-	return ($s, $v, $info) if $jobv;
-	wantarray ? ($s, $info) : $s;
+	wantarray ? ($jobu?$u:(), $s, $jobv?$v:(), $info) : $s;
 }
 
 =head2 mgsvd

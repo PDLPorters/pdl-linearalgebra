@@ -196,8 +196,12 @@ its second element.
 
 pp_def("gesvd",
        HandleBad => 0,
-	RedoDimsCode => '$SIZE(r) = PDLMIN($SIZE(m),$SIZE(n));',
-	Pars => '[io]A(m,n); int jobu(); int jobvt(); [o]s(r); [o]U(p,q); [o]VT(s,t); int [o]info()',
+	Pars => '[io]A(m,n); int jobu(); int jobvt(); [o]s(minmn); [o]U(p,p); [o]VT(s,s); int [o]info()',
+	RedoDimsCode => '
+	  $SIZE(minmn) = PDLMIN($SIZE(m),$SIZE(n));
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobu), tmp==1 || tmp==2, $PDL(U), $SIZE(p), $SIZE(m))
+	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvt), tmp==1 || tmp==2, $PDL(VT), $SIZE(s), $SIZE(n))
+	',
 	GenericTypes => [F,D],
 	Code => generate_code '
 		extern int $TFD(s,d)gesvd_(char *jobu, char *jobvt, integer *m, integer *n, $GENERIC() *a,
