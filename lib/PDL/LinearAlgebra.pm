@@ -3301,7 +3301,7 @@ sub PDL::mdsvd {
 	my $min = $dims[$di] > $dims[1+$di] ? $dims[1+$di]: $dims[$di];
 	$m = $m->copy;
 	$_ = $m->_similar_null for my ($u, $v);
-	$m->_call_method('gesdd', $jobz, my $s = null, $v, $u, my $info = null);
+	$m->_call_method('gesdd', $jobz, my $s = null, $u, $v, my $info = null);
 	_error($info, "mdsvd: Matrix (PDL(s) %s) is/are singular");
 	return ($u, $s, $v, $info) if $jobz;
 	wantarray ? ($s, $info) : $s;
