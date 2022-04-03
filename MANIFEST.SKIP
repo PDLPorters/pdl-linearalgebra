@@ -1,0 +1,13 @@
+/pp-.*
+Real/Real\.
+Trans/Trans\.
+Complex/Complex\.
+cover_db/
+Makefile$
+\.o(bj|)$
+\.sw.*$
+META
+MANIFEST\.SKIP
+pm_to_blib
+^blib
+^\.git
