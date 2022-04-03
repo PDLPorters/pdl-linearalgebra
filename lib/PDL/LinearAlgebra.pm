@@ -627,7 +627,7 @@ sub PDL::mposdet {
 	my ($m, $upper) = @_;
 	$m = $m->copy;
 	$m->_call_method('potrf', $upper, my $info = null);
-	_error($info, "mposdet: Matrix (PDL(s) %s) is/are not positive definite(s) (after potrf factorization)");
+	_error($info, "mposdet: Matrix (PDL(s) %s) is/are not positive definite (after potrf factorization)");
 	$m = $m->re if $m->_is_complex;
 	$m = $m->diagonal(0,1)->prodover->pow(2);
 	return wantarray ? ($m, $info) : $m;
@@ -718,7 +718,7 @@ sub PDL::mrcond {
 	$info = PDL->null;
 	$rcond = PDL->null;
 	$m->_call_method('getrf', $ipiv, $info);
-	_error($info, "mrcond: Factor(s) U (PDL(s) %s) is/are singular(s) (after getrf factorization)");
+	_error($info, "mrcond: Factor(s) U (PDL(s) %s) is/are singular (after getrf factorization)");
 	$m->_call_method('gecon',$anorm,$norm,$rcond,$info);
 	return wantarray ? ($rcond, $info) : $rcond;
 }
@@ -820,7 +820,7 @@ sub PDL::minv {
 	$ipiv = PDL->null;
 	$info = PDL->null;
 	$m->_call_method('getrf', $ipiv, $info);
-	_error($info, "minv: Factor(s) U (PDL(s) %s) is/are singular(s) (after getrf factorization)");
+	_error($info, "minv: Factor(s) U (PDL(s) %s) is/are singular (after getrf factorization)");
 	$m->_call_method('getri', $ipiv, $info);
 	return wantarray ? ($m, $info) : $m;
 }
@@ -856,7 +856,7 @@ sub PDL::mtriinv{
 	$m = $m->copy() unless $m->is_inplace(0);
 	my $info = PDL->null;
 	$m->_call_method('trtri', $upper, $diag, $info);
-	_error($info, "mtriinv: Matrix (PDL(s) %s) is/are singular(s)");
+	_error($info, "mtriinv: Matrix (PDL(s) %s) is/are singular");
 	return wantarray ? ($m, $info) : $m;
 }
 
@@ -893,7 +893,7 @@ sub PDL::msyminv {
 	$m = $m->copy() unless $m->is_inplace(0);
 	@dims = @dims[2+$di..$#dims];
 	$m->_call_method('sytrf', $upper, my $ipiv=null, my $info=null);
-	_error($info, "msyminv: Block diagonal matrix D (PDL(s) %s) is/are singular(s) (after sytrf factorization)");
+	_error($info, "msyminv: Block diagonal matrix D (PDL(s) %s) is/are singular (after sytrf factorization)");
 	$m->_call_method('sytri',$upper,$ipiv,$info);
 	$m = $m->t->tritosym($upper, 0);
 	return wantarray ? ($m, $info) : $m;
@@ -933,7 +933,7 @@ sub PDL::mposinv {
 	$m = $m->copy() unless $m->is_inplace(0);
 	@dims = @dims[2+$di..$#dims];
 	$m->_call_method('potrf', $upper, my $info=null);
-	_error($info, "mposinv: matrix (PDL(s) %s) is/are not positive definite(s) (after potrf factorization)");
+	_error($info, "mposinv: matrix (PDL(s) %s) is/are not positive definite (after potrf factorization)");
 	$m->_call_method('potri', $upper, $info);
 	return wantarray ? ($m, $info) : $m;
 }
@@ -1060,7 +1060,7 @@ sub PDL::mchol {
 	@dims = @dims[2+$di..$#dims];
 	my $uplo =  1 - $upper;
 	$m->_call_method('potrf',$uplo,my $info=null);
-	_error($info, "mchol: matrix (PDL(s) %s) is/are not positive definite(s) (after potrf factorization)");
+	_error($info, "mchol: matrix (PDL(s) %s) is/are not positive definite (after potrf factorization)");
 	return wantarray ? ($m, $info) : $m;
 }
 
@@ -1981,7 +1981,7 @@ sub PDL::msolve {
 	$a = $a->t->copy;
 	my $c = $b->is_inplace ? $b->t : $b->t->copy;
 	$a->_call_method('gesv', $c, my $ipiv = null, my $info = null);
-	_error($info, "msolve: Can't solve system of linear equations (after getrf factorization): matrix (PDL(s) %s) is/are singular(s)");
+	_error($info, "msolve: Can't solve system of linear equations (after getrf factorization): matrix (PDL(s) %s) is/are singular");
 	$b = $c->t->sever if !$b->is_inplace(0);
 	wantarray ? ($b, $a->t->sever, $ipiv, $info) : $b;
 }
@@ -2131,7 +2131,7 @@ sub PDL::mtrisolve{
 	$trans = 1 - $trans;
 	my $c = $b->is_inplace ? $b->t : $b->t->copy;
 	$a->_call_method('trtrs', $uplo, $trans, $diag, $c, my $info = null);
-	_error($info, "mtrisolve: Can't solve system of linear equations: matrix (PDL(s) %s) is/are singular(s)");
+	_error($info, "mtrisolve: Can't solve system of linear equations: matrix (PDL(s) %s) is/are singular");
 	$b = $c->t->sever if !$b->is_inplace(0);
 	wantarray ? ($b, $info) : $b;
 }
@@ -2175,7 +2175,7 @@ sub PDL::msymsolve {
 	$a = $a->copy;
 	my $c = $b->is_inplace ? $b->t : $b->t->copy;
 	$a->_call_method('sysv', $uplo, $c, my $ipiv = null, my $info = null);
-	_error($info, "msymsolve: Can't solve system of linear equations (after sytrf factorization): matrix (PDL(s) %s) is/are singular(s)");
+	_error($info, "msymsolve: Can't solve system of linear equations (after sytrf factorization): matrix (PDL(s) %s) is/are singular");
 	$b = $c->t->sever if !$b->is_inplace(0);
 	wantarray ? ($b, $a, $ipiv, $info) : $b;
 }
@@ -2292,7 +2292,7 @@ sub PDL::mpossolve {
 	$a = $a->copy;
 	my $c = $b->is_inplace ? $b->t :  $b->t->copy;
 	$a->_call_method('posv', $uplo, $c, my $info=null);
-	_error($info, "mpossolve: Can't solve system of linear equations: matrix (PDL(s) %s) is/are not positive definite(s)");
+	_error($info, "mpossolve: Can't solve system of linear equations: matrix (PDL(s) %s) is/are not positive definite");
 	wantarray ? $b->is_inplace(0) ? ($b, $a,$info) : ($c->t->sever , $a,$info) : $b->is_inplace(0) ? $b : $c->t->sever;
 }
 
@@ -3169,7 +3169,7 @@ sub PDL::msymgeigen {
 	$a = $a->copy;
 	$b = $b->copy;
 	$a->_call_method($method, $type, $jobv, $upper, $b, my $w = null, my $info = null);
-	_error($info, "msymgeigen: Can't compute eigenvalues/vectors: matrix (PDL(s) %s) is/are not positive definite(s) or the algorithm failed to converge");
+	_error($info, "msymgeigen: Can't compute eigenvalues/vectors: matrix (PDL(s) %s) is/are not positive definite or the algorithm failed to converge");
 	return $jobv ? ($w , $a->t->sever, $info) : wantarray ? ($w, $info) : $w;
 }
 
@@ -3346,7 +3346,7 @@ sub PDL::msvd {
 	$m = $m->copy;
 	$_ = $m->_similar_null for my ($u, $v);
 	$m->_call_method('gesvd', $jobv, $jobu,my $s = null, $u, $v, my $info = null);
-	_error($info, "msvd: Matrix (PDL(s) %s) is/are singular(s)");
+	_error($info, "msvd: Matrix (PDL(s) %s) is/are singular");
 	wantarray ? ($jobu?$u:(), $s, $jobv?$v:(), $info) : $s;
 }
 
@@ -3572,7 +3572,6 @@ sub PDL::Complex::mgsvd {
 #	threading support
 #	automatically create PDL
 #	inplace operation and memory
-#d	check s after he/she/it and matrix(s)
 #	PDL type, verify float/double
 #	eig_det qr_det
 #	(g)schur(x):
