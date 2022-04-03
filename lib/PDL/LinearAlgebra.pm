@@ -273,11 +273,19 @@ sub _matrices_match {
     " of row equal to number of columns of A")
     unless @adims >= 2+$d && @bdims >= 2+$d && $bdims[1+$d] == $adims[$d];
 }
+sub _matrices_matchcolumns {
+  my $di = $_[0]->dims_internal;
+  my @adims = $_[0]->dims;
+  my @bdims = $_[1]->dims;
+  barf("Require 2 matrices with equal number of columns")
+    unless( ((@adims >= 2+$di && @bdims >= 2+$di)) &&
+    $adims[$di] == $bdims[$di]);
+}
 sub _matrices_matchrows {
   my $d = $_[0]->dims_internal;
   my @adims = $_[0]->dims;
   my @bdims = $_[1]->dims;
-  barf("mlls: Require a 2D right hand side matrix B with number".
+  barf("Require a 2D right hand side matrix B with number".
     " of rows equal to number of rows of A")
     unless @adims >= 2+$d && @bdims >= 2+$d && $bdims[1+$d] == $adims[1+$d];
 }
@@ -361,8 +369,8 @@ Supports threading.
 sub PDL::diag {
 	my $di = $_[0]->dims_internal;
 	my @diag_args = ($di, $di+1);
-	my ($a,$i, $vec) = @_;
 	my $slice_prefix = ',' x $di;
+	my ($a,$i, $vec) = @_;
 	my $z;
 	my @dims = $a->dims;
 	my $diag = ($i < 0) ? -$i : $i ;
@@ -2631,9 +2639,7 @@ sub PDL::mlse {
 	my(@bdims) = $b->dims;
 	my(@cdims) = $c->dims;
 	my(@ddims) = $d->dims;
-	barf("mlse: Require 2 matrices with equal number of columns")
-		unless( ((@adims == 2+$di && @bdims == 2+$di)) &&
-		$adims[$di] == $bdims[$di]);
+	&_matrices_matchcolumns;
 	barf("mlse: Require 1D vector C with size equal to number of A rows")
 		unless( (@cdims == $di+1)&& $adims[$di+2] == $cdims[$di+2]);
 	barf("mlse: Require 1D vector D with size equal to number of B rows")
@@ -3353,172 +3359,70 @@ L<cggsvd|PDL::LinearAlgebra::Complex/cggsvd> from Lapack. Works on transposed ar
 
 =cut
 
-sub mgsvd {shift->mgsvd(@_)}
+my @gsvd_opts = qw(V U Q D1 D2 0R R X);
+*mgsvd = \&PDL::mgsvd;
 sub PDL::mgsvd {
+	&_matrices_matchcolumns;
+	my $di = $_[0]->dims_internal;
+	my $slice_prefix = ',' x $di;
+	my @diag_args = ($di, $di+1);
 	my($a, $b, %opt) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
-	barf("mgsvd: Require matrices with equal number of columns")
-		unless( @adims == 2 && @bdims == 2 && $adims[0] == $bdims[0] );
-
-	my ($D1, $work);
-	if ($opt{all}){
-		$opt{'V'} = 1;
-		$opt{'U'} = 1;
-		$opt{'Q'} = 1;
-		$opt{'D1'} = 1;
-		$opt{'D2'} = 1;
-		$opt{'0R'} = 1;
-		$opt{'R'} = 1;
-		$opt{'X'} = 1;
-	}
+	@opt{@gsvd_opts} = (1) x @gsvd_opts if $opt{all};
 	my $type = $a->type;
 	my $jobqx = ($opt{Q} || $opt{X}) ? 1 : 0;
 	$a = $a->copy;
 	$b = $b->t->copy;
 	$_ = null for my ($k, $l, $alpha, $beta, $iwork, $info);
 	$_ = $a->_similar_null for my ($U, $V, $Q);
-	$a->t->ggsvd($opt{U}, $opt{V}, $jobqx, $b, $k, $l, $alpha, $beta, $U, $V, $Q, $iwork, $info);
+	$a->t->_call_method('ggsvd', $opt{U}, $opt{V}, $jobqx, $b, $k, $l, $alpha, $beta, $U, $V, $Q, $iwork, $info);
 	laerror("mgsvd: The Jacobi procedure fails to converge") if $info;
-
 	my %ret = (rank=>$k + $l, info=>$info);
 	warn "mgsvd: Effective rank of 0 in mgsvd" if (!$ret{rank} and $_laerror);
-
-	if (%opt){
+	if (%opt) {
 		$Q = $Q->t->sever if $jobqx;
-
-		if (($adims[1] - $k - $l)  < 0  && $ret{rank}){
-
+		if (($adims[$di+1] - $k - $l)  < 0  && $ret{rank}){
 			if ( $opt{'0R'} || $opt{R} || $opt{X}){
-				$a->reshape($adims[0], ($k + $l));
+				$a->reshape((map $a->dim($_-1), 1..$di), $adims[$di], ($k + $l));
 				# Slice $a ???  => always square ??
-				$a ( ($adims[0] -  (($k+$l) - $adims[1])) : , $adims[1]:) .=
-						$b(($adims[1]-$k):($l-1),($adims[0]+$adims[1]-$k - $l):($adims[0]-1))->t;
+				$a->slice("$slice_prefix@{[$adims[$di] - ($k+$l-$adims[$di+1])]} : , $adims[$di+1]:") .=
+						$b->slice("$slice_prefix@{[$adims[$di+1]-$k]}:@{[$l-1]},@[[$adims[$di]+$adims[$di+1]-$k - $l]}:@{[$adims[$di]-1]}")->t;
 				$ret{'0R'} = $a if $opt{'0R'};
 			}
-
 			if ($opt{'D1'}){
-				my $D1 = zeroes($type, $adims[1], $adims[1]);
-				$D1->diagonal(0,1) .= $alpha(:($adims[1]-1));
-				$D1 = $D1->t->reshape($adims[1] , ($k+$l))->t->sever;
+				my $D1 = zeroes($type, $adims[$di+1], $adims[$di+1]);
+				$D1->diagonal(0,1) .= $alpha(:($adims[$di+1]-1));
+				$D1 = $D1->t->reshape($adims[$di+1] , ($k+$l))->t->sever;
 				$ret{'D1'} = $D1;
 			}
 		}
 		elsif ($ret{rank}){
 			if ( $opt{'0R'} || $opt{R} || $opt{X}){
-				$a->reshape($adims[0], ($k + $l));
+				$a->reshape((map $a->dim($_-1), 1..$di), $adims[$di], ($k + $l));
 				$ret{'0R'} = $a if $opt{'0R'};
 			}
-
 			if ($opt{'D1'}){
 				my $D1 = zeroes($type, ($k + $l), ($k + $l));
 				$D1->diagonal(0,1) .=  $alpha(:($k+$l-1));
-				$D1->reshape(($k + $l), $adims[1]);
-				$ret{'D1'} = $D1;
-			}
-		}
-
-		if ($opt{'D2'} && $ret{rank}){
-			$work = zeroes($b->type, $l, $l);
-			$work->diagonal(0,1) .=  $beta($k:($k+$l-1));
-			my $D2 = zeroes($b->type, ($k + $l), $bdims[1]);
-			$D2( $k:, :($l-1)  ) .= $work;
-			$ret{'D2'} = $D2;
-		}
-
-		if ( $ret{rank} && ($opt{X} || $opt{R}) ){
-			$work =  $a( -($k + $l):,);
-			$ret{R} = $work if $opt{R};
-			if ($opt{X}){
-				my $X = zeroes($type, $adims[0], $adims[0]);
-				$X->diagonal(0,1) .= 1 if ($adims[0] > ($k + $l));
-				$X ( -($k + $l): , -($k + $l): )  .=  mtriinv($work);
-				$ret{X} = $Q x $X;
-			}
-
-		}
-
-		$ret{U} = $U->t->sever if $opt{U};
-		$ret{V} = $V->t->sever if $opt{V};
-		$ret{Q} = $Q if $opt{Q};
-	}
-	$ret{rank} ? return ($alpha($k:($k+$l-1))->sever, $beta($k:($k+$l-1))->sever, %ret ) : (undef, undef, %ret);
-}
-
-sub PDL::Complex::mgsvd {
-	my($a, $b, %opt) = @_;
-	my(@adims) = $a->dims;
-	my(@bdims) = $b->dims;
-	barf("mgsvd: Require matrices with equal number of columns")
-		unless( @adims == 3 && @bdims == 3 && $adims[1] == $bdims[1] );
-	my ($alpha, $beta, $k, $l, $iwork, $info, $D2, $D1, $work, %ret, $jobqx, $type);
-	if ($opt{all}){
-		$opt{'V'} = 1;
-		$opt{'U'} = 1;
-		$opt{'Q'} = 1;
-		$opt{'D1'} = 1;
-		$opt{'D2'} = 1;
-		$opt{'0R'} = 1;
-		$opt{'R'} = 1;
-		$opt{'X'} = 1;
-	}
-	$type = $a->type;
-	$jobqx = ($opt{Q} || $opt{X}) ? 1 : 0;
-	$a = $a->copy;
-	$b = $b->t->copy;
-	$_ = null for my ($k, $l, $alpha, $beta, $iwork, $info);
-	$_ = $a->_similar_null for my ($U, $V, $Q);
-	$a->t->cggsvd($opt{U}, $opt{V}, $jobqx, $b, $k, $l, $alpha, $beta, $U, $V, $Q, $iwork, $info);
-	$k = $k->sclr;
-	$l = $l->sclr;
-	laerror("mgsvd: The Jacobi procedure fails to converge") if $info;
-	$ret{rank} = $k + $l;
-	warn "mgsvd: Effective rank of 0 in mgsvd" if (!$ret{rank} and $_laerror);
-	$ret{'info'} = $info;
-	if (%opt){
-		$Q = $Q->t->sever if $jobqx;
-		if (($adims[2] - $k - $l)  < 0  && $ret{rank}){
-			if ( $opt{'0R'} || $opt{R} || $opt{X}){
-				$a->reshape(2,$adims[1], ($k + $l));
-				# Slice $a ???  => always square ??
-				$a (, ($adims[1] -  (($k+$l) - $adims[2])) : , $adims[2]:) .=
-						$b(,($adims[2]-$k):($l-1),($adims[1]+$adims[2]-$k - $l):($adims[1]-1))->t;
-				$ret{'0R'} = $a if $opt{'0R'};
-			}
-			if ($opt{'D1'}){
-				$D1 = zeroes($type, $adims[2], $adims[2]);
-				$D1->diagonal(0,1) .= $alpha(:($adims[2]-1));
-				$D1 = $D1->t->reshape($adims[2] , ($k+$l))->t->sever;
-				$ret{'D1'} = $D1;
-			}
-		}
-		elsif ($ret{rank}){
-			if ( $opt{'0R'} || $opt{R} || $opt{X}){
-				$a->reshape(2, $adims[1], ($k + $l));
-				$ret{'0R'} = $a if $opt{'0R'};
-			}
-			if ($opt{'D1'}){
-				$D1 = zeroes($type, ($k + $l), ($k + $l));
-				$D1->diagonal(0,1) .=  $alpha(:($k+$l-1));
-				$D1->reshape(($k + $l), $adims[2]);
+				$D1->reshape(($k + $l), $adims[$di+1]);
 				$ret{'D1'} = $D1;
 			}
 		}
 		if ($opt{'D2'} && $ret{rank}){
-			$work = zeroes($b->type, $l, $l);
+			my $work = zeroes($b->type, $l, $l);
 			$work->diagonal(0,1) .=  $beta($k:($k+$l-1));
-			$D2 = zeroes($b->type, ($k + $l), $bdims[2]);
+			my $D2 = zeroes($b->type, ($k + $l), $bdims[$di+1]);
 			$D2( $k:, :($l-1)  ) .= $work;
 			$ret{'D2'} = $D2;
 		}
 		if ( $ret{rank} && ($opt{X} || $opt{R}) ){
-			$work =  $a( , -($k + $l):,);
+			my $work = $a->slice("$slice_prefix@{[-($k + $l)]}:");
 			$ret{R} = $work if $opt{R};
 			if ($opt{X}){
-				my $X = PDL::Complex->new_from_specification($type, 2, $adims[1], $adims[1]);
-				$X .= 0;
-				$X->diagonal(1,2)->(0,) .= 1 if ($adims[1] > ($k + $l));
-				$X ( ,-($k + $l): , -($k + $l): )  .=  mtriinv($work);
+				my $X = $a->_similar(@adims[$di,$di]);
+				$X->diagonal(@diag_args) .= 1 if ($adims[$di] > ($k + $l));
+				$X->slice("$slice_prefix@{[-($k + $l)]}:, @{[-($k + $l)]}:") .= mtriinv($work);
 				$ret{X} = $Q x $X;
 			}
 		}
