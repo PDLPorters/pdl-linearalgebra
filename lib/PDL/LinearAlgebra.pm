@@ -1179,7 +1179,7 @@ sub _eigen_one {
   my ($mm, $select_func, $jobv, $jobvl, $jobvr, $mult, $norm, $mdim, $sdim, @w) = @_;
   my $job = $jobvr && $jobvl ? undef : $jobvl ? 2 : 1;
   my $is_mult = $jobvl == 1 || $jobvr == 1 || $mult;
-  my ($vl, $vr) = map $mm->_similar_null, 1..2;
+  $_ = $mm->_similar_null for my ($vl, $vr);
   $mult = ($select_func && !$is_mult) ? 2 : !$jobv ? 0 : $mult;
   my $sel = ($select_func && !$is_mult) ? zeroes($mdim) : undef;
   $sel(:($sdim-1)) .= 1 if defined $sel;
@@ -1325,7 +1325,7 @@ sub PDL::mschurx {
 	my $type = $m->type;
 	my $select = long($select_func ? 1 : 0);
 	$sense = pdl(long,0) if !$select_func;
-	my ($info, $sdim, $rconde, $rcondv) = map null, 1..4;
+	$_ = null for my ($info, $sdim, $rconde, $rcondv);
 	my $mm = $m->is_inplace ? $m->t : $m->t->copy;
 	my $v = $m->_similar_null;
 	my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
@@ -1449,7 +1449,7 @@ sub _eigen_pair {
     $mult, $norm, $mdim, $sdim, @w
   ) = @_;
   my $job = !($jobvr && $jobvl) ? $jobvl ? 2 : 1 : undef;
-  my ($vl, $vr) = map $mm->_similar_null, 1..2;
+  $_ = $mm->_similar_null for my ($vl, $vr);
   $mult = 0 if ($jobvl && !$jobvsl) || ($jobvr && !$jobvsr);
   if (!$select_func || ($jobvl == 1 || $jobvr == 1 || $mult)) {
     $vl .= $vsl if $jobvl && $jobvsl;
@@ -1494,7 +1494,7 @@ sub PDL::mgschur{
 	$norm //= 1;
 	my $type = $m->type;
 	my $select = $select_func ? pdl(long,1) : pdl(long,0);
-	my ($info, $sdim) = map null, 1..2;
+	$_ = null for my ($info, $sdim);
 	my ($mm, $pp) = map $_->is_inplace ? $_->t : $_->t->copy, $m, $p;
 	my ($select_f, %ret);
 	if ($select_func){
@@ -1503,7 +1503,7 @@ sub PDL::mgschur{
 		};
 	}
 	my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
-	my ($beta, $vsl, $vsr) = map $m->_similar_null, 1..3;
+	$_ = $m->_similar_null for my ($beta, $vsl, $vsr);
 	$mm->_call_method('gges', $jobvsl, $jobvsr, $select, $pp, @w, $beta, $vsl, $vsr, $sdim, $info, $select_f);
 	_error_schur($info, $select_func, $mdims[$di], 'mgschur', 'QZ');
 	if ($select_func){
@@ -1627,9 +1627,9 @@ sub PDL::mgschurx{
 	$type = $m->type;
 	my $select = $select_func ? 1 : 0;
 	$sense = 0 if !$select_func;
-	my ($info, $rconde, $rcondv, $sdim) = map null, 1..4;
+	$_ = null for my ($info, $rconde, $rcondv, $sdim);
 	my ($mm, $pp) = map $_->is_inplace ? $_->t : $_->t->copy, $m, $p;
-	my ($beta, $vsl, $vsr) = map $m->_similar_null, 1..3;
+	$_ = $m->_similar_null for my ($beta, $vsl, $vsr);
 	my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
 	my ($select_f);
 	if ($select_func){
@@ -2063,7 +2063,7 @@ sub PDL::msolvex {
 	$b = $b->t->copy;
 	my $x = $a->_similar_null;
 	my $af = PDL::zeroes $a;
-	my ($info, $rcond, $rpvgrw, $ferr, $berr) = map null, 1..5;
+	$_ = null for my ($info, $rcond, $rpvgrw, $ferr, $berr);
 	my $equed = pdl(long, 0);
 	my $ipiv = zeroes(long, $adims[$di]);
 	$a->_call_method('gesvx', $opt{transpose}, $opt{equilibrate} ? 2 : 1, $b, $af, $ipiv, $equed, my $r = null, my $c = null, $x, $rcond, $ferr, $berr, $rpvgrw,$info);
@@ -2235,7 +2235,7 @@ sub PDL::msymsolvex {
 	$b = $b->t;
 	my $x = $a->_similar_null;
 	my $af =  PDL::zeroes $a;
-	my ($info, $rcond, $ferr, $berr) = map null, 1..4;
+	$_ = null for my ($info, $rcond, $ferr, $berr);
 	my $ipiv = zeroes(long, $adims[$di]);
 	$a->_call_method('sysvx', $uplo, 0, $b, $af, $ipiv, $x, $rcond, $ferr, $berr, $info);
 	if( $info < $adims[$di] && $info > 0){
@@ -2563,7 +2563,7 @@ sub PDL::mllss {
 	else{
 		$x = $b->t->copy;
 	}
-	my ($info, $rank, $s) = map null, 1..3;
+	$_ = null for my ($info, $rank, $s);
 	my $min = ($adims[$di] > $adims[$di+1]) ? $adims[$di+1] : $adims[$di];
 	$method ||= 'gelsd';
 	$a->_call_method($method, $x,  $rcond, $s, $rank, $info);
@@ -2713,9 +2713,9 @@ Works on transposed arrays.
 sub PDL::meigen {
 	&_square;
 	my ($m,$jobvl,$jobvr) = @_;
-	my ($info, $sdim) = map null, 1..2;
+	$_ = null for my ($info, $sdim);
 	my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
-	my ($vl, $vr) = map $m->_similar_null, 1..2;
+	$_ = $m->_similar_null for my ($vl, $vr);
 	$m->t->_call_method('geev', $jobvl, $jobvr, @w, $vl, $vr, $info);
 	_error($info, "meigen: The QR algorithm failed to converge for PDL(s) %s");
 	(my $w, $vl, $vr) = _eigen_extract($jobvl, $jobvr, $vl, $vr, @w);
@@ -2799,8 +2799,8 @@ sub PDL::meigenx {
 	my($m, %opt) = @_;
 	my (%result);
 	$m = $m->copy;
-	my ($info, $ilo, $ihi, $abnrm, $scale, $rconde, $rcondv) = map null, 1..7;
-	my ($vl, $vr) = map $m->_similar_null, 1..2;
+	$_ = null for my ($info, $ilo, $ihi, $abnrm, $scale, $rconde, $rcondv);
+	$_ = $m->_similar_null for my ($vl, $vr);
 	my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
 	my $balanc = ($opt{'scale'}?2:0) | ($opt{permute}?1:0);
 	my $jobvl = $vector2jobvl{$opt{vector}} || $opt{rcondition} ? 1 : 0;
@@ -2857,9 +2857,9 @@ sub PDL::mgeigen {
 	&_square_same;
 	&_same_dims;
 	my ($a,$b,$jobvl,$jobvr) = @_;
-	my ($info, $sdim) = map null, 1..2;
+	$_ = null for my ($info, $sdim);
 	my @w = map $a->_similar_null, $a->_is_complex ? 1 : 1..2;
-	my ($vl, $vr, $beta) = map $a->_similar_null, 1..3;
+	$_ = $a->_similar_null for my ($vl, $vr, $beta);
 	$a->t->_call_method('ggev', $jobvl, $jobvr, $b->t, @w, $beta, $vl, $vr, $info);
 	_error($info, "mgeigen: Can't compute eigenvalues/vectors for PDL(s) %s");
 	(my $w, $vl, $vr) = _eigen_extract($jobvl, $jobvr, $vl, $vr, @w);
@@ -2942,11 +2942,11 @@ sub PDL::mgeigenx {
 	my ($a, $b, %opt) = @_;
 	my @adims = $a->dims;
 	my (%result);
-	my ($vl, $vr, $beta) = map $a->_similar_null, 1..3;
+	$_ = $a->_similar_null for my ($vl, $vr, $beta);
 	$a = $a->copy;
 	$b = $b->t->copy;
 	my @w = map $a->_similar_null, $a->_is_complex ? 1 : 1..2;
-	my ($rconde, $rcondv, $info, $ilo, $ihi, $rscale, $lscale, $abnrm, $bbnrm) = map null, 1..9;
+	$_ = null for my ($rconde, $rcondv, $info, $ilo, $ihi, $rscale, $lscale, $abnrm, $bbnrm);
 	my $jobvl = $vector2jobvl{$opt{vector}} || $opt{rcondition} ? 1 : 0;
 	my $jobvr = $vector2jobvr{$opt{vector}} || $opt{rcondition} ? 1 : 0;
 	my $sense = $rcondition2sense{$opt{rcondition}} || 0;
@@ -3091,7 +3091,7 @@ sub PDL::msymeigenx {
 	elsif ($range == 1){
 		barf "msymeigenx: Interval limits must be different" unless ($opt{range}->(0) !=  $opt{range}->(1));
 	}
-	my ($w, $n, $support, $info) = map null, 1..4;
+	$_ = null for my ($w, $n, $support, $info);
 	my $z = $m->_similar_null;
 	if (!defined $opt{'abstol'})
 	{
@@ -3238,7 +3238,7 @@ sub PDL::msymgeigenx {
 		$range = 0;
 	}
 	$opt{type} //= 1;
-	my ($w, $n, $support, $info) = map null, 1..4;
+	$_ = null for my ($w, $n, $support, $info);
 	if (!defined $opt{'abstol'}){
 		my $unfl = lamch(1);
 		my $ovfl = lamch(9);
@@ -3300,7 +3300,7 @@ sub PDL::mdsvd {
 	$jobz = !wantarray ? 0 : $jobz // 1;
 	my $min = $dims[$di] > $dims[1+$di] ? $dims[1+$di]: $dims[$di];
 	$m = $m->copy;
-	my ($u, $v) = map $m->_similar_null, 1..2;
+	$_ = $m->_similar_null for my ($u, $v);
 	$m->_call_method('gesdd', $jobz, my $s = null, $v, $u, my $info = null);
 	_error($info, "mdsvd: Matrix (PDL(s) %s) is/are singular");
 	return ($u, $s, $v, $info) if $jobz;
@@ -3420,8 +3420,8 @@ sub PDL::mgsvd {
 	my $jobqx = ($opt{Q} || $opt{X}) ? 1 : 0;
 	$a = $a->copy;
 	$b = $b->t->copy;
-	my ($k, $l, $alpha, $beta, $iwork, $info) = map null, 1..6;
-	my ($U, $V, $Q) = map $a->_similar_null, 1..3;
+	$_ = null for my ($k, $l, $alpha, $beta, $iwork, $info);
+	$_ = $a->_similar_null for my ($U, $V, $Q);
 	$a->t->ggsvd($opt{U}, $opt{V}, $jobqx, $b, $k, $l, $alpha, $beta, $U, $V, $Q, $iwork, $info);
 	laerror("mgsvd: The Jacobi procedure fails to converge") if $info;
 
@@ -3510,8 +3510,8 @@ sub PDL::Complex::mgsvd {
 	$jobqx = ($opt{Q} || $opt{X}) ? 1 : 0;
 	$a = $a->copy;
 	$b = $b->t->copy;
-	my ($k, $l, $alpha, $beta, $iwork, $info) = map null, 1..6;
-	my ($U, $V, $Q) = map $a->_similar_null, 1..6;
+	$_ = null for my ($k, $l, $alpha, $beta, $iwork, $info);
+	$_ = $a->_similar_null for my ($U, $V, $Q);
 	$a->t->cggsvd($opt{U}, $opt{V}, $jobqx, $b, $k, $l, $alpha, $beta, $U, $V, $Q, $iwork, $info);
 	$k = $k->sclr;
 	$l = $l->sclr;
