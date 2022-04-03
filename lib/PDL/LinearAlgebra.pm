@@ -105,12 +105,6 @@ sub norm {
 		PDL::Complex::Cscale($m,1/$ret->dummy(0))->reshape(-1);
 }
 
-sub t {
-  my ($m, $conj) = @_;
-  my $r = $m->SUPER::t;
-  $conj ? $r->conj : $r;
-}
-
 *tricpy = \&PDL::LinearAlgebra::Complex::ctricpy;
 }
 ########################################################################
@@ -229,7 +223,9 @@ sub PDL::Complex::_is_complex {1}
 sub t {shift->t(@_)}
 sub PDL::t {
   my $d = $_[0]->dims_internal;
-  ($_[0]->dims > $d+1) ? $_[0]->xchg($d,$d+1) : $_[0]->dummy(0);
+  my ($m, $conj) = @_;
+  my $r = ($m->dims > $d+1) ? $m->xchg($d,$d+1) : $m->dummy($d);
+  $conj ? $r->conj : $r;
 }
 
 =head2 issym
