@@ -3015,7 +3015,7 @@ sub PDL::msymeigen {
 	$m = $m->copy unless ($m->is_inplace(0) and $jobv);
 	$m->t->_call_method($method, $jobv, $upper, $w, $info);
 	_error($info, "msymeigen: The algorithm failed to converge for PDL(s) %s");
-	$jobv ? wantarray ? ($w , $m, $info) : $w : wantarray ? ($w, $info) : $w;
+	!wantarray ? $w : ($w, ($jobv?$m:()), $info);
 }
 
 =head2 msymeigenx
@@ -3072,27 +3072,26 @@ or L<cheevr|PDL::LinearAlgebra::Complex/cheevr> for complex. Works on transposed
 
 *msymeigenx = \&PDL::msymeigenx;
 
+my %range_type2range = (interval => 1, indice => 2);
 sub PDL::msymeigenx {
 	&_square;
+	my $di = $_[0]->dims_internal;
+	my $slice_prefix = ',' x $di;
 	my($m, $upper, $jobz, %opt) = @_;
 	my(@dims) = $m->dims;
-	my $type = $m->type;
-	my $range = ($opt{'range_type'} eq 'interval') ? pdl(long, 1) :
-		($opt{'range_type'} eq 'indice')? pdl(long, 2) : pdl(long, 0);
+	my $range = $range_type2range{$opt{range_type}} || 0;
 	if ((ref $opt{range}) ne 'PDL'){
-		$opt{range} = pdl($type,[0,0]);
-		$range = pdl(long, 0);
+		$opt{range} = pdl([0,0]);
+		$range = 0;
 	}
 	elsif ($range == 2){
 		barf "msymeigenx: Indices must be > 0" unless $opt{range}->(0) > 0;
-		barf "msymeigenx: Indices must be <= $dims[1]" unless $opt{range}->(1) <= $dims[1];
+		barf "msymeigenx: Indices must be <= $dims[$di+1]" unless $opt{range}->(1) <= $dims[$di+1];
 	}
 	elsif ($range == 1){
-		barf "msymeigenx: Interval limits must be differents" unless ($opt{range}->(0) !=  $opt{range}->(1));
+		barf "msymeigenx: Interval limits must be different" unless ($opt{range}->(0) !=  $opt{range}->(1));
 	}
-	my $w = null;
-	my $n = null;
-	my $info = null;
+	my ($w, $n, $support, $info) = map null, 1..4;
 	my $z = $m->_similar_null;
 	if (!defined $opt{'abstol'})
 	{
@@ -3101,8 +3100,7 @@ sub PDL::msymeigenx {
 		$opt{'abstol'} = $unfl + $unfl;
 	}
 	my $method = $opt{'method'} || ['syevx','cheevx'];
-	my $support = null;
-	$upper = $upper ? pdl(long,0) : pdl(long,1);
+	$upper = $upper ? 0 : 1;
 	$m = $m->copy;
 	$m->_call_method($method, $jobz, $range, $upper, $opt{range}->(0), $opt{range}->(1),$opt{range}->(0),$opt{range}->(1),
 		 $opt{'abstol'}, $n, $w, $z , $support, $info);
@@ -3111,29 +3109,17 @@ sub PDL::msymeigenx {
 		print ("See support for details.\n") if $_laerror;
 	}
 	if ($jobz){
-		if ($info){
-			return ($w , $z->t->sever, $n, $info, $support);
-		}
-		elsif ($method =~ 'evr'){
-			return (undef,undef,$n,$info,$support) if $n == 0;
-			return (@dims == 3) ? ($w(:$n-1)->sever, $z->t->(,:$n-1,)->sever, $n, $info, $support) :
-						($w(:$n-1)->sever, $z->t->(:$n-1,)->sever, $n, $info, $support);
-		}
-		else{
-			return (undef,undef,$n, $info) if $n == 0;
-			return (@dims == 3) ? ($w(:$n-1)->sever , $z->t->(,:$n-1,)->sever, $n, $info) :
-						($w(:$n-1)->sever , $z->t->(:$n-1,)->sever, $n, $info);
-		}
+		return ($w, $z->t->sever, $n, $info, $support) if $info;
+		return (undef,undef,$n,$info,$method =~ qr/evr/?$support:()) if $n == 0;
+		return ($w(:$n-1)->sever, $z->t->slice("$slice_prefix:@{[$n->sclr-1]}")->sever, $n, $info, $method =~ qr/evr/?$support:());
 	}
 	else{
+		return $w if !wantarray;
 		if ($info){
-			wantarray ?  ($w, $n, $info, $support) : $w;
-		}
-		elsif ($method =~ 'evr'){
-			wantarray ?  ($w(:$n-1)->sever, $n, $info, $support) : $w;
+			($w, $n, $info, $support);
 		}
 		else{
-			wantarray ?  ($w(:$n-1)->sever, $n, $info) : $w;
+			($w(:$n-1)->sever, $n, $info, $method =~ qr/evr/?$support:());
 		}
 	}
 }
