@@ -3345,7 +3345,7 @@ sub PDL::msvd {
 	$jobv = !wantarray ? 0 : $jobv // 1;
 	$m = $m->copy;
 	$_ = $m->_similar_null for my ($u, $v);
-	$m->_call_method('gesvd', $jobv, $jobu,my $s = null, $v, $u, my $info = null);
+	$m->_call_method('gesvd', $jobv, $jobu,my $s = null, $u, $v, my $info = null);
 	_error($info, "msvd: Matrix (PDL(s) %s) is/are singular(s)");
 	wantarray ? ($jobu?$u:(), $s, $jobv?$v:(), $info) : $s;
 }
