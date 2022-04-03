@@ -130,13 +130,13 @@ PDL::LinearAlgebra - Linear Algebra utils for PDL
 
 =head1 DESCRIPTION
 
-This module provides a convenient interface to L<PDL::LinearAlgebra::Real|PDL::LinearAlgebra::Real>
-and L<PDL::LinearAlgebra::Complex|PDL::LinearAlgebra::Complex>. Its primary purpose is educational.
+This module provides a convenient interface to L<PDL::LinearAlgebra::Real>
+and L<PDL::LinearAlgebra::Complex>. Its primary purpose is educational.
 You have to know that routines defined here are not optimized, particularly in term of memory. Since
 Blas and Lapack use a column major ordering scheme some routines here need to transpose matrices before
 calling fortran routines and transpose back (see the documentation of each routine). If you need
-optimized code use directly  L<PDL::LinearAlgebra::Real|PDL::LinearAlgebra::Real> and
-L<PDL::LinearAlgebra::Complex|PDL::LinearAlgebra::Complex>. It's planned to "port" this module to PDL::Matrix such
+optimized code use directly  L<PDL::LinearAlgebra::Real> and
+L<PDL::LinearAlgebra::Complex>. It's planned to "port" this module to PDL::Matrix such
 that transpositions will not be necessary, the major problem is that two new modules need to be created PDL::Matrix::Real
 and PDL::Matrix::Complex.
 
@@ -345,7 +345,6 @@ Supports threading.
  i	: i-th diagonal, default = 0
  vector	: create diagonal matrices by threading over row vectors, default = 0
 
-
 =for example
 
  my $a = random(5,5);
@@ -370,11 +369,9 @@ sub PDL::diag {
 	if (@dims == $di+1 || $vec){
 		my $dim = $dims[0];
 		my $zz = $dim + $diag;
-		$z = $a->_similar($zz,$zz,@dims[$di+1..$#dims]);
-		if ($i){
-			($i < 0) ? $z->slice("$slice_prefix:@{[$dim-1]},$diag:")->diagonal(@diag_args) .= $a : $z->slice("$slice_prefix$diag:,:@{[$dim-1]}")->diagonal(@diag_args).=$a;
-		}
-		else{ $z->diagonal(@diag_args) .= $a; }
+		my $v = $z = $a->_similar($zz,$zz,@dims[$di+1..$#dims]);
+		$v = ($i < 0) ? $v->slice("$slice_prefix:@{[$dim-1]},$diag:") : $v->slice("$slice_prefix$diag:,:@{[$dim-1]}") if $i;
+		$v->diagonal(@diag_args) .= $a;
 	}
 	elsif($i < 0){
 		$z = $a->slice("$slice_prefix:-@{[$diag+1]} , $diag:")->diagonal(@diag_args);
@@ -413,9 +410,9 @@ Uses L<tricpy|PDL::LinearAlgebra::Real/tricpy> or L<ctricpy|PDL::LinearAlgebra::
 sub PDL::tritosym {
 	&_square;
 	my ($m, $upper, $conj) = @_;
-	my $b = $m->is_inplace ? $m : ref($m)->new_from_specification($m->type,$m->dims);
-	($conj ? $m->conj : $m)->tricpy($upper, $b->t);
-	$m->tricpy($upper, $b) unless (!$conj && $m->is_inplace(0));
+	my $b = $m->is_inplace ? $m->t : $m->_similar_null;
+	($conj ? $m->conj : $m)->tricpy($upper, $b);
+	$m->tricpy($upper, $b->t) unless (!$conj && $m->is_inplace(0));
 	$b->im->diagonal(0,1) .= 0 if $conj;
 	$b;
 }
@@ -511,19 +508,17 @@ from Lapack.
 
 sub PDL::mrank {
 	&_2d_array;
+	my $di = $_[0]->dims_internal;
 	my($m, $tol) = @_;
 	my(@dims) = $m->dims;
-	my ($sv, $info, $err);
-
-	$err = setlaerror(NO);
+	my $err = setlaerror(NO);
 	# Sometimes mdsvd bugs for  float (SGEBRD)
 	# ($sv, $info) = $m->msvd(0, 0);
-	($sv, $info) = $m->mdsvd(0);
+	my ($sv, $info) = $m->mdsvd(0);
 	setlaerror($err);
 	barf("mrank: SVD algorithm did not converge\n") if $info;
-
 	unless (defined $tol){
-		$tol =  ($dims[-1] > $dims[-2] ? $dims[-1] : $dims[-2]) * $sv((0)) * lamch(3);
+		$tol =  ($dims[$di+1] > $dims[$di] ? $dims[$di+1] : $dims[$di]) * $sv((0)) * lamch(3);
 	}
 	(which($sv > $tol))->dim(0);
 }
@@ -665,11 +660,7 @@ sub PDL::mcond {
 	my $err = setlaerror(NO);
 	my ($sv, $info) = $m->msvd(0, 0);
 	setlaerror($err);
-	if($info->max > 0) {
-		my $index = which($info > 0)+1;
-		my @list = $index->list;
-		barf("mcond: Algorithm did not converge for matrix (PDL(s) @list): \$info = $info");
-	}
+	_error($info, "mcond: Algorithm did not converge for matrix (PDL(s) %s)");
 	my $temp = $sv->slice('(0)');
         my $ret = $temp/$sv->((-1));
 	$info = $ret->flat->index(which($temp == 0));
@@ -748,7 +739,6 @@ sub PDL::morth {
 	my $di = $_[0]->dims_internal;
 	my $slice_prefix = ',' x $di;
 	my ($m, $tol) = @_;
-	my @dims = $m->dims;
 	$tol =  (defined $tol) ? $tol  : ($m->type == double) ? 1e-8 : 1e-5;
 	(my $u, my $s, undef, my $info) = $m->mdsvd;
 	barf("morth: SVD algorithm did not converge\n") if $info;
@@ -889,9 +879,7 @@ sub PDL::msyminv {
 	my $di = $_[0]->dims_internal;
 	my $m = shift;
 	my $upper = @_ ? (1 - shift)  : pdl (long,1);
-	my(@dims) = $m->dims;
 	$m = $m->copy() unless $m->is_inplace(0);
-	@dims = @dims[2+$di..$#dims];
 	$m->_call_method('sytrf', $upper, my $ipiv=null, my $info=null);
 	_error($info, "msyminv: Block diagonal matrix D (PDL(s) %s) is/are singular (after sytrf factorization)");
 	$m->_call_method('sytri',$upper,$ipiv,$info);
@@ -929,9 +917,7 @@ sub PDL::mposinv {
 	my $di = $_[0]->dims_internal;
 	my $m = shift;
 	my $upper = @_ ? (1 - shift)  : pdl (long,1);
-	my(@dims) = $m->dims;
 	$m = $m->copy() unless $m->is_inplace(0);
-	@dims = @dims[2+$di..$#dims];
 	$m->_call_method('potrf', $upper, my $info=null);
 	_error($info, "mposinv: matrix (PDL(s) %s) is/are not positive definite (after potrf factorization)");
 	$m->_call_method('potri', $upper, $info);
@@ -962,16 +948,15 @@ sub PDL::mpinv{
 	&_2d_array;
 	my ($m, $tol) = @_;
 	my @dims = $m->dims;
-	my ($ind, $cind, $u, $s, $v, $info, $err);
-	$err = setlaerror(NO);
+	my $err = setlaerror(NO);
 	#TODO: don't transpose
-	($u, $s, $v, $info) = $m->mdsvd(2);
+	my ($u, $s, $v, $info) = $m->mdsvd(2);
 	setlaerror($err);
 	_error($info, "mpinv: SVD algorithm did not converge (PDL %s)");
 	unless (defined $tol){
 		$tol =  ($dims[-1] > $dims[-2] ? $dims[-1] : $dims[-2]) * $s((0)) * lamch(3);
 	}
-	($ind, $cind) = which_both( $s > $tol );
+	my ($ind, $cind) = which_both( $s > $tol );
 	$s->index($cind) .= 0 if defined $cind;
 	$s->index($ind)  .= 1/$s->index($ind) ;
 	$ind = ($v->t * ($m->_is_complex ? $s->r2C : $s)) x $u->t;
@@ -1031,7 +1016,7 @@ sub PDL::mlu {
 
 =for ref
 
-Computes Cholesky decomposition of a symmetric matrix also knows as symmetric square root.
+Computes Cholesky decomposition of a symmetric matrix also known as symmetric square root.
 If inplace flag is set, overwrite  the leading upper or lower triangular part of A else returns
 triangular matrix. Returns C<cholesky, info> in array context.
 Supports threading.
@@ -1714,7 +1699,7 @@ sub PDL::mqr {
 	my($m, $full) = @_;
 	my(@dims) = $m->dims;
 	my ($q, $r);
-        $m = $m->t->copy;
+	$m = $m->t->copy;
 	my $min = $dims[$di] < $dims[$di+1] ? $dims[$di] : $dims[$di+1];
 	my $slice_arg = (',' x $di) . ",:@{[$min-1]}";
 	my $tau = $m->_similar($min);
@@ -1723,18 +1708,11 @@ sub PDL::mqr {
 		laerror ("mqr: Error $info in geqrf\n");
 		return ($m->t->sever, $m, $info);
 	}
-	$q = ($dims[$di] > $dims[$di+1] ? $m->slice($slice_arg) : $m)->copy;
+	my $q = ($dims[$di] > $dims[$di+1] ? $m->slice($slice_arg) : $m)->copy;
 	$q->reshape(@di_vals, @dims[$di+1,$di+1]) if $full && $dims[$di] < $dims[$di+1];
 	$q->_call_method(['orgqr','cungqr'], $tau, $info);
 	return $q->t->sever unless wantarray;
-	if ($dims[$di] < $dims[$di+1] && !$full){
-		$r = $m->_similar($min, $min);
-		$m->t->slice($slice_arg)->tricpy(0,$r);
-	}
-	else{
-		$r = $m->_similar(@dims[$di,$di+1]);
-		$m->t->tricpy(0,$r);
-	}
+	my $r = (($dims[$di] < $dims[$di+1] && !$full) ? $m->t->slice($slice_arg) : $m->t)->tricpy(0);
 	return ($q->t->sever, $r, $info);
 }
 
@@ -1793,19 +1771,17 @@ sub PDL::mrq {
 	$q->_call_method(['orgrq','cungrq'], $tau, $info);
 	return $q->t->sever unless wantarray;
 	if ($dims[$di] > $dims[$di+1] && $full){
-		$r = $m->_similar(@dims[$di,$di+1]);
-		$m->t->tricpy(0,$r);
+		$r = $m->t->tricpy(0);
 		$r->slice("$slice_prefix:@{[$min-1]},:@{[$min-1]}")->diagonal(@diag_args) .= 0;
 	}
 	elsif ($dims[$di] < $dims[$di+1]){
 		my $temp = $m->_similar(@dims[$di+1,$di+1]);
 		$temp->slice("$slice_prefix-$min:") .= $m->t;
-		$temp->tricpy(0,$r = $temp->_similar_null);
+		$r = $temp->tricpy(0);
 		$r = $r->slice("$slice_prefix-$min:")->sever;
 	}
 	else{
-		$r = $m->_similar($min, $min);
-		$m->t->slice("$slice_prefix@{[$dims[$di] - $dims[$di+1]]}:")->tricpy(0,$r);
+		$r = $m->t->slice("$slice_prefix@{[$dims[$di] - $dims[$di+1]]}:")->tricpy(0);
 	}
 	return ($r, $q->t->sever, $info);
 }
@@ -1865,19 +1841,17 @@ sub PDL::mql {
 	$q->_call_method(['orgql','cungql'], $tau, $info);
 	return $q->t->sever unless wantarray;
 	if ($dims[$di] < $dims[$di+1] && $full){
-		$l = $m->_similar(@dims[$di,$di+1]);
-		$m->t->tricpy(1,$l);
+		$l = $m->t->tricpy(1);
 		$l->slice("$slice_prefix:@{[$min-1]},:@{[$min-1]}")->diagonal(@diag_args) .= 0;
 	}
 	elsif ($dims[$di] > $dims[$di+1]){
 		my $temp = $m->_similar(@dims[$di,$di]);
 		$temp->slice("$slice_prefix:,-$dims[$di+1]:") .= $m->t;
-		$temp->tricpy(0,$l = $temp->_similar_null);
+		$l = $temp->tricpy(0);
 		$l = $l->slice("$slice_prefix:,-$dims[$di+1]:");
 	}
 	else{
-		$l = $m->_similar($min, $min);
-		$m->t->slice("$slice_prefix:,@{[$dims[$di+1] - $min]}:")->tricpy(1,$l);
+		$l = $m->t->slice("$slice_prefix:,@{[$dims[$di+1] - $min]}:")->tricpy(1);
 	}
 	return ($q->t->sever, $l, $info);
 }
@@ -1913,8 +1887,8 @@ sub PDL::mlq {
 	my $di = $_[0]->dims_internal;
 	my($m, $full) = @_;
 	my(@dims) = $m->dims;
-	my ($q, $l);
-        $m = $m->t->copy;
+	my ($q);
+	$m = $m->t->copy;
 	my $min = $dims[$di] < $dims[$di+1] ? $dims[$di] : $dims[$di+1];
 	my $slice_arg = (',' x $di) . ":@{[$min-1]}";
 	my $tau = $m->_similar($min);
@@ -1935,14 +1909,7 @@ sub PDL::mlq {
 	}
 	$q->_call_method(['orglq','cunglq'], $tau, $info);
 	return $q->t->sever unless wantarray;
-	if ($dims[$di] > $dims[$di+1] && !$full){
-		$l = $m->_similar(@dims[$di+1,$di+1]);
-		$m->t->slice($slice_arg)->tricpy(1,$l);
-	}
-	else{
-		$l = $m->_similar(@dims[$di,$di+1]);
-		$m->t->tricpy(1,$l);
-	}
+	my $l = (($dims[$di] > $dims[$di+1] && !$full) ? $m->t->slice($slice_arg) : $m->t)->tricpy(1);
 	return ($l, $q->t->sever, $info);
 }
 
