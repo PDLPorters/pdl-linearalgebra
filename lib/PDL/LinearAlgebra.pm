@@ -71,17 +71,15 @@ our $doubleformat = "%6.6g";
 
 sub ecplx {
   my ($re, $im) = @_;
-  return $re if UNIVERSAL::isa($re,'PDL::Complex');
-  if (defined $im){
-	  $re = PDL->topdl($re);
-	  $im = PDL->topdl($im);
-	  my $ret =  PDL::Complex->new_from_specification($re->type, 2, $re->dims);
-	  $ret->slice('(0),') .= $re;
-	  $ret->slice('(1),') .= $im;
-	  return $ret;
-  }
-  Carp::croak("first dimsize must be 2") unless $re->dims > 0 && $re->dim(0) == 2;
-  bless $_[0]->slice('');
+  $re = PDL->topdl($re);
+  return $re if UNIVERSAL::isa($re,'PDL::Complex') or !$re->type->real;
+  Carp::confess("Usage: ecplx(re,im) or (complex)") if !defined $im;
+  $im = PDL->topdl($im);
+  return $re->czip($im) if !defined &PDL::Complex::new_from_specification;
+  my $ret =  PDL::Complex->new_from_specification($re->type, 2, $re->dims);
+  $ret->slice('(0),') .= $re;
+  $ret->slice('(1),') .= $im;
+  return $ret;
 }
 
 sub norm {
