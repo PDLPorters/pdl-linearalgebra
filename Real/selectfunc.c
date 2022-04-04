@@ -86,20 +86,13 @@ PDL_Long dgselect_wrapper(double *zr, double *zi, double *d)
   PDL_LA_CALL_GSV(zr, zi, d, dgselect_func)
 }
 
-float ftrace(int n, float *mat)
-{
-  int i;
-  float sum = mat[0];
-  for (i = 1; i < n; i++)
-	sum += mat[i*(n+1)];
-  return sum;
-}
-
-double dtrace(int n, double *mat)
-{
-  int i;
-  double sum = mat[0];
-  for (i = 1; i < n; i++)
-	sum += mat[i*(n+1)];
-  return sum;
-}
+#define TRACE(letter, type) \
+  type letter ## trace(int n, type *mat) { \
+    PDL_Indx i; \
+    type sum = mat[0]; \
+    for (i = 1; i < n; i++) \
+          sum += mat[i*(n+1)]; \
+    return sum; \
+  }
+TRACE(f, float)
+TRACE(d, double)

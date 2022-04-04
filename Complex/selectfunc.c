@@ -109,28 +109,17 @@ PDL_Long dgselect_wrapper(double *p, double *q)
   PDL_LA_CALL_GSV(PDL_D, p, q, dgselect_func)
 }
 
-void cftrace(int n, void *a1, void *a2)
-{
-  float *mat = a1, *res = a2;
-  int i;
-  res[0] = mat[0];
-  res[1] = mat[1];
-  for (i = 1; i < n; i++)
-  {
-	res[0] += mat[(i*(n+1))*2];
-	res[1] += mat[(i*(n+1))*2+1];
+#define TRACE(letter, type) \
+  void c ## letter ## trace(int n, void *a1, void *a2) { \
+    type *mat = a1, *res = a2; \
+    PDL_Indx i; \
+    res[0] = mat[0]; \
+    res[1] = mat[1]; \
+    for (i = 1; i < n; i++) \
+    { \
+          res[0] += mat[(i*(n+1))*2]; \
+          res[1] += mat[(i*(n+1))*2+1]; \
+    } \
   }
-}
-
-void cdtrace(int n, void *a1, void *a2)
-{
-  double *mat = a1, *res = a2;
-  int i;
-  res[0] = mat[0];
-  res[1] = mat[1];
-  for (i = 1; i < n; i++)
-  {
-	res[0] += mat[(i*(n+1))*2];
-	res[1] += mat[(i*(n+1))*2+1];
-  }
-}
+TRACE(f, float)
+TRACE(d, double)
