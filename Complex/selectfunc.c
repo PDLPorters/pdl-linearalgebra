@@ -49,23 +49,17 @@ extern Core *PDL;
 /* replace BLAS one so don't terminate on bad input */
 int xerbla_(char *sub, int *info) { return 0; }
 
-static SV *fselect_func;
-void fselect_func_set(SV* func) {
-  fselect_func = func;
-}
-PDL_Long fselect_wrapper(float *p)
-{
-  PDL_LA_CALL_SV(PDL_F, p, fselect_func)
-}
-
-static SV*   dselect_func;
-void dselect_func_set(SV* func) {
-  dselect_func = func;
-}
-PDL_Long dselect_wrapper(double *p)
-{
-  PDL_LA_CALL_SV(PDL_D, p, dselect_func)
-}
+#define SEL_FUNC(letter, type, pdl_type) \
+  static SV* letter ## select_func; \
+  void letter ## select_func_set(SV* func) { \
+    letter ## select_func = func; \
+  } \
+  PDL_Long letter ## select_wrapper(type *p) \
+  { \
+    PDL_LA_CALL_SV(pdl_type, p, letter ## select_func) \
+  }
+SEL_FUNC(f, float, PDL_F)
+SEL_FUNC(d, double, PDL_D)
 
 #define PDL_LA_CALL_GSV(type, val1p, val2p, sv_func) \
    dSP; \
@@ -91,23 +85,17 @@ PDL_Long dselect_wrapper(double *p)
    PUTBACK ;   FREETMPS ;   LEAVE ; \
    return ret;
 
-static SV*   fgselect_func;
-void fgselect_func_set(SV* func) {
-  fgselect_func = func;
-}
-PDL_Long fgselect_wrapper(float *p, float *q)
-{
-  PDL_LA_CALL_GSV(PDL_F, p, q, fgselect_func)
-}
-
-static SV*   dgselect_func;
-void dgselect_func_set(SV* func) {
-  dgselect_func = func;
-}
-PDL_Long dgselect_wrapper(double *p, double *q)
-{
-  PDL_LA_CALL_GSV(PDL_D, p, q, dgselect_func)
-}
+#define GSEL_FUNC(letter, type, pdl_type) \
+  static SV* letter ## gselect_func; \
+  void letter ## gselect_func_set(SV* func) { \
+    letter ## gselect_func = func; \
+  } \
+  PDL_Long letter ## gselect_wrapper(type *p, type *q) \
+  { \
+    PDL_LA_CALL_GSV(pdl_type, p, q, letter ## gselect_func) \
+  }
+GSEL_FUNC(f, float, PDL_F)
+GSEL_FUNC(d, double, PDL_D)
 
 #define TRACE(letter, type) \
   void c ## letter ## trace(int n, void *a1, void *a2) { \
