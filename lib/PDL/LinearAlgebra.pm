@@ -1352,11 +1352,9 @@ sub PDL::mschurx {
 sub magn_norm {
 	my ($m, $trans) = @_;
 	# If trans == true => transpose output matrix
-	my $ret = PDL::abs($m);
-	bless $ret,'PDL';
-	$ret = PDL::sumover($ret)->maximum->dummy(0);
+	my $ret = PDL::cat(map $m->$_, qw(re im))->mv(-1,0)->abs->sumover->maxover->dummy(0);
 	$m = $m->t, $ret = $ret->t if $trans;
-	PDL::Complex::Cscale($m,1/$ret)->reshape(-1);
+	($m/$ret)->reshape(-1);
 }
 
 #TODO: inplace ?
