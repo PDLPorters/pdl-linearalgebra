@@ -6,71 +6,46 @@
 #define PDL PDL_LinearAlgebra_Real
 extern Core *PDL;
 
-#define PDL_LA_CALL_SV(val1p, val2p, sv_func) \
-  dSP ; \
-  long  retval; \
-  int count; \
-  ENTER ; \
-  SAVETMPS ; \
-  PUSHMARK(sp) ; \
-  XPUSHs(sv_2mortal(newSVnv((double ) *val1p))); \
-  XPUSHs(sv_2mortal(newSVnv((double ) *val2p))); \
-  PUTBACK ; \
-  count = perl_call_sv(sv_func, G_SCALAR); \
-  SPAGAIN; \
-  if (count != 1) \
-    croak("Error calling perl function\n"); \
-  retval = (long ) POPl ;  /* Return value */ \
-  PUTBACK ; \
-  FREETMPS ; \
-  LEAVE ; \
-  return retval;
-
 /* replace BLAS one so don't terminate on bad input */
 int xerbla_(char *sub, int *info) { return 0; }
 
-#define SEL_FUNC(letter, type) \
-  static SV* letter ## select_func; \
-  void letter ## select_func_set(SV* func) { \
-    letter ## select_func = func; \
+#define SEL_FUNC2(letter, letter2, type, args, push) \
+  static SV* letter ## letter2 ## select_func; \
+  void letter ## letter2 ## select_func_set(SV* func) { \
+    letter ## letter2 ## select_func = func; \
   } \
-  PDL_Long letter ## select_wrapper(type *wr, type *wi) \
+  PDL_Long letter ## letter2 ## select_wrapper args \
   { \
-    PDL_LA_CALL_SV(wr, wi, letter ## select_func) \
+    dSP ; \
+    ENTER ; \
+    SAVETMPS ; \
+    PUSHMARK(sp) ; \
+    push \
+    PUTBACK ; \
+    int count = perl_call_sv(letter ## select_func, G_SCALAR); \
+    SPAGAIN; \
+    if (count != 1) croak("Error calling perl function\n"); \
+    long retval = (long ) POPl ;  /* Return value */ \
+    PUTBACK ; \
+    FREETMPS ; \
+    LEAVE ; \
+    return retval; \
   }
+
+#define SEL_FUNC(letter, type) \
+  SEL_FUNC2(letter, , type, (type *wr, type *wi), \
+    XPUSHs(sv_2mortal(newSVnv((double ) *wr))); \
+    XPUSHs(sv_2mortal(newSVnv((double ) *wi))); \
+  )
 SEL_FUNC(f, float)
 SEL_FUNC(d, double)
 
-#define PDL_LA_CALL_GSV(val1p, val2p, val3p, sv_func) \
-  dSP ; \
-  long  retval; \
-  int count; \
-  ENTER ; \
-  SAVETMPS ; \
-  PUSHMARK(sp) ; \
-  XPUSHs(sv_2mortal(newSVnv((double)  *val1p))); \
-  XPUSHs(sv_2mortal(newSVnv((double)  *val2p))); \
-  XPUSHs(sv_2mortal(newSVnv((double)  *val3p))); \
-  PUTBACK ; \
-  count = perl_call_sv(sv_func, G_SCALAR); \
-  SPAGAIN; \
-  if (count != 1) \
-    croak("Error calling perl function\n"); \
-  retval = (long ) POPl ;  /* Return value */ \
-  PUTBACK ; \
-  FREETMPS ; \
-  LEAVE ; \
-  return retval;
-
 #define GSEL_FUNC(letter, type) \
-  static SV* letter ## gselect_func; \
-  void letter ## gselect_func_set(SV* func) { \
-    letter ## gselect_func = func; \
-  } \
-  PDL_Long letter ## gselect_wrapper(type *zr, type *zi, type *d) \
-  { \
-    PDL_LA_CALL_GSV(zr, zi, d, letter ## gselect_func) \
-  }
+  SEL_FUNC2(letter, g, type, (type *zr, type *zi, type *d), \
+    XPUSHs(sv_2mortal(newSVnv((double) *zr))); \
+    XPUSHs(sv_2mortal(newSVnv((double) *zi))); \
+    XPUSHs(sv_2mortal(newSVnv((double) *d))); \
+  )
 GSEL_FUNC(f, float)
 GSEL_FUNC(d, double)
 

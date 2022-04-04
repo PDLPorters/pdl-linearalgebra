@@ -6,15 +6,15 @@
 #define PDL PDL_LinearAlgebra_Complex
 extern Core *PDL;
 
-#define PDL_LA_COMPLEX_INIT_PUSH(pdl, type, valp, svpdl) \
-   pdl = PDL->pdlnew(); \
-   PDL->setdims(pdl, dims, sizeof(dims)/sizeof(dims[0])); \
-   pdl->datatype = type; \
-   pdl->data = valp; \
-   pdl->state |= PDL_DONTTOUCHDATA | PDL_ALLOCATED; \
+#define PDL_LA_COMPLEX_INIT_PUSH(pdlvar, type, valp, svpdl) \
+   pdl *pdlvar = PDL->pdlnew(); \
+   PDL->setdims(pdlvar, dims, sizeof(dims)/sizeof(dims[0])); \
+   pdlvar->datatype = type; \
+   pdlvar->data = valp; \
+   pdlvar->state |= PDL_DONTTOUCHDATA | PDL_ALLOCATED; \
    ENTER;   SAVETMPS;   PUSHMARK(sp); \
-    svpdl = sv_newmortal(); \
-    PDL->SetSV_PDL(svpdl, pdl); \
+    SV *svpdl = sv_newmortal(); \
+    PDL->SetSV_PDL(svpdl, pdlvar); \
     svpdl = sv_bless(svpdl, bless_stash); /* bless in PDL::Complex  */ \
     XPUSHs(svpdl); \
    PUTBACK;
@@ -24,70 +24,45 @@ extern Core *PDL;
    pdl->state &= ~ (PDL_ALLOCATED |PDL_DONTTOUCHDATA); \
    pdl->data=NULL;
 
-#define PDL_LA_CALL_SV(type, valp, sv_func) \
-   dSP; \
-   int count; \
-   long ret; \
-   SV *pdl1; \
-   pdl *pdl; \
-   PDL_Indx odims[] = {0}; \
-   PDL_Indx dims[] = {2,1}; \
-   HV *bless_stash = gv_stashpv("PDL::Complex", 0); \
-   PDL_LA_COMPLEX_INIT_PUSH(pdl, type, valp, pdl1) \
-   count = perl_call_sv(sv_func, G_SCALAR); \
-   SPAGAIN; \
-   if (count !=1) \
-      croak("Error calling perl function\n"); \
-   PDL_LA_COMPLEX_UNINIT(pdl) \
-   ret = (long ) POPl ; \
-   PUTBACK ;   FREETMPS ;   LEAVE ; \
-   return ret;
-
 /* replace BLAS one so don't terminate on bad input */
 int xerbla_(char *sub, int *info) { return 0; }
 
-#define SEL_FUNC(letter, type, pdl_type) \
-  static SV* letter ## select_func; \
-  void letter ## select_func_set(SV* func) { \
-    letter ## select_func = func; \
+#define SEL_FUNC2(letter, letter2, type, pdl_type, args, init, uninit) \
+  static SV* letter ## letter2 ## select_func; \
+  void letter ## letter2 ## select_func_set(SV* func) { \
+    letter ## letter2 ## select_func = func; \
   } \
-  PDL_Long letter ## select_wrapper(type *p) \
+  PDL_Long letter ## letter2 ## select_wrapper args \
   { \
-    PDL_LA_CALL_SV(pdl_type, p, letter ## select_func) \
+    dSP; \
+    PDL_Indx odims[] = {0}; \
+    PDL_Indx dims[] = {2,1}; \
+    HV *bless_stash = gv_stashpv("PDL::Complex", 0); \
+    init \
+    int count = perl_call_sv(letter ## select_func, G_SCALAR); \
+    SPAGAIN; \
+    uninit \
+    if (count !=1) croak("Error calling perl function\n"); \
+    long ret = (long ) POPl ; \
+    PUTBACK ;   FREETMPS ;   LEAVE ; \
+    return ret; \
   }
+
+#define SEL_FUNC(letter, type, pdl_type) \
+  SEL_FUNC2(letter, , type, pdl_type, (type *p), \
+    PDL_LA_COMPLEX_INIT_PUSH(pdl, pdl_type, p, svpdl), \
+    PDL_LA_COMPLEX_UNINIT(pdl) \
+  )
 SEL_FUNC(f, float, PDL_F)
 SEL_FUNC(d, double, PDL_D)
 
-#define PDL_LA_CALL_GSV(type, val1p, val2p, sv_func) \
-   dSP; \
-   int count; \
-   long ret; \
-   SV *svpdl1, *svpdl2; \
-   pdl *pdl1, *pdl2; \
-   PDL_Indx odims[] = {0}; \
-   PDL_Indx dims[] = {2,1}; \
-   HV *bless_stash = gv_stashpv("PDL::Complex", 0); \
-   PDL_LA_COMPLEX_INIT_PUSH(pdl1, type, val1p, svpdl1) \
-   PDL_LA_COMPLEX_INIT_PUSH(pdl2, type, val2p, svpdl2) \
-   count = perl_call_sv(sv_func, G_SCALAR); \
-   SPAGAIN; \
-   if (count !=1) \
-      croak("Error calling perl function\n"); \
-   PDL_LA_COMPLEX_UNINIT(pdl1) \
-   PDL_LA_COMPLEX_UNINIT(pdl2) \
-   ret = (long ) POPl ; \
-   PUTBACK ;   FREETMPS ;   LEAVE ; \
-   return ret;
-
 #define GSEL_FUNC(letter, type, pdl_type) \
-  static SV* letter ## gselect_func; \
-  void letter ## gselect_func_set(SV* func) { \
-    letter ## gselect_func = func; \
-  } \
-  PDL_Long letter ## gselect_wrapper(type *p, type *q) \
-  { \
-    PDL_LA_CALL_GSV(pdl_type, p, q, letter ## gselect_func) \
-  }
+  SEL_FUNC2(letter, g, type, pdl_type, (type *p, type *q), \
+    PDL_LA_COMPLEX_INIT_PUSH(pdl1, pdl_type, p, svpdl1) \
+    PDL_LA_COMPLEX_INIT_PUSH(pdl2, pdl_type, q, svpdl2), \
+    PDL_LA_COMPLEX_UNINIT(pdl1) \
+    PDL_LA_COMPLEX_UNINIT(pdl2) \
+  )
 GSEL_FUNC(f, float, PDL_F)
 GSEL_FUNC(d, double, PDL_D)
 
