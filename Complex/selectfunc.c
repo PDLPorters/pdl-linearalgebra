@@ -8,8 +8,8 @@ extern Core *PDL;
 
 #define PDL_LA_COMPLEX_INIT_PUSH(pdlvar, type, valp, svpdl) \
    pdl *pdlvar = PDL->pdlnew(); \
-   PDL->setdims(pdlvar, dims, sizeof(dims)/sizeof(dims[0])); \
-   pdlvar->datatype = type; \
+   PDL->setdims(pdlvar, dims, ndims); \
+   pdlvar->datatype = type + type_add; \
    pdlvar->data = valp; \
    pdlvar->state |= PDL_DONTTOUCHDATA | PDL_ALLOCATED; \
    ENTER;   SAVETMPS;   PUSHMARK(sp); \
@@ -36,7 +36,11 @@ int xerbla_(char *sub, int *info) { return 0; }
   { \
     dSP; \
     PDL_Indx odims[] = {0}; \
-    PDL_Indx dims[] = {2,1}; \
+    PDL_Indx pc_dims[] = {2}; \
+    char use_native = !perl_get_sv("PDL::Complex::VERSION", 0); \
+    PDL_Indx *dims = use_native ? NULL : pc_dims; \
+    PDL_Indx ndims = use_native ? 0 : sizeof(dims)/sizeof(dims[0]); \
+    int type_add = use_native ? PDL_CF - PDL_F : 0; \
     HV *bless_stash = gv_stashpv("PDL::Complex", 0); \
     init \
     int count = perl_call_sv(letter ## select_func, G_SCALAR); \

@@ -2,10 +2,10 @@ use strict;
 use warnings;
 use PDL::LiteF;
 use PDL::MatrixOps qw(identity);
+use PDL::Complex;
 use PDL::LinearAlgebra;
 use PDL::LinearAlgebra::Trans qw //;
 use PDL::LinearAlgebra::Real;
-use PDL::Complex;
 use Test::More;
 
 sub fapprox {
