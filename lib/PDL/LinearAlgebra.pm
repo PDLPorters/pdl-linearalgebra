@@ -47,14 +47,15 @@ package # hide from CPAN indexer
 
 use PDL::Types;
 
-use vars qw($sep $sep2);
 our $floatformat  = "%4.4g";    # Default print format for long numbers
 our $doubleformat = "%6.6g";
+our @ISA = @ISA ? @ISA : 'PDL'; # so still operates when no PDL::Complex
 
 *r2p = \&PDL::Complex::Cr2p;
 *p2r = \&PDL::Complex::Cp2r;
 *scale = \&PDL::Complex::Cscale;
 *conj = \&PDL::Complex::Cconj;
+*abs = \&PDL::Complex::Cabs;
 *abs2 = \&PDL::Complex::Cabs2;
 *arg = \&PDL::Complex::Carg;
 *tan = \&PDL::Complex::Ctan;
@@ -80,27 +81,6 @@ sub ecplx {
   $ret->slice('(0),') .= $re;
   $ret->slice('(1),') .= $im;
   return $ret;
-}
-
-sub norm {
-	my ($m, $real, $trans) = @_;
-
-	# If trans == true => transpose output matrix
-	# If real == true => rotate (complex as a vector)
-	#		     such that max abs will be real
-
-	#require PDL::LinearAlgebra::Complex;
-	my $ret = PDL::LinearAlgebra::Complex::cnrm2($m);
-	if ($real){
-		my ($index, $scale);
-		$m = PDL::Complex::Cscale($m,1/$ret->dummy(0))->reshape(-1);
-		$index = $m->Cabs->maximum_ind;
-		$scale = $m->mv(0,-1)->index($index)->mv(-1,0);
-		$scale= $scale->conj/$scale->Cabs;
-		return $trans ? $m->t*$scale->dummy(2) : $m*$scale->dummy(2)->t;
-	}
-	return $trans ? PDL::Complex::Cscale($m->t,1/$ret->dummy(0)->xchg(0,1))->reshape(-1) :
-		PDL::Complex::Cscale($m,1/$ret->dummy(0))->reshape(-1);
 }
 
 *tricpy = \&PDL::LinearAlgebra::Complex::ctricpy;
@@ -217,8 +197,21 @@ sub PDL::_similar {
 sub PDL::_similar_null { ref($_[0])->null }
 sub PDL::_is_complex { !$_[0]->type->real }
 sub PDL::Complex::_is_complex {1}
+sub PDL::_norm {
+	my ($m, $real, $trans) = @_;
+	# If trans == true => transpose output matrix
+	# If real == true => rotate (complex as a vector)
+	#		     such that max abs will be real
+	my $ret = PDL::LinearAlgebra::Complex::cnrm2($m);
+	return ($trans ? $m->t/$ret->dummy(0)->t : $m/$ret->dummy(0))->reshape(-1) if !$real;
+	$m = ($m/$ret->dummy(0))->reshape(-1);
+	my $index = $m->abs->maximum_ind;
+	my $scale = $m->mv(0,-1)->index($index)->mv(-1,0);
+	$scale = $scale->conj/$scale->abs;
+	return $trans ? $m->t*$scale->dummy(2) : $m*$scale->dummy(2)->t;
+}
 
-sub t {shift->t(@_)}
+*t = \&PDL::t;
 sub PDL::t {
   my $d = $_[0]->dims_internal;
   my ($m, $conj) = @_;
@@ -1187,9 +1180,9 @@ sub _eigen_one {
     } else {
       $val = $_->[1];
     }
-    unshift(@ret, $norm ? $val->norm(1,1) : $val), next if !$is_mult or !$select_func;
+    unshift(@ret, $norm ? $val->_norm(1,1) : $val), next if !$is_mult or !$select_func;
     $val = $val(,,:($sdim-1))->sever if $_->[0] == 2;
-    $val = $val->norm(1,1) if $norm;
+    $val = $val->_norm(1,1) if $norm;
     unshift @ret, $val;
   }
   @ret;

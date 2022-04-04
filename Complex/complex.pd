@@ -108,7 +108,7 @@ $doc
 =cut
 
 sub PDL::c$function {
-  \$_[0]->type->real ? goto &PDL::__Cc$function : goto &PDL::__Nc$function;
+  ref \$_[0] eq 'PDL::Complex' || \$_[0]->type->real ? goto &PDL::__Cc$function : goto &PDL::__Nc$function;
 }
 *c$function = \\&PDL::c$function;
 
