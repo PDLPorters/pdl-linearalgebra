@@ -70,7 +70,6 @@ sub generate_code($){
 	}
 }
 
-my %float2native = (F => 'G', D => 'C');
 sub pp_defc {
   my ($function, %hash) = @_;
   $hash{GenericTypes} ||= [qw(F D)];
@@ -81,10 +80,7 @@ sub pp_defc {
   $hash{Code} = "$decl\n$hash{Code}";
   pp_def("__Cc$function", %hash);
   my %hash2 = %hash;
-  $hash2{Pars} =~ s/\((?:ri=)?2,/(/g;
-  $hash2{GenericTypes} = [map $float2native{$_} || $_, @{$hash{GenericTypes}}];
-  $hash2{Code} =~ s/\$GENERIC\(\)/\$TFD(float,double)/g;
-  $hash2{Code} =~ s/\$TFD\(/\$TGC(/g;
+  $hash2{Pars} = join ';', map s/\(2(?:,|(?=\)))/(/ ? "complex $_" : $_, split /;/, $hash2{Pars};
   if ($hash2{RedoDimsCode}) {
     # decrement numbers being compared to, or dims offsets
     $hash2{RedoDimsCode} =~ s/(>\s*)(\d+)|(\[\s*)(\d+)(\s*\])/
@@ -95,7 +91,7 @@ sub pp_defc {
   }
   pp_def("__Nc$function", %hash2);
   pp_add_exported("c$function");
-  my $sig = join ';', grep defined, @hash{qw(Pars OtherPars)};
+  my $sig = join ';', grep defined, @hash2{qw(Pars OtherPars)};
   pp_addpm(<<EOF);
 =head2 c$function
 
@@ -5077,16 +5073,15 @@ pp_defc("dot",
 			integer *incy);
 EOF
        HandleBad => 0,
-	Pars => '[phys]a(2,n);[phys]b(2,n);[o]c(ri=2)',
+	Pars => '[phys]a(2,n);[phys]b(2,n);[o]c(2)',
 	Code =>  '
-		complex $TFD(float,double) *cptr = (void*)&$c(ri=>0), t;
-		t = $TFD(cdotu_,zdotu_)(
+		complex $TFD(float,double) *cptr = (void*)$P(c);
+		*cptr = $TFD(cdotu_,zdotu_)(
 		&(integer){$SIZE(n)},
 		$P(a),
 		&(integer){1},
 		$P(b),
 		&(integer){1});
-		*cptr = t;
 ');
 
 pp_defc("dotc",
@@ -5095,16 +5090,15 @@ pp_defc("dotc",
 			integer *incy);
 EOF
        HandleBad => 0,
-	Pars => '[phys]a(2,n);[phys]b(2,n);[o,phys]c(ri=2)',
+	Pars => '[phys]a(2,n);[phys]b(2,n);[o,phys]c(2)',
 	Code =>  '
-		complex $TFD(float,double) *cptr = (void*)&$c(ri=>0), t;
-		t = $TFD(cdotc_,zdotc_)(
+		complex $TFD(float,double) *cptr = (void*)$P(c);
+		*cptr = $TFD(cdotc_,zdotc_)(
 		&(integer){$SIZE(n)},
 		$P(a),
 		&(integer){1},
 		$P(b),
 		&(integer){1});
-		*cptr = t;
 ',
 Doc=>'
 

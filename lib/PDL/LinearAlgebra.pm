@@ -1181,7 +1181,9 @@ sub _eigen_one {
       $val = $_->[1];
     }
     unshift(@ret, $norm ? $val->_norm(1,1) : $val), next if !$is_mult or !$select_func;
-    $val = $val(,,:($sdim-1))->sever if $_->[0] == 2;
+    my $di = $val->dims_internal;
+    my $slice_prefix = ',' x $di;
+    $val = $val->slice("$slice_prefix,:@{[$sdim-1]}")->sever if $_->[0] == 2;
     $val = $val->_norm(1,1) if $norm;
     unshift @ret, $val;
   }
@@ -3117,7 +3119,7 @@ sub PDL::msymgeigen {
 	$b = $b->copy;
 	$a->_call_method($method, $type, $jobv, $upper, $b, my $w = null, my $info = null);
 	_error($info, "msymgeigen: Can't compute eigenvalues/vectors: matrix (PDL(s) %s) is/are not positive definite or the algorithm failed to converge");
-	return $jobv ? ($w , $a->t->sever, $info) : wantarray ? ($w, $info) : $w;
+	!wantarray ? $w : ($w, $jobv?$a->t->sever:(), $info);
 }
 
 =head2 msymgeigenx
