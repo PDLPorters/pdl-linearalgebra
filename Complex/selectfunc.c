@@ -8,7 +8,7 @@ extern Core *PDL;
 
 #define PDL_LA_COMPLEX_INIT_PUSH(pdl, type, valp, svpdl) \
    pdl = PDL->pdlnew(); \
-   PDL->setdims (pdl, dims, 2); \
+   PDL->setdims(pdl, dims, sizeof(dims)/sizeof(dims[0])); \
    pdl->datatype = type; \
    pdl->data = valp; \
    pdl->state |= PDL_DONTTOUCHDATA | PDL_ALLOCATED; \
@@ -20,7 +20,7 @@ extern Core *PDL;
    PUTBACK;
 
 #define PDL_LA_COMPLEX_UNINIT(pdl) \
-   PDL->setdims (pdl, odims, 0); \
+   PDL->setdims(pdl, odims, sizeof(odims)/sizeof(odims[0])); \
    pdl->state &= ~ (PDL_ALLOCATED |PDL_DONTTOUCHDATA); \
    pdl->data=NULL;
 
@@ -29,18 +29,15 @@ extern Core *PDL;
    int count; \
    long ret; \
    SV *pdl1; \
-   HV *bless_stash; \
    pdl *pdl; \
-   PDL_Indx odims[1]; \
+   PDL_Indx odims[] = {0}; \
    PDL_Indx dims[] = {2,1}; \
-   bless_stash = gv_stashpv("PDL::Complex", 0); \
+   HV *bless_stash = gv_stashpv("PDL::Complex", 0); \
    PDL_LA_COMPLEX_INIT_PUSH(pdl, type, valp, pdl1) \
    count = perl_call_sv(sv_func, G_SCALAR); \
    SPAGAIN; \
    if (count !=1) \
       croak("Error calling perl function\n"); \
-   /* For pdl_free */ \
-   odims[0] = 0; \
    PDL_LA_COMPLEX_UNINIT(pdl) \
    ret = (long ) POPl ; \
    PUTBACK ;   FREETMPS ;   LEAVE ; \
@@ -66,19 +63,16 @@ SEL_FUNC(d, double, PDL_D)
    int count; \
    long ret; \
    SV *svpdl1, *svpdl2; \
-   HV *bless_stash; \
    pdl *pdl1, *pdl2; \
-   PDL_Indx odims[1]; \
+   PDL_Indx odims[] = {0}; \
    PDL_Indx dims[] = {2,1}; \
-   bless_stash = gv_stashpv("PDL::Complex", 0); \
+   HV *bless_stash = gv_stashpv("PDL::Complex", 0); \
    PDL_LA_COMPLEX_INIT_PUSH(pdl1, type, val1p, svpdl1) \
    PDL_LA_COMPLEX_INIT_PUSH(pdl2, type, val2p, svpdl2) \
    count = perl_call_sv(sv_func, G_SCALAR); \
    SPAGAIN; \
    if (count !=1) \
       croak("Error calling perl function\n"); \
-   /* For pdl_free */ \
-   odims[0] = 0; \
    PDL_LA_COMPLEX_UNINIT(pdl1) \
    PDL_LA_COMPLEX_UNINIT(pdl2) \
    ret = (long ) POPl ; \
