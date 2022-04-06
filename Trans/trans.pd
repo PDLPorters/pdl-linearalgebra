@@ -2,8 +2,6 @@ our $VERSION = '0.14';
 pp_setversion($VERSION);
 $VERSION = eval $VERSION;
 
-use PDL::Exporter;
-
 if ($^O =~ /MSWin/) {
 pp_addhdr('
 #include <float.h>
@@ -86,7 +84,6 @@ use PDL::Slices;
 use PDL::Ops qw//;
 use PDL::Math qw/floor/;
 use PDL::MatrixOps qw/identity/;
-use PDL::NiceSlice;
 use PDL::LinearAlgebra;
 use PDL::LinearAlgebra::Real qw //;
 use PDL::LinearAlgebra::Complex qw //;
@@ -989,7 +986,7 @@ sub toreal{
 	return $_[0] if $_[0]->isempty;
 	$_tol = $_[1] if defined $_[1];
 	my ($min, $max, $tmp);
-	($min, $max) = $_[0]->slice('(1)')->minmax;
+	($min, $max) = $_[0]->im->minmax;
 	return $_[0]->re->sever unless (abs($min) > $_tol || abs($max) > $_tol);
 	$_[0];
 }
