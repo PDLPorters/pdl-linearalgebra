@@ -176,11 +176,12 @@ If c is a scalar number, it's determinant can be computed by:
 *mhankel = \&PDL::mhankel;
 
 sub PDL::mhankel {
+	my $di = $_[0]->dims_internal;
 	my ($m, $n) = @_;
 	$m = xvals($m) + 1 unless ref($m);
 	my @dims = $m->dims;
 	$n = PDL::zeroes($m) unless defined $n;
-	my $index = xvals($dims[-1]);
+	my $index = xvals($dims[$di]);
 	$index = $index->dummy(0) + $index;
 	if (@dims == 2){
 		$m = mstack($m,$n(,1:));

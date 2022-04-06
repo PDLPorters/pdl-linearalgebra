@@ -946,6 +946,7 @@ Works on transposed array.
 *mpinv = \&PDL::mpinv;
 sub PDL::mpinv{
 	&_2d_array;
+	my $di = $_[0]->dims_internal;
 	my ($m, $tol) = @_;
 	my @dims = $m->dims;
 	my $err = setlaerror(NO);
@@ -954,7 +955,7 @@ sub PDL::mpinv{
 	setlaerror($err);
 	_error($info, "mpinv: SVD algorithm did not converge (PDL %s)");
 	unless (defined $tol){
-		$tol =  ($dims[-1] > $dims[-2] ? $dims[-1] : $dims[-2]) * $s((0)) * lamch(3);
+		$tol =  ($dims[$di+1] > $dims[$di] ? $dims[$di+1] : $dims[$di]) * $s((0)) * lamch(3);
 	}
 	my ($ind, $cind) = which_both( $s > $tol );
 	$s->index($cind) .= 0 if defined $cind;
@@ -2312,6 +2313,7 @@ sub PDL::mpossolvex {
 	&_square;
 	my $uplo = splice(@_, 1, 1) ? 0 : 1;
 	&_matrices_match;
+	my $di = $_[0]->dims_internal;
 	my($a, $b, %opt) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
@@ -2322,7 +2324,7 @@ sub PDL::mpossolvex {
 	my $af = PDL::zeroes $a;
 	my $equed = pdl(long, 0);
 	$a->_call_method('posvx', $uplo, $equilibrate, $b, $af, $equed, my $s = null, $x, my $rcond=null, my $ferr=null, my $berr=null, my $info=null);
-	if( $info < $adims[-2] && $info > 0){
+	if( $info < $adims[$di] && $info > 0){
 		$info--;
 		barf("mpossolvex: Can't solve system of linear equations:\n".
 			"the leading minor of order $info of A is".

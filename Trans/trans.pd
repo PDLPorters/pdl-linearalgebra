@@ -1121,6 +1121,7 @@ Return matrix power of a square matrix.
 *mpow = \&PDL::mpow;
 sub PDL::mpow {
 	&PDL::LinearAlgebra::_square;
+	my $di = $_[0]->dims_internal;
 	my ($m, $power, $tol, $eigen) = @_;
 	my @dims = $m->dims;
 	my $ret;
@@ -1128,7 +1129,7 @@ sub PDL::mpow {
 		my ($e, $v) = $m->meigen(0,1);
 		$ret = $v * $e->Cpow($power) x $v->minv;
 	}
-	elsif( 1/$dims[-1] * 1000 > abs($power)  and !$eigen){
+	elsif( 1/$dims[$di] * 1000 > abs($power)  and !$eigen){
 		$ret = $m;
 		my $pow = floor($power);
 		$pow++ if ($power < 0 and $power != $pow);
