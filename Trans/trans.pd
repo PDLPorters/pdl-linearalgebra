@@ -408,10 +408,10 @@ ACM - Transactions On Mathematical Software, 24(1):130-156, 1998
 EOT
 );
 
-pp_def('cgeexp',
+do '../pp_defc.pl'; die if $@;
+pp_defc('geexp',
         Pars => '[io,phys]A(2,n,n);int deg();scale();int trace();int [o]ns();int [o]info()',
 	Doc => '
-
 =for ref
 
 Complex version of geexp. The value used for trace normalization is not returned.
@@ -703,7 +703,7 @@ ACM - Transactions On Mathematical Software, 24(1):130-156, 1998
 ',
 );
 
-pp_def('ctrsqrt',
+pp_defc('trsqrt',
         Pars => '[io,phys]A(2,n,n);int uplo();[phys,o] B(2,n,n);int [o]info()',
 	Doc => '
 
@@ -800,7 +800,7 @@ pp_addhdr('
 void dfunc_wrapper(dcomplex *p, integer n, SV* dfunc);
 ');
 
-pp_def('ctrfun',
+pp_defc('trfun',
         Pars => '[io,phys]A(2,n,n);int uplo();[phys,o] B(2,n,n);int [o]info()',
 	OtherPars => "SV* func" ,
 	Doc => '
@@ -823,7 +823,7 @@ If uplo is true, A is lower triangular.
 	diag = (dcomplex *) malloc ($SIZE(n) * sizeof(dcomplex));
 
 	ca = (dcomplex *) $P(A);
-	b = $P(B); 
+	b = (double *)$P(B);
 	cb = (dcomplex *) $P(B);
 	c__1 = 1;
 
