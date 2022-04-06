@@ -403,7 +403,7 @@ ACM - Transactions On Mathematical Software, 24(1):130-156, 1998
 
  $a = random(5,5);
  $trace = pdl(1);
- $a->xchg(0,1)->geexp(6,1,$trace, ($ns = null), ($info = null));
+ $a->t->geexp(6,1,$trace, ($ns = null), ($info = null));
 
 =cut
 
@@ -1040,7 +1040,7 @@ sub PDL::msqrt {
 	&PDL::LinearAlgebra::_square;
 	my ($m, $tol) = @_;
 	my @dims = $m->dims;
-	$m = $m->r2C unless @dims == 3;
+	$m = $m->r2C unless $m->_is_complex;
 	my ($t, undef, $z, undef, $info) = $m->mschur(1);
 	if ($info){
 		warn "msqrt: Can't compute Schur form\n";
@@ -1076,14 +1076,10 @@ Return matrix exponential of a square matrix.
 sub PDL::mexp {
 	&PDL::LinearAlgebra::_square;
 	my ($m, $order, $trace) = @_;
-	my @dims = $m->dims;
-	my $info  = PDL::null;
-	my $ns = PDL::null;
 	$trace = 1 unless defined $trace;
 	$order = 6 unless defined $order;
 	$m = $m->copy;
-	@dims == 3 ? $m->xchg(1,2)->cgeexp($order, 1, $trace, $ns, $info) :
-			$m->xchg(0,1)->geexp($order, 1, $trace, $ns, $info);
+	$m->t->_call_method('geexp', $order, 1, $trace, my $ns = PDL->null, my $info = PDL->null);
 	if ($info){
 		warn "mexp: Error $info";
 	}
@@ -1895,7 +1891,7 @@ sub PDL::mfun {
 		return (@dims ==3) ? $v : toreal($v, $tol);
 	}
 	else{
-		$m = $m->r2C unless @dims == 3;
+		$m = $m->r2C unless $m->_is_complex;
 		my ($t, undef, $z, undef, $info) = $m->mschur(1);
 		if ($info){
 			warn "mfun: Can't compute Schur form\n";
