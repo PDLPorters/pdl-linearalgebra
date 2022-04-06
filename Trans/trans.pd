@@ -1172,11 +1172,16 @@ Return matrix cosine of a square matrix.
 
 =cut
 
+sub _i {
+  defined $PDL::Complex::VERSION ? PDL::Complex::i() : i();
+}
+
 *mcos = \&PDL::mcos;
 sub PDL::mcos {
 	&PDL::LinearAlgebra::_square;
 	my $m = shift;
-	return $m->_is_complex ? (mexp(PDL::Complex::i()*$m) + mexp(- PDL::Complex::i()*$m)) / 2 : mexp(PDL::Complex::i()*$m)->re->sever;
+	my $i = _i();
+	return $m->_is_complex ? (mexp($i*$m) + mexp(- $i*$m)) / 2 : mexp($i*$m)->re->sever;
 }
 
 =head2 macos
@@ -1199,11 +1204,12 @@ Return matrix inverse cosine of a square matrix.
 *macos = \&PDL::macos;
 sub PDL::macos {
 	&PDL::LinearAlgebra::_square;
+	my $di = $_[0]->dims_internal;
 	my ($m, $tol) = @_;
 	my @dims = $m->dims;
-	my $di = $_[0]->dims_internal;
 	my $id = identity($dims[$di]); $id = $id->r2C if $m->_is_complex;
-	my $ret = PDL::Complex::i() * mlog( ($m->r2C - PDL::Complex::i() * msqrt( ($id - $m x $m), $tol)));
+	my $i = _i();
+	my $ret = $i * mlog( ($m->r2C - $i * msqrt( ($id - $m x $m), $tol)));
 	return $m->_is_complex ? $ret : toreal($ret, $tol);
 }
 
@@ -1228,7 +1234,8 @@ Return matrix sine of a square matrix.
 sub PDL::msin {
 	&PDL::LinearAlgebra::_square;
 	my $m = shift;
-	$m->_is_complex ? (mexp(PDL::Complex::i()*$m) - mexp(- PDL::Complex::i()*$m))/(2*PDL::Complex::i()) : mexp(PDL::Complex::i()*$m)->im->sever;
+	my $i = _i();
+	$m->_is_complex ? (mexp($i*$m) - mexp(- $i*$m))/(2*$i) : mexp($i*$m)->im->sever;
 }
 
 =head2 masin
@@ -1251,11 +1258,12 @@ Return matrix inverse sine of a square matrix.
 *masin = \&PDL::masin;
 sub PDL::masin {
 	&PDL::LinearAlgebra::_square;
+	my $di = $_[0]->dims_internal;
 	my ($m, $tol) = @_;
 	my @dims = $m->dims;
-	my $di = $_[0]->dims_internal;
+	my $i = _i();
 	my $id = identity($dims[$di]); $id = $id->r2C if $m->_is_complex;
-	my $ret = (- PDL::Complex::i()) * mlog(((PDL::Complex::i()*$m) + msqrt($id - $m x $m, $tol)));
+	my $ret = (-$i) * mlog((($i*$m) + msqrt($id - $m x $m, $tol)));
 	return $m->_is_complex ? $ret : toreal($ret, $tol);
 }
 
@@ -1282,14 +1290,15 @@ sub PDL::mtan {
 	my ($m, $id) = @_;
 	my @dims = $m->dims;
 	return scalar msolvex(mcos($m), msin($m),equilibrate=>1) unless $id;
+	my $i = _i();
 	if ($m->_is_complex){
 		my $di = $_[0]->dims_internal;
 		$id = identity($dims[$di])->r2C;
-		$m = mexp(-2*PDL::Complex::i()*$m);
-		return scalar msolvex( ($id + $m ),( (- PDL::Complex::i()) * ($id - $m)),equilibrate=>1);
+		$m = mexp(-2*$i*$m);
+		return scalar msolvex( ($id + $m ),( (- $i) * ($id - $m)),equilibrate=>1);
 	}
 	else{
-		$m = mexp(PDL::Complex::i() * $m);
+		$m = mexp($i * $m);
 		return scalar $m->re->msolvex($m->im,equilibrate=>1);
 	}
 }
@@ -1314,11 +1323,12 @@ Return matrix inverse tangent of a square matrix.
 *matan = \&PDL::matan;
 sub PDL::matan {
 	&PDL::LinearAlgebra::_square;
+	my $di = $_[0]->dims_internal;
 	my ($m, $tol) = @_;
 	my @dims = $m->dims;
-	my $di = $_[0]->dims_internal;
+	my $i = _i();
 	my $id = identity($dims[$di]); $id = $id->r2C if $m->_is_complex;
-	my $ret = - PDL::Complex::i()/2 * mlog( scalar PDL::msolvex( ($id - PDL::Complex::i()*$m) ,($id + PDL::Complex::i()*$m),equilibrate=>1 ));
+	my $ret = -$i/2 * mlog( scalar PDL::msolvex( ($id - $i*$m) ,($id + $i*$m),equilibrate=>1 ));
 	return $m->_is_complex ? $ret : toreal($ret, $tol);
 }
 
@@ -1345,14 +1355,15 @@ sub PDL::mcot {
 	my ($m, $id) = @_;
 	my @dims = $m->dims;
 	return scalar msolvex(msin($m),mcos($m),equilibrate=>1) unless $id;
+	my $i = _i();
 	if ($m->_is_complex){
 		my $di = $_[0]->dims_internal;
 		$id = identity($dims[$di])->r2C;
-		$m = mexp(-2*PDL::Complex::i()*$m);
-		return  scalar msolvex( ($id - $m ),(  PDL::Complex::i() * ($id + $m)),equilibrate=>1);
+		$m = mexp(-2*$i*$m);
+		return  scalar msolvex( ($id - $m), ($i * ($id + $m)), equilibrate=>1);
 	}
 	else{
-		$m = mexp(PDL::Complex::i() * $m);
+		$m = mexp($i * $m);
 		return scalar $m->im->msolvex($m->re,equilibrate=>1);
 	}
 }
@@ -1407,7 +1418,8 @@ Return matrix secant of a square matrix.
 sub PDL::msec {
 	&PDL::LinearAlgebra::_square;
 	my $m = shift;
-	return $m->_is_complex ? PDL::minv(mexp(PDL::Complex::i()+$m) + mexp(- PDL::Complex::i()*$m)) * 2 : scalar PDL::minv(re(mexp(PDL::Complex::i()*$m)));
+	my $i = _i();
+	return $m->_is_complex ? PDL::minv(mexp($i*$m) + mexp(- $i*$m)) * 2 : scalar PDL::minv(re(mexp($i*$m)));
 }
 
 =head2 masec
@@ -1460,7 +1472,8 @@ Return matrix cosecant of a square matrix.
 sub PDL::mcsc {
 	&PDL::LinearAlgebra::_square;
 	my $m = shift;
-	return $m->_is_complex ? PDL::minv(mexp(PDL::Complex::i()*$m) - mexp(- PDL::Complex::i()*$m)) * 2*PDL::Complex::i() : scalar PDL::minv(im(mexp(PDL::Complex::i()*$m)));
+	my $i = _i();
+	$m->_is_complex ? PDL::minv(mexp($i*$m) - mexp(- $i*$m)) * 2*$i : scalar PDL::minv(im(mexp($i*$m)));
 }
 
 =head2 macsc
