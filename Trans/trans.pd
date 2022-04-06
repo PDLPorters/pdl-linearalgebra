@@ -1012,10 +1012,8 @@ Return matrix logarithm of a square matrix.
 
 *mlog = \&PDL::mlog;
 sub PDL::mlog {
+	&PDL::LinearAlgebra::_square;
 	my ($m, $tol) = @_;
-	my @dims = $m->dims;
-	barf("mlog requires a 2-D square matrix")
-		unless( ((@dims == 2) || (@dims == 3)) && $dims[-1] == $dims[-2] );
 	mfun($m, sub{$_[0].=log $_[0]} , 0, $tol);
 }
 
@@ -1039,11 +1037,9 @@ Return matrix square root (principal) of a square matrix.
 *msqrt = \&PDL::msqrt;
 
 sub PDL::msqrt {
+	&PDL::LinearAlgebra::_square;
 	my ($m, $tol) = @_;
 	my @dims = $m->dims;
-	barf("msqrt requires a 2-D square matrix")
-		unless( ((@dims == 2) || (@dims == 3)) && $dims[-1] == $dims[-2] );
-
 	$m = $m->r2C unless @dims == 3;
 	my ($t, undef, $z, undef, $info) = $m->mschur(1);
 	if ($info){
@@ -1078,14 +1074,11 @@ Return matrix exponential of a square matrix.
 
 *mexp = \&PDL::mexp;
 sub PDL::mexp {
+	&PDL::LinearAlgebra::_square;
 	my ($m, $order, $trace) = @_;
 	my @dims = $m->dims;
-	barf("mexp requires a 2-D square matrix")
-		unless( ((@dims == 2) || (@dims == 3)) && $dims[-1] == $dims[-2] );
-
-	my ($info, $ns);
-	$info  = PDL::null;
-	$ns = PDL::null;
+	my $info  = PDL::null;
+	my $ns = PDL::null;
 	$trace = 1 unless defined $trace;
 	$order = 6 unless defined $order;
 	$m = $m->copy;
@@ -1101,10 +1094,9 @@ sub PDL::mexp {
 
 *mexpts = \&PDL::mexpts;
 sub PDL::mexpts {
+	&PDL::LinearAlgebra::_square;
 	my ($m, $order, $tol) = @_;
 	my @dims = $m->dims;
-	barf("mexp1 requires a 2-D square matrix")
-		unless( ((@dims == 2) || (@dims == 3)) && $dims[-1] == $dims[-2] );
 	my ($em, $trm);
 	$order = 20 unless defined $order;
 	$em = (@dims == 3 ) ? diag(r2C(ones($dims[1]))) : diag(ones($dims[1]));
@@ -1137,10 +1129,9 @@ Return matrix power of a square matrix.
 
 *mpow = \&PDL::mpow;
 sub PDL::mpow {
+	&PDL::LinearAlgebra::_square;
 	my ($m, $power, $tol, $eigen) = @_;
 	my @dims = $m->dims;
-	barf("mpow requires a 2-D square matrix")
-		unless( ((@dims == 2) || (@dims == 3)) && $dims[-1] == $dims[-2] );
 	my $ret;
 	if (UNIVERSAL::isa($power,'PDL') and $power->dims > 1){
 		my ($e, $v) = $m->meigen(0,1);
@@ -1190,10 +1181,9 @@ Return matrix cosine of a square matrix.
 
 *mcos = \&PDL::mcos;
 sub PDL::mcos {
+	&PDL::LinearAlgebra::_square;
 	my $m = shift;
 	my @dims = $m->dims;
-	barf("mcos requires a 2-D square matrix")
-		unless( ((@dims == 2) || (@dims == 3)) && $dims[-1] == $dims[-2] );
 	return (@dims == 3) ? (mexp(PDL::Complex::i()*$m) + mexp(- PDL::Complex::i()*$m)) / 2 : mexp(PDL::Complex::i()*$m)->re->sever;
 }
 
@@ -1216,14 +1206,12 @@ Return matrix inverse cosine of a square matrix.
 
 *macos = \&PDL::macos;
 sub PDL::macos {
+	&PDL::LinearAlgebra::_square;
 	my ($m, $tol) = @_;
 	my @dims = $m->dims;
-	barf("macos requires a 2-D square matrix")
-		unless( ((@dims == 2) || (@dims == 3)) && $dims[-1] == $dims[-2] );
-	my ($id, $ret);
-	$id = PDL::zeroes $m;
+	my $id = PDL::zeroes $m;
 	(@dims == 3) ? $id->slice('(0),:,:')->diagonal(0,1) .= 1 : $id->diagonal(0,1) .= 1;
-	$ret = PDL::Complex::i() * mlog( ($m->r2C - PDL::Complex::i() * msqrt( ($id - $m x $m), $tol)));
+	my $ret = PDL::Complex::i() * mlog( ($m->r2C - PDL::Complex::i() * msqrt( ($id - $m x $m), $tol)));
 	return (@dims ==3) ? $ret : toreal($ret, $tol);
 }
 
@@ -1246,10 +1234,9 @@ Return matrix sine of a square matrix.
 
 *msin = \&PDL::msin;
 sub PDL::msin {
+	&PDL::LinearAlgebra::_square;
 	my $m = shift;
 	my @dims = $m->dims;
-	barf("msin requires a 2-D square matrix")
-		unless( ((@dims == 2) || (@dims == 3)) && $dims[-1] == $dims[-2] );
 	return (@dims == 3) ? (mexp(PDL::Complex::i()*$m) - mexp(- PDL::Complex::i()*$m))/(2*PDL::Complex::i()) : mexp(PDL::Complex::i()*$m)->im->sever;
 }
 
@@ -1272,14 +1259,12 @@ Return matrix inverse sine of a square matrix.
 
 *masin = \&PDL::masin;
 sub PDL::masin {
+	&PDL::LinearAlgebra::_square;
 	my ($m, $tol) = @_;
 	my @dims = $m->dims;
-	barf("masin requires a 2-D square matrix")
-		unless( ((@dims == 2) || (@dims == 3)) && $dims[-1] == $dims[-2] );
-	my ($ret, $id);
-	$id = PDL::zeroes $m;
+	my $id = PDL::zeroes $m;
 	(@dims == 3) ? $id->slice('(0),:,:')->diagonal(0,1) .= 1 : $id->diagonal(0,1) .= 1;
-	$ret = (- PDL::Complex::i()) * mlog(((PDL::Complex::i()*$m) + msqrt($id - $m x $m, $tol)));
+	my $ret = (- PDL::Complex::i()) * mlog(((PDL::Complex::i()*$m) + msqrt($id - $m x $m, $tol)));
 	return (@dims ==3) ? $ret : toreal($ret, $tol);
 }
 
@@ -1302,10 +1287,9 @@ Return matrix tangent of a square matrix.
 
 *mtan = \&PDL::mtan;
 sub PDL::mtan {
+	&PDL::LinearAlgebra::_square;
 	my ($m, $id) = @_;
 	my @dims = $m->dims;
-	barf("mtan requires a 2-D square matrix")
-		unless( ((@dims == 2) || (@dims == 3)) && $dims[-1] == $dims[-2] );
 	return scalar msolvex(mcos($m), msin($m),equilibrate=>1) unless $id;
 	if (@dims == 3){
 		$id = PDL::zeroes $m;
@@ -1338,14 +1322,12 @@ Return matrix inverse tangent of a square matrix.
 
 *matan = \&PDL::matan;
 sub PDL::matan {
+	&PDL::LinearAlgebra::_square;
 	my ($m, $tol) = @_;
 	my @dims = $m->dims;
-	barf("matan requires a 2-D square matrix")
-		unless( ((@dims == 2) || (@dims == 3)) && $dims[-1] == $dims[-2] );
-	my ($id, $ret);
-	$id = PDL::zeroes($m)->r2C;
+	my $id = PDL::zeroes($m)->r2C;
 	$id->re->diagonal(0,1) .= 1;
-	$ret = - PDL::Complex::i()/2 * mlog( scalar PDL::msolvex( ($id - PDL::Complex::i()*$m) ,($id + PDL::Complex::i()*$m),equilibrate=>1 ));
+	my $ret = - PDL::Complex::i()/2 * mlog( scalar PDL::msolvex( ($id - PDL::Complex::i()*$m) ,($id + PDL::Complex::i()*$m),equilibrate=>1 ));
 	return (@dims ==3) ? $ret : toreal($ret, $tol);
 }
 
@@ -1368,10 +1350,9 @@ Return matrix cotangent of a square matrix.
 
 *mcot = \&PDL::mcot;
 sub PDL::mcot {
+	&PDL::LinearAlgebra::_square;
 	my ($m, $id) = @_;
 	my @dims = $m->dims;
-	barf("mcot requires a 2-D square matrix")
-		unless( ((@dims == 2) || (@dims == 3)) && $dims[-1] == $dims[-2] );
 	return scalar msolvex(msin($m),mcos($m),equilibrate=>1) unless $id;
 	if (@dims == 3){
 		$id = PDL::zeroes $m;
@@ -1404,10 +1385,8 @@ Return matrix inverse cotangent of a square matrix.
 
 *macot = \&PDL::macot;
 sub PDL::macot {
+	&PDL::LinearAlgebra::_square;
 	my ($m, $tol, $id) = @_;
-	my @dims = $m->dims;
-	barf("macot requires a 2-D square matrix")
-		unless( ((@dims == 2) || (@dims == 3)) && $dims[-1] == $dims[-2] );
 	my ($inv, $info) = $m->minv;
 	if ($info){
 		warn "macot: singular matrix";
@@ -1435,10 +1414,9 @@ Return matrix secant of a square matrix.
 
 *msec = \&PDL::msec;
 sub PDL::msec {
+	&PDL::LinearAlgebra::_square;
 	my $m = shift;
 	my @dims = $m->dims;
-	barf("msec requires a 2-D square matrix")
-		unless( ((@dims == 2) || (@dims == 3)) && $dims[-1] == $dims[-2] );
 	return (@dims == 3) ? PDL::minv(mexp(PDL::Complex::i()+$m) + mexp(- PDL::Complex::i()*$m)) * 2 : scalar PDL::minv(re(mexp(PDL::Complex::i()*$m)));
 }
 
@@ -1461,10 +1439,8 @@ Return matrix inverse secant of a square matrix.
 
 *masec = \&PDL::masec;
 sub PDL::masec {
+	&PDL::LinearAlgebra::_square;
 	my ($m, $tol) = @_;
-	my @dims = $m->dims;
-	barf("masec requires a 2-D square matrix")
-		unless( ((@dims == 2) || (@dims == 3)) && $dims[-1] == $dims[-2] );
 	my ($inv, $info) = $m->minv;
 	if ($info){
 		warn "masec: singular matrix";
@@ -1492,10 +1468,9 @@ Return matrix cosecant of a square matrix.
 
 *mcsc = \&PDL::mcsc;
 sub PDL::mcsc {
+	&PDL::LinearAlgebra::_square;
 	my $m = shift;
 	my @dims = $m->dims;
-	barf("mcsc requires a 2-D square matrix")
-		unless( ((@dims == 2) || (@dims == 3)) && $dims[-1] == $dims[-2] );
 	return (@dims == 3) ? PDL::minv(mexp(PDL::Complex::i()*$m) - mexp(- PDL::Complex::i()*$m)) * 2*PDL::Complex::i() : scalar PDL::minv(im(mexp(PDL::Complex::i()*$m)));
 }
 
@@ -1518,10 +1493,8 @@ Return matrix inverse cosecant of a square matrix.
 
 *macsc = \&PDL::macsc;
 sub PDL::macsc {
+	&PDL::LinearAlgebra::_square;
 	my ($m, $tol) = @_;
-	my @dims = $m->dims;
-	barf("macsc requires a 2-D square matrix")
-		unless( ((@dims == 2) || (@dims == 3)) && $dims[-1] == $dims[-2] );
 	my ($inv, $info) = $m->minv;
 	if ($info){
 		warn "macsc: singular matrix";
@@ -1550,10 +1523,8 @@ Return matrix hyperbolic cosine of a square matrix.
 *mcosh = \&PDL::mcosh;
 
 sub PDL::mcosh {
+	&PDL::LinearAlgebra::_square;
 	my $m  = shift;
-	my @dims = $m->dims;
-	barf("mcosh requires a 2-D square matrix")
-		unless( ((@dims == 2) || (@dims == 3)) && $dims[-1] == $dims[-2] );
 	( $m->mexp + mexp(-$m) )/2;
 }
 
@@ -1577,14 +1548,12 @@ Return matrix hyperbolic inverse cosine of a square matrix.
 *macosh = \&PDL::macosh;
 
 sub PDL::macosh {
+	&PDL::LinearAlgebra::_square;
 	my ($m, $tol)  =  @_;
 	my @dims = $m->dims;
-	barf("macosh requires a 2-D square matrix")
-		unless( ((@dims == 2) || (@dims == 3)) && $dims[-1] == $dims[-2] );
-	my ($id, $ret);
-	$id = PDL::zeroes $m;
+	my $id = PDL::zeroes $m;
 	(@dims == 3) ? $id->slice('(0),:,:')->diagonal(0,1) .= 1 : $id->diagonal(0,1) .= 1;
-	$ret = msqrt($m x $m - $id);
+	my $ret = msqrt($m x $m - $id);
 	$m = $m->r2C if $ret->getndims > @dims;
 	mlog($m + $ret, $tol);
 }
@@ -1609,10 +1578,8 @@ Return matrix hyperbolic sine of a square matrix.
 *msinh = \&PDL::msinh;
 
 sub PDL::msinh {
+	&PDL::LinearAlgebra::_square;
 	my $m  = shift;
-	my @dims = $m->dims;
-	barf("msinh requires a 2-D square matrix")
-		unless( ((@dims == 2) || (@dims == 3)) && $dims[-1] == $dims[-2] );
 	( $m->mexp - mexp(-$m) )/2;
 }
 
@@ -1636,14 +1603,12 @@ Return matrix hyperbolic inverse sine of a square matrix.
 *masinh = \&PDL::masinh;
 
 sub PDL::masinh {
+	&PDL::LinearAlgebra::_square;
 	my ($m, $tol)  = @_;
 	my @dims = $m->dims;
-	barf("masinh requires a 2-D square matrix")
-		unless( ((@dims == 2) || (@dims == 3)) && $dims[-1] == $dims[-2] );
-	my ($id, $ret);
-	$id = PDL::zeroes $m;
+	my $id = PDL::zeroes $m;
 	(@dims == 3) ? $id->slice('(0),:,:')->diagonal(0,1) .= 1 : $id->diagonal(0,1) .= 1;
-	$ret = msqrt($m x $m + $id);
+	my $ret = msqrt($m x $m + $id);
 	$m = $m->r2C if $ret->getndims > @dims;	
 	mlog(($m + $ret), $tol);
 }
@@ -1668,10 +1633,9 @@ Return matrix hyperbolic tangent of a square matrix.
 *mtanh = \&PDL::mtanh;
 
 sub PDL::mtanh {
+	&PDL::LinearAlgebra::_square;
 	my ($m, $id)  = @_;
 	my @dims = $m->dims;
-	barf("mtanh requires a 2-D square matrix")
-		unless( ((@dims == 2) || (@dims == 3)) && $dims[-1] == $dims[-2] );
 	return scalar msolvex(mcosh($m), msinh($m),equilibrate=>1) unless $id;
 	$id = PDL::zeroes $m;
 	(@dims == 3) ? $id->slice('(0),:,:')->diagonal(0,1) .= 1 : $id->diagonal(0,1) .= 1;
@@ -1699,12 +1663,10 @@ Return matrix hyperbolic inverse tangent of a square matrix.
 *matanh = \&PDL::matanh;
 
 sub PDL::matanh {
+	&PDL::LinearAlgebra::_square;
 	my ($m, $tol)  = @_;
 	my @dims = $m->dims;
-	barf("matanh requires a 2-D square matrix")
-		unless( ((@dims == 2) || (@dims == 3)) && $dims[-1] == $dims[-2] );
-	my ($id, $ret);
-	$id = PDL::zeroes $m;
+	my $id = PDL::zeroes $m;
 	(@dims == 3) ? $id->slice('(0),:,:')->diagonal(0,1) .= 1 : $id->diagonal(0,1) .= 1;
 	mlog( scalar msolvex( ($id - $m ),($id + $m),equilibrate=>1), $tol ) / 2;
 }
@@ -1729,10 +1691,9 @@ Return matrix hyperbolic cotangent of a square matrix.
 *mcoth = \&PDL::mcoth;
 
 sub PDL::mcoth {
+	&PDL::LinearAlgebra::_square;
 	my ($m, $id)  = @_;
 	my @dims = $m->dims;
-	barf("mcoth requires a 2-D square matrix")
-		unless( ((@dims == 2) || (@dims == 3)) && $dims[-1] == $dims[-2] );
 	scalar msolvex(msinh($m), mcosh($m),equilibrate=>1) unless $id;
 	$id = PDL::zeroes $m;
 	(@dims == 3) ? $id->slice('(0),:,:')->diagonal(0,1) .= 1 : $id->diagonal(0,1) .= 1;
@@ -1760,10 +1721,8 @@ Return matrix hyperbolic inverse cotangent of a square matrix.
 *macoth = \&PDL::macoth;
 
 sub PDL::macoth {
+	&PDL::LinearAlgebra::_square;
 	my ($m, $tol)  = @_;
-	my @dims = $m->dims;
-	barf("macoth requires a 2-D square matrix")
-		unless( ((@dims == 2) || (@dims == 3)) && $dims[-1] == $dims[-2] );
 	my ($inv, $info) = $m->minv;
 	if ($info){
 		warn "macoth: singular matrix";
@@ -1792,10 +1751,8 @@ Return matrix hyperbolic secant of a square matrix.
 *msech = \&PDL::msech;
 
 sub PDL::msech {
+	&PDL::LinearAlgebra::_square;
 	my $m  = shift;
-	my @dims = $m->dims;
-	barf("msech requires a 2-D square matrix")
-		unless( ((@dims == 2) || (@dims == 3)) && $dims[-1] == $dims[-2] );
 	PDL::minv( $m->mexp + mexp(-$m) ) * 2;
 }
 
@@ -1819,10 +1776,8 @@ Return matrix hyperbolic inverse secant of a square matrix.
 *masech = \&PDL::masech;
 
 sub PDL::masech {
+	&PDL::LinearAlgebra::_square;
 	my ($m, $tol)  = @_;
-	my @dims = $m->dims;
-	barf("masech requires a 2-D square matrix")
-		unless( ((@dims == 2) || (@dims == 3)) && $dims[-1] == $dims[-2] );
 	my ($inv, $info) = $m->minv;
 	if ($info){
 		warn "masech: singular matrix";
@@ -1851,10 +1806,8 @@ Return matrix hyperbolic cosecant of a square matrix.
 *mcsch = \&PDL::mcsch;
 
 sub PDL::mcsch {
+	&PDL::LinearAlgebra::_square;
 	my $m  = shift;
-	my @dims = $m->dims;
-	barf("mcsch requires a 2-D square matrix")
-		unless( ((@dims == 2) || (@dims == 3)) && $dims[-1] == $dims[-2] );
 	PDL::minv( $m->mexp - mexp(-$m) ) * 2;
 }
 
@@ -1878,10 +1831,8 @@ Return matrix hyperbolic inverse cosecant of a square matrix.
 *macsch = \&PDL::macsch;
 
 sub PDL::macsch {
+	&PDL::LinearAlgebra::_square;
 	my ($m, $tol)  = @_;
-	my @dims = $m->dims;
-	barf("macsch requires a 2-D square matrix")
-		unless( ((@dims == 2) || (@dims == 3)) && $dims[-1] == $dims[-2] );
 	my ($inv, $info) = $m->minv;
 	if ($info){
 		warn "macsch: singular matrix";
@@ -1921,10 +1872,9 @@ Function will be applied on a PDL::Complex object.
 *mfun = \&PDL::mfun;
 
 sub PDL::mfun {
+	&PDL::LinearAlgebra::_square;
 	my ($m, $method, $diag, $tol)  = @_;
 	my @dims = $m->dims;
-	barf("mfun requires a 2-D square matrix")
-		unless( ((@dims == 2) || (@dims == 3)) && $dims[-1] == $dims[-2] );
 	if ($diag){
 		my ($e, $v, $inv, $info);
 		($e, $v) = $m->meigen(0,1);
