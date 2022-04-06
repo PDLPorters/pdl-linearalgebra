@@ -37,7 +37,8 @@ int xerbla_(char *sub, int *info) { return 0; }
     dSP; \
     PDL_Indx odims[] = {0}; \
     PDL_Indx pc_dims[] = {2}; \
-    char use_native = !perl_get_sv("PDL::Complex::VERSION", 0); \
+    SV *pcv = perl_get_sv("PDL::Complex::VERSION", 0); \
+    char use_native = !pcv || !SvOK(pcv); \
     PDL_Indx *dims = use_native ? NULL : pc_dims; \
     PDL_Indx ndims = use_native ? 0 : sizeof(dims)/sizeof(dims[0]); \
     int type_add = use_native ? PDL_CF - PDL_F : 0; \

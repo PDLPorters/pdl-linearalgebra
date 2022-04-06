@@ -801,15 +801,13 @@ void dfunc_wrapper(dcomplex *p, integer n, SV* dfunc);
 ');
 
 pp_defc('trfun',
-        Pars => '[io,phys]A(2,n,n);int uplo();[phys,o] B(2,n,n);int [o]info()',
+        Pars => '[io]A(2,n,n);int uplo();[o] B(2,n,n);int [o]info()',
 	OtherPars => "SV* func" ,
 	Doc => '
-
 =for ref
 
 Apply an arbitrary function to a complex triangular matrix. Uses a recurrence of Parlett.
 If uplo is true, A is lower triangular.
-
 ',
        	  GenericTypes => [D],
           Code => '
