@@ -2,7 +2,6 @@ use strict;
 use warnings;
 use PDL::LiteF;
 use PDL::MatrixOps qw(identity);
-use PDL::Complex;
 use PDL::LinearAlgebra;
 use PDL::LinearAlgebra::Trans qw //;
 use PDL::LinearAlgebra::Real;
@@ -20,9 +19,9 @@ sub runtest {
     my ($got) = $in->$method(@{$extra||[]});
     ok fapprox($got, $expected), $method or diag "got(".ref($got)."): $got";
   }
-  $_ = PDL::Complex::r2C($_) for $in, $expected_cplx;
-  my ($got) = $in->$method(map ref() && ref() ne 'CODE' ? PDL::Complex::r2C($_) : $_, @{$extra||[]});
-  ok fapprox($got, $expected_cplx), "PDL::Complex $method" or diag "got(".ref($got)."): $got";
+  $_ = PDL->topdl($_)->r2C for $in, $expected_cplx;
+  my ($got) = $in->$method(map ref() && ref() ne 'CODE' ? $_->r2C : $_, @{$extra||[]});
+  ok fapprox($got, $expected_cplx), "native complex $method" or diag "got(".ref($got)."): $got";
 }
 
 my $aa = random(2,2,2);
