@@ -10,7 +10,7 @@ use Test::More;
 
 sub fapprox {
 	my($a,$b) = @_;
-	(PDL->topdl($a)-$b)->abs->max < 0.0001;
+	(PDL->topdl($a)-$b)->abs->max < 0.001;
 }
 sub runtest {
   local $Test::Builder::Level = $Test::Builder::Level + 1;

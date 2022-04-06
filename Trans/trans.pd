@@ -1878,10 +1878,8 @@ sub PDL::mfun {
 	my ($m, $method, $diag, $tol)  = @_;
 	my @dims = $m->dims;
 	if ($diag){
-		my ($e, $v, $inv, $info);
-		($e, $v) = $m->meigen(0,1);
-	
-		($inv, $info) = $v->minv;
+		my ($e, $v) = $m->meigen(0,1);
+		my ($inv, $info) = $v->minv;
 		unless ($info){
 			$method = 'PDL::Complex::'.$method unless ref($method);
 			eval {$v = ($v * $e->$method) x $v->minv;};

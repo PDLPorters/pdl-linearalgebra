@@ -41,7 +41,7 @@ int xerbla_(char *sub, int *info) { return 0; }
     PDL_Indx *dims = use_native ? NULL : pc_dims; \
     PDL_Indx ndims = use_native ? 0 : sizeof(dims)/sizeof(dims[0]); \
     int type_add = use_native ? PDL_CF - PDL_F : 0; \
-    HV *bless_stash = gv_stashpv("PDL::Complex", 0); \
+    HV *bless_stash = gv_stashpv(use_native ? "PDL" : "PDL::Complex", 0); \
     init \
     int count = perl_call_sv(letter ## select_func, G_SCALAR); \
     SPAGAIN; \

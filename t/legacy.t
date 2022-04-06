@@ -10,7 +10,7 @@ use Test::More;
 
 sub fapprox {
 	my($a,$b) = @_;
-	($a-$b)->abs->max < 0.0001;
+	($a-$b)->abs->max < 0.001;
 }
 # PDL::Complex only
 sub runtest {
