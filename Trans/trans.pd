@@ -725,7 +725,7 @@ If uplo is true, A is lower triangular.
           integer i, j, k, l, ind, ind1, ind2;
 
 	ca = (dcomplex *) $P(A);
-	b = $P(B); 
+	b = (void *)$P(B);
 	cb = (dcomplex *) $P(B);
 
 #define subscr(a_1,a_2)\
