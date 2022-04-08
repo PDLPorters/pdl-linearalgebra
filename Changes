@@ -1,3 +1,5 @@
+- allow alternative values for complex U in mschur (#12) - thanks @sebastic for report
+
 0.27 2022-04-06
 - now 64-bit safe
 - t, issym, tritosym method for complex now defaults to not conjugate
