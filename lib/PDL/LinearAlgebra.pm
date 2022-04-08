@@ -195,6 +195,9 @@ sub PDL::_similar {
   ref($m)->new_from_specification($m->type, @di_vals, @vdims);
 }
 sub PDL::_similar_null { ref($_[0])->null }
+sub _complex_null {
+  (defined &PDL::Complex::new_from_specification ? 'PDL::Complex' : 'PDL')->null
+}
 sub PDL::_is_complex { !$_[0]->type->real }
 sub PDL::Complex::_is_complex {1}
 sub PDL::_norm {
@@ -1214,7 +1217,7 @@ sub PDL::mschur {
 		$v, my $sdim = null, my $info = null, $select_f
 	);
 	_error_schur($info, $select_func, $dims[$di], 'mschur', 'QR');
-	my @ret = !$select_func || $sdim ? () : map PDL::Complex->null, grep $_ == 2, $jobvl, $jobvr;
+	my @ret = !$select_func || $sdim ? () : map _complex_null(), grep $_ == 2, $jobvl, $jobvr;
 	push @ret, $sdim if $select_func;
 	$_ = 0 for grep $select_func && $_ == 2 && !$sdim, $jobvl, $jobvr;
 	my $w = @w == 2 ? PDL::Complex::ecplx(@w) : @w[0];
@@ -1303,7 +1306,6 @@ sub PDL::mschurx {
 	my $slice_prefix = ',' x $di;
 	my($m, $jobv, $jobvl, $jobvr, $select_func, $sense, $mult,$norm) = @_;
 	my(@dims) = $m->dims;
-	my ($w, $v, %ret, $vl, $vr);
 	$mult //= 1;
 	$norm //= 1;
 	$jobv = $jobvl = $jobvr = 0 unless wantarray;
@@ -1317,27 +1319,19 @@ sub PDL::mschurx {
 	my $select_f = $m->_wrap_select_func($select_func);
 	$mm->_call_method('geesx', $jobv, $select, $sense, @w, $v, $sdim, $rconde, $rcondv,$info, $select_f);
 	_error_schur($info, $select_func, $dims[$di], 'mschurx', 'QR');
-	if ($select_func){
-		if(!$sdim){
-			if ($jobvl == 2){
-				$ret{VL} = $m->_similar_null;
-				$jobvl = 0;
-			}
-			if ($jobvr == 2){
-				$ret{VR} = $m->_similar_null;
-				$jobvr = 0;
-			}
-		}
-		$ret{n} = $sdim;
-	}
-	if ($jobvl || $jobvr){
+	my @vl = ('VL', $jobvl);
+	my @vr = ('VR', $jobvr);
+	my %ret;
+	$ret{$_->[0]} = _complex_null(), $_->[1]=0 for grep $select_func && !$sdim && $_->[1] == 2, \@vl, \@vr;
+	$ret{n} = $sdim if $select_func;
+	if ($vl[1] || $vr[1]) {
 		my ($vl, $vr) = _eigen_one(
-		  $mm, $select_func, $jobv, $jobvl, $jobvr,
+		  $mm, $select_func, $jobv, $vl[1], $vr[1],
 		  $mult, $norm, $dims[$di+1], $sdim, @w
 		);
 		$ret{$_->[0]} = $_->[1] for grep defined $_->[1], ['VL',$vl], ['VR',$vr];
 	}
-	$w = PDL::Complex::ecplx(@w);
+	my $w = PDL::Complex::ecplx(@w);
 	if ($jobv == 2 && $select_func) {
 		$v = $sdim > 0 ? $v->t->slice("$slice_prefix:@{[$sdim-1]},")->sever : $m->_similar_null;
 	}
@@ -1480,25 +1474,14 @@ sub PDL::mgschur{
 	$_ = $m->_similar_null for my ($beta, $vsl, $vsr);
 	$mm->_call_method('gges', $jobvsl, $jobvsr, $select, $pp, @w, $beta, $vsl, $vsr, $sdim, $info, $select_f);
 	_error_schur($info, $select_func, $mdims[$di], 'mgschur', 'QZ');
+	my @vl = ('VL', $jobvl);
+	my @vr = ('VR', $jobvr);
 	my %ret;
-	if ($select_func){
-		if ($jobvl == 2){
-			if (!$sdim){
-				$ret{VL} = PDL::Complex->null;
-				$jobvl = 0;
-			}
-		}
-		if ($jobvr == 2){
-			if(!$sdim){
-				$ret{VR} = PDL::Complex->null;
-				$jobvr = 0;
-			}
-		}
-		$ret{n} = $sdim;
-	}
-	if ($jobvl || $jobvr){
+	$ret{$_->[0]} = _complex_null(), $_->[1]=0 for grep $select_func && !$sdim && $_->[1] == 2, \@vl, \@vr;
+	$ret{n} = $sdim if $select_func;
+	if ($vl[1] || $vr[1]) {
 		my ($vl, $vr) = _eigen_pair(
-		  $mm, $pp, $select_func, $jobvl, $jobvr, $jobvsl, $jobvsr, $vsl, $vsr,
+		  $mm, $pp, $select_func, $vl[1], $vr[1], $jobvsl, $jobvsr, $vsl, $vsr,
 		  $mult, $norm, $mdims[$di+1], $sdim, @w
 		);
 		$ret{$_->[0]} = $_->[1] for grep defined $_->[1], ['VL',$vl], ['VR',$vr];
@@ -1597,10 +1580,9 @@ sub PDL::mgschurx{
 	&_square_same;
 	my($m, $p, $jobvsl, $jobvsr, $jobvl, $jobvr, $select_func, $sense, $mult, $norm) = @_;
 	my (@mdims) = $m->dims;
-	my ($vsl, $vsr, $type, %ret, $vl, $vr);
 	$mult //= 1;
 	$norm //= 1;
-	$type = $m->type;
+	my $type = $m->type;
 	my $select = $select_func ? 1 : 0;
 	$sense = 0 if !$select_func;
 	$_ = null for my ($info, $rconde, $rcondv, $sdim);
@@ -1610,22 +1592,14 @@ sub PDL::mgschurx{
 	my $select_f = $m->_wrap_select_func($select_func);
 	$mm->_call_method('ggesx', $jobvsl, $jobvsr, $select, $sense, $pp, @w, $beta, $vsl, $vsr, $sdim, $rconde, $rcondv,$info, $select_f);
 	_error_schur($info, $select_func, $mdims[$di], 'mgschurx', 'QZ');
-	if ($select_func){
-		if(!$sdim){
-			if ($jobvl == 2){
-				$ret{VL} = $m->_similar_null;
-				$jobvl = 0;
-			}
-			if ($jobvr == 2){
-				$ret{VR} = $m->_similar_null;
-				$jobvr = 0;
-			}
-		}
-		$ret{n} = $sdim;
-	}
-	if ($jobvl || $jobvr) {
+	my @vl = ('VL', $jobvl);
+	my @vr = ('VR', $jobvr);
+	my %ret;
+	$ret{$_->[0]} = _complex_null(), $_->[1]=0 for grep $select_func && !$sdim && $_->[1] == 2, \@vl, \@vr;
+	$ret{n} = $sdim if $select_func;
+	if ($vl[1] || $vr[1]) {
 		my ($vl, $vr) = _eigen_pair(
-		  $mm, $pp, $select_func, $jobvl, $jobvr, $jobvsl, $jobvsr, $vsl, $vsr,
+		  $mm, $pp, $select_func, $vl[1], $vr[1], $jobvsl, $jobvsr, $vsl, $vsr,
 		  $mult, $norm, $mdims[$di+1], $sdim, @w
 		);
 		$ret{$_->[0]} = $_->[1] for grep defined $_->[1], ['VL',$vl], ['VR',$vr];
