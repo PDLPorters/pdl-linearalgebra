@@ -11,7 +11,7 @@ use PDL::LinearAlgebra::Complex;
 use PDL::LinearAlgebra::Special qw//;
 use PDL::Exporter;
 no warnings 'uninitialized';
-use constant{
+use constant {
 	NO => 0,
 	WARN => 1,
 	BARF => 2,
@@ -28,24 +28,15 @@ $VERSION = eval $VERSION;
 				mgeigen  mgeigenx msymeigen msymeigenx msymgeigen msymgeigenx
 				msolve mtrisolve msymsolve mpossolve msolvex msymsolvex mpossolvex
 				mrank mlls mllsy mllss mglm mlse tritosym mnorm mgschur mgschurx
-				mcrossprod mcond morth mschur mschurx posinf neginf
+				mcrossprod mcond morth mschur mschurx
 				NO WARN BARF setlaerror getlaerorr laerror/;
 %PDL::LinearAlgebra::EXPORT_TAGS = (Func=>[@PDL::LinearAlgebra::EXPORT_OK]);
 
 my $_laerror = BARF;
 
-my $posinf;
-BEGIN { $posinf = 1/pdl(0) }
-sub posinf() { $posinf->copy };
-my $neginf;
-BEGIN { $neginf = -1/pdl(0) }
-sub neginf() { $neginf->copy };
-
 {
 package # hide from CPAN indexer
   PDL::Complex;
-
-use PDL::Types;
 
 our $floatformat  = "%4.4g";    # Default print format for long numbers
 our $doubleformat = "%6.6g";
@@ -69,7 +60,6 @@ our @ISA = @ISA ? @ISA : 'PDL'; # so still operates when no PDL::Complex
 *asinh = \&PDL::Complex::Casinh;
 *acosh = \&PDL::Complex::Cacosh;
 *atanh = \&PDL::Complex::Catanh;
-
 *tricpy = \&PDL::LinearAlgebra::Complex::ctricpy;
 }
 ########################################################################
@@ -666,7 +656,7 @@ sub PDL::mcond {
 	my $temp = $sv->slice('(0)');
         my $ret = $temp/$sv->((-1));
 	$info = $ret->flat->index(which($temp == 0));
-	$info .= posinf unless $info->isempty;
+	$info .= inf() unless $info->isempty;
 	return $ret;
 }
 
