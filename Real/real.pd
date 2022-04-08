@@ -2348,7 +2348,7 @@ pp_def("ggesx",
 //		}
 
 		// Code modified from Lapack
-		// TODO other shur form above
+		// TODO other schur form above
 		// The actual updated release (clapack 09/20/2000) do not allow
 		// querying the workspace. See release notes of Lapack
 		// for this feature.

@@ -44,7 +44,6 @@ our @ISA = @ISA ? @ISA : 'PDL'; # so still operates when no PDL::Complex
 
 *r2p = \&PDL::Complex::Cr2p;
 *p2r = \&PDL::Complex::Cp2r;
-*scale = \&PDL::Complex::Cscale;
 *conj = \&PDL::Complex::Cconj;
 *abs = \&PDL::Complex::Cabs;
 *abs2 = \&PDL::Complex::Cabs2;
@@ -2697,7 +2696,7 @@ Works on transposed arrays.
              error => 1,
              scale => 1,
              permute=>1,
-             shur => 1
+             schur => 1
              );
  my ( $eigenvalues, $left_eigenvectors, $right_eigenvectors, %result)  = meigenx($a,%options);
  print "Error bounds for eigenvalues:\n $eigenvalues\n are:\n". transpose($result{'eerror'}) unless $info;
@@ -2842,7 +2841,7 @@ Works on transposed arrays.
              error => 1,
              scale => 1,
              permute=>1,
-             shur => 1
+             schur => 1
              );
  ($alpha, $beta, $left_eigenvectors, $right_eigenvectors, %result)  = mgeigenx($a, $b,%options);
  print "Error bounds for eigenvalues:\n $eigenvalues\n are:\n". transpose($result{'eerror'}) unless $info;

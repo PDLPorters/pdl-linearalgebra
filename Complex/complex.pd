@@ -1258,7 +1258,7 @@ EOF
 
 
 		// Code modified from Lapack
-		// TODO other shur form above
+		// TODO other schur form above
 		// The actual updated release (clapack 09/20/2000) do not allow
 		// the workspace query. See release notes of Lapack
 		// for this feature.
