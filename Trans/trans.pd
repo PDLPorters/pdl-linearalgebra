@@ -71,7 +71,10 @@ pp_add_exported('', ' mexp mexpts mlog msqrt mpow
 			csc acsc csch acsch toreal pi');
 
 pp_def('geexp',
-          Pars => '[io,phys]A(n,n);int deg();scale();[io]trace();int [o]ns();int [o]info()',
+          Pars => '[io,phys]A(n,n);int deg();scale();[io]trace();int [o]ns();int [o]info(); int [t]ipiv(n); [t]wsp(wspn);',
+	  RedoDimsCode => '
+	    $SIZE(wspn) = 3 * $SIZE(n) * $SIZE(n);
+	  ',
        	  GenericTypes => [D],
           Code => '
 /* ----------------------------------------------------------------------| 
@@ -138,11 +141,9 @@ pp_def('geexp',
 
 	integer i__1, i__2, i__, j, k;
 	integer ip, mm, iq, ih2, ifree,  iused, iodd, iget, iput;
-	integer *ipiv;
 
 	double cp, cq, scale, scale2, hnorm, tracen;
-	double *coef;
-	double *wsp;
+	double *coef, *wsp = $P(wsp);
 
 	integer c__1 = 1;
 	integer c__2 = 2;
@@ -156,9 +157,7 @@ pp_def('geexp',
 
 /////////////    
 	mm = $SIZE(n) * $SIZE(n);
-	ipiv = (integer *) malloc ( $SIZE(n) * sizeof (integer));
-	coef = (double *) malloc ( (($deg() + 1) + $SIZE(n) * $SIZE(n)) * sizeof (double));
-	wsp = (double *) malloc ( 3 * mm * sizeof (double));    
+	coef = (double *) malloc(($deg() + 1 + mm) * sizeof(double));
 //////////
 
 	// ---  initialise pointers ... 
@@ -194,8 +193,6 @@ pp_def('geexp',
 	hnorm = abs($scale() * hnorm);
 	if (hnorm == 0.)
 	{
-		free(ipiv);
-		free(wsp);
 		free(coef);
 		coef = $P(A);
 		$ns() = 0;
@@ -269,7 +266,7 @@ pp_def('geexp',
 			ip = ifree;
 		}
 		FORTRAN(daxpy)(&mm, &c_b19, &wsp[ip], &c__1, &wsp[iq], &c__1);
-		FORTRAN(dgesv)(&(integer){$SIZE(n)}, &(integer){$SIZE(n)}, &wsp[iq], &(integer){$SIZE(n)}, ipiv, &wsp[ip], &(integer){$SIZE(n)}, $P(info));
+		FORTRAN(dgesv)(&(integer){$SIZE(n)}, &(integer){$SIZE(n)}, &wsp[iq], &(integer){$SIZE(n)}, $P(ipiv), &wsp[ip], &(integer){$SIZE(n)}, $P(info));
 	
 		if ($info() != 0)
 		{
@@ -314,8 +311,6 @@ pp_def('geexp',
 					coef[i__++] = wsp[i__1];
 			}
 		}
-		free(ipiv);
-		free(wsp);
 	}
 ',
 	Doc => <<EOT
@@ -360,7 +355,7 @@ EOT
 
 do '../pp_defc.pl'; die if $@;
 pp_defc('geexp',
-        Pars => '[io,phys]A(2,n,n);int deg();scale();int trace();int [o]ns();int [o]info()',
+        Pars => '[io,phys]A(2,n,n);int deg();scale();int trace();int [o]ns();int [o]info(); int [t] ipiv(n)',
 	Doc => '
 =for ref
 
@@ -426,7 +421,6 @@ ACM - Transactions On Mathematical Software, 24(1):130-156, 1998
 	static integer c__1 = 1;
 	static double c_b19 = 2.;
 	static double c_b21 = -1.;
-	integer *ipiv;
 
 	integer i__1, i__2, i__3, i__, j, k;
 	integer ip, mm, iq, ih2, iodd, iget, iput, ifree, iused;
@@ -450,7 +444,6 @@ ACM - Transactions On Mathematical Software, 24(1):130-156, 1998
 
 	h__ = (PDL_CDouble *) $P(A);
     
-	ipiv = (integer *) malloc ( $SIZE(n) * sizeof (integer));
 	wsp = malloc (( $deg() + 1 +   4 * $SIZE(n) * $SIZE(n)) * sizeof (PDL_CDouble));
 
 	mm = $SIZE(n) * $SIZE(n);
@@ -570,7 +563,7 @@ ACM - Transactions On Mathematical Software, 24(1):130-156, 1998
 		    }
 		    z__1 = -1.;
 		    FORTRAN(zaxpy)(&mm, &z__1, &wsp[ip], &c__1, &wsp[iq], &c__1);
-		    FORTRAN(zgesv)(&(integer){$SIZE(n)}, &(integer){$SIZE(n)}, &wsp[iq], &(integer){$SIZE(n)}, ipiv, &wsp[ip], &(integer){$SIZE(n)}, $P(info));
+		    FORTRAN(zgesv)(&(integer){$SIZE(n)}, &(integer){$SIZE(n)}, &wsp[iq], &(integer){$SIZE(n)}, $P(ipiv), &wsp[ip], &(integer){$SIZE(n)}, $P(info));
 
 		    if ($info() == 0) 
 		    {
@@ -618,7 +611,6 @@ ACM - Transactions On Mathematical Software, 24(1):130-156, 1998
 		    }
 	    }
 	    free(wsp);
-	    free(ipiv);
 ',
 );
 

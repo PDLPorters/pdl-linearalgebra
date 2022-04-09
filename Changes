@@ -1,5 +1,6 @@
 - allow alternative values for complex U in mschur (#12) - thanks @sebastic for report
 - use C macro "FORTRAN()" to hide whether need _ on end of symbols
+- use [t] Pars instead of malloc for fixed-size workspace
 
 0.27 2022-04-06
 - now 64-bit safe
