@@ -1,3 +1,4 @@
+0.29 2022-04-10
 - fix mnull reporting different solution on Windows - thanks @aero for CPANTesters report
 - remove PDL::Complex method aliases now in PDL 2.078
 
