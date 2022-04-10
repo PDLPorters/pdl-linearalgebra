@@ -1,4 +1,5 @@
 - fix mnull reporting different solution on Windows - thanks @aero for CPANTesters report
+- remove PDL::Complex method aliases now in PDL 2.078
 
 0.28 2022-04-09
 - allow alternative values for complex U in mschur (#12) - thanks @sebastic for report

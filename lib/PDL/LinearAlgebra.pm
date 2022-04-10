@@ -42,23 +42,6 @@ our $floatformat  = "%4.4g";    # Default print format for long numbers
 our $doubleformat = "%6.6g";
 our @ISA = @ISA ? @ISA : 'PDL'; # so still operates when no PDL::Complex
 
-*r2p = \&PDL::Complex::Cr2p;
-*p2r = \&PDL::Complex::Cp2r;
-*conj = \&PDL::Complex::Cconj;
-*abs = \&PDL::Complex::Cabs;
-*abs2 = \&PDL::Complex::Cabs2;
-*arg = \&PDL::Complex::Carg;
-*tan = \&PDL::Complex::Ctan;
-*proj = \&PDL::Complex::Cproj;
-*asin = \&PDL::Complex::Casin;
-*acos = \&PDL::Complex::Cacos;
-*atan = \&PDL::Complex::Catan;
-*sinh = \&PDL::Complex::Csinh;
-*cosh = \&PDL::Complex::Ccosh;
-*tanh = \&PDL::Complex::Ctanh;
-*asinh = \&PDL::Complex::Casinh;
-*acosh = \&PDL::Complex::Cacosh;
-*atanh = \&PDL::Complex::Catanh;
 *tricpy = \&PDL::LinearAlgebra::Complex::ctricpy;
 }
 ########################################################################

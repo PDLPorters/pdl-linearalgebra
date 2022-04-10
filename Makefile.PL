@@ -60,12 +60,12 @@ WriteMakefile(
     x_IRC => 'irc://irc.perl.org/#pdl',
   },
   CONFIGURE_REQUIRES =>  {
-    "PDL" => '2.075',
+    "PDL" => '2.078',
     "Devel::CheckLib" => 0,
     "ExtUtils::F77" => '1.26',
   },
   PREREQ_PM => {
-    "PDL" => '2.075', # RedoDimsCode with SIZE() available
+    "PDL" => '2.078', # PDL::Complex method aliases
   },
   TEST_REQUIRES =>  {
     "Test::More" => '0.88', # done_testing
