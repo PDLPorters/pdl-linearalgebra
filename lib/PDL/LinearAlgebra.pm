@@ -46,7 +46,7 @@ our @ISA = @ISA ? @ISA : 'PDL'; # so still operates when no PDL::Complex
 }
 ########################################################################
 
-=encoding Latin-1
+=encoding utf8
 
 =head1 NAME
 
@@ -3376,7 +3376,7 @@ sub PDL::mgsvd {
 
 =head1 AUTHOR
 
-Copyright (C) Grégory Vanuxem 2005-2018.
+Copyright (C) GrÃ©gory Vanuxem 2005-2018.
 
 This library is free software; you can redistribute it and/or modify
 it under the terms of the Perl Artistic License as in the file Artistic_2
