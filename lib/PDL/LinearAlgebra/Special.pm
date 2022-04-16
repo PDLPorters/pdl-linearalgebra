@@ -27,7 +27,7 @@ PDL::LinearAlgebra::Special - Special matrices for PDL
 
 =head1 SYNOPSIS
 
- use PDL::LinearAlgebra::Mtype;
+ use PDL::LinearAlgebra::Special;
 
  $a = mhilb(5,5);
 
