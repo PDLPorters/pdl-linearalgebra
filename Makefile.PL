@@ -17,11 +17,12 @@ our $inc = '-DF77_USCORE='. (ExtUtils::F77->trail_ ? '_' : '');
 {
   # work around Devel::CheckLib not doing Text::ParseWords::shellwords
   use Text::ParseWords qw(shellwords);
-  my @libpath = map {my $r=$_;$r=~s/^-L//?$r:()} shellwords $libs0;
+  my @libpath = map {my $r=$_;$r=~s/^-L//?$r:()} my @sw = shellwords $libs0;
+  my @lib = map {my $r=$_;$r=~s/^-l//?$r:()} @sw;
+  my $mangled_libs0 = join ' ', (map qq{-L"$_"}, @libpath), (map "-l$_", @lib);
   my $f77_uscore = (ExtUtils::F77->trail_ ? '_' : '');
   check_lib_or_exit(
-    lib => 'lapack',
-    libpath => \@libpath,
+    ldflags => $mangled_libs0,
     header => [($^O =~ /MSWin/ ? 'float.h' : ()), qw(stdio.h math.h)],
     function => <<EOF,
 
