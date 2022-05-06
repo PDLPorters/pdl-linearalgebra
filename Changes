@@ -1,3 +1,5 @@
+- fix to work again with MacOS by stripping unknown libraries
+
 0.31 2022-05-06
 - fix to work with Strawberry Perl 5.28's LAPACK (#14) - thanks @aero for report
 
