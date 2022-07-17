@@ -87,13 +87,10 @@ sub find_libs {
   my @libs = qw/
     openblaso
     openblas_openmp
-    tatlas
-    lapack_atlas
     openblasp
     openblas_pthreads
     openblas
     openblas_serial
-    satlas
     mkl_rt/;
 
   for my $l (@libs) {
