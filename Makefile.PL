@@ -23,6 +23,10 @@ extern long FORTRAN(ilaenv)(long *ispec, char *name__, char *opts, long *n1,
   long *n2, long *n3, long *n4, long name_len, long opts_len);
 long i = FORTRAN(ilaenv)(&c_nine, "SGESDD", " ", &c_zero, &c_zero, &c_zero, &c_zero, 6, 1);
 if (argc > 2) printf("%ld", i); /* try to stop optimiser eliminating */
+extern void FORTRAN(dgebal)(char job, int n, double *a, int lda, int ilo, int ihi, double *scale, int info);
+if (argc > 2) FORTRAN(dgebal)(0, 0, NULL, 0, 0, 0, NULL, 0);
+extern void FORTRAN(dgesdd)(char job, int m, int n, double *a, int lda, double *s, double *u, int ldu, double *vt, int ldvt, double *work, int lwork, int *iwork, int info);
+if (argc > 2) FORTRAN(dgesdd)(0, 0, 0, NULL, 0, NULL, NULL, 0, NULL, 0, NULL, 0, NULL, 0);
 return 0;
 EOF
 our %ldloadlibs = ($^O =~ /MSWin/ && $Config{cc} eq 'cl')
@@ -76,7 +80,7 @@ WriteMakefile(
   },
   CONFIGURE_REQUIRES =>  {
     "PDL" => '2.104',
-    "Devel::CheckLib" => 0,
+    "Devel::CheckLib" => '1.16', # argc is not supplied in 1.05, but 1.16 works.
     "ExtUtils::F77" => '1.26',
   },
   PREREQ_PM => {
