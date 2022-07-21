@@ -1,8 +1,11 @@
 use ExtUtils::MakeMaker;
+use strict;
+use warnings;
 use Config;
 use Devel::CheckLib qw(check_lib check_lib_or_exit);
 use ExtUtils::F77;
 use PDL::Core::Dev;
+use Text::ParseWords qw(shellwords);
 
 our %ldloadlibs = ($^O =~ /MSWin/ && $Config{cc} eq 'cl')
   ? (LDLOADLIBS => 'oldnames.lib kernel32.lib user32.lib gdi32.lib winspool.lib  comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib  netapi32.lib uuid.lib wsock32.lib mpr.lib winmm.lib  version.lib odbc32.lib odbccp32.lib msvcrt.lib  ../lapack/libacml.lib "C:\Program Files\Microsoft Visual Studio .NET 2003\Vc7\lib\msvcrt.lib" ')
@@ -19,7 +22,6 @@ our $libs0 = (
 our $inc = '-DF77_USCORE='. (ExtUtils::F77->trail_ ? '_' : '');
 {
   # work around Devel::CheckLib not doing Text::ParseWords::shellwords
-  use Text::ParseWords qw(shellwords);
   my @libpath = grep -d, map {my $r=$_;$r=~s/^-L//?$r:()} my @sw = shellwords $libs0;
   my @lib = grep check_lib(lib=>$_), map {my $r=$_;$r=~s/^-l//?$r:()} @sw;
   $libs0 = join ' ', (map qq{-L"$_"}, @libpath), (map "-l$_", @lib);
