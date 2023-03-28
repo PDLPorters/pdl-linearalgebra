@@ -1,3 +1,5 @@
+- memory-manage CODE-refs properly to work with PDL 2.083+
+
 0.35 2022-07-17
 - fix `$real x $native_complex` (#18) - thanks @KJ7LNW for report
 
