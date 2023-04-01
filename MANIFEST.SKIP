@@ -3,7 +3,7 @@ Real/Real\.
 Trans/Trans\.
 Complex/Complex\.
 cover_db/
-Makefile$
+Makefile(\.old)?$
 \.o(bj|)$
 \.sw.*$
 META
