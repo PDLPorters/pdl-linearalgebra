@@ -10477,9 +10477,13 @@ the exponent range, as is found on a Cray.
 pp_def(
 	'tricpy',
 	Pars => 'A(m,n);int uplo();[o] C(m,n)',
+	Pars => 'A(m,n);[o] C(m,n)',
+    OtherPars => 'int uplo',
+    OtherParsDefaults => {uplo => 0},
+    ArgOrder => 1,
 	GenericTypes => [ppdefs_all()],
 	Code => '
-		if ($uplo())
+		if ($COMP(uplo))
 		{
 			loop(n,m) %{
 				$C() = $A();
@@ -10497,7 +10501,9 @@ pp_def(
 	Doc => <<EOT
 =for ref
 
-Copy triangular part to another matrix. If uplo == 0 copy upper triangular part.
+Copy triangular part to another matrix.
+The parameters order is A, uplo, C.
+If uplo == 0 (which is the default), copy upper triangular part.
 
 =cut
 

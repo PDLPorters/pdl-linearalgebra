@@ -4947,9 +4947,11 @@ EOF
 ################################################################################
 pp_def(
 	'ctricpy',
-	Pars => 'A(c=2,m,n);int uplo();[o] C(c=2,m,n)',
+	Pars => 'A(c=2,m,n);[o] C(c=2,m,n)',
+	OtherPars => 'int uplo',
+	ArgOrder => 1,
 	Code => '
-		if ($uplo())
+		if ($COMP(uplo))
 		{
 			loop (n,m) %{
 				loop(c) %{ $C() = $A(); %}
@@ -4970,7 +4972,9 @@ pp_def(
 
 =for ref
 
-Copy triangular part to another matrix. If uplo == 0 copy upper triangular part.
+Copy triangular part to another matrix.
+The parameters order is A, uplo, C.
+If uplo == 0 (which is the default), copy upper triangular part.
 
 =cut
 
