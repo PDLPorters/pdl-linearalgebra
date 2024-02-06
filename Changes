@@ -1,3 +1,5 @@
+- tricpy now supports native-complex types
+
 0.37 2023-04-01
 - install pdldoc using PDL::Doc
 

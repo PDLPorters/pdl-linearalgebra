@@ -5,6 +5,7 @@ pp_setversion($VERSION);
 $VERSION = eval $VERSION;
 
 use PDL::Exporter;
+use PDL::Types qw(ppdefs_all);
 
 sub generate_code($){
 	if ($config{WITHOUT_THREAD}){
@@ -10475,6 +10476,7 @@ the exponent range, as is found on a Cray.
 pp_def(
 	'tricpy',
 	Pars => 'A(m,n);int uplo();[o] C(m,n)',
+	GenericTypes => [ppdefs_all()],
 	Code => '
 		if ($uplo())
 		{
