@@ -119,6 +119,7 @@ PDL::LinearAlgebra::Complex - PDL interface to the lapack linear algebra program
 This module provides an interface to parts of the lapack library (complex numbers).
 These routines accept either float or double ndarrays.
 
+=cut
 EOD
 
 pp_defc("gtsv",

@@ -123,6 +123,7 @@ PDL::LinearAlgebra::Real - PDL interface to the real lapack linear algebra progr
 This module provides an interface to parts of the real lapack library.
 These routines accept either float or double ndarrays.
 
+=cut
 EOD
 
 pp_def("gtsv",

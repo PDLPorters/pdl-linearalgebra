@@ -59,6 +59,7 @@ Moreover it provides sec, asec, sech, asech, cot, acot, acoth, coth, csc,
 acsc, csch, acsch. Beware, importing this module will overwrite the hidden
 PDL routine sec. If you need to call it specify its origin module : PDL::Basic::sec(args)
 
+=cut
 EOD
 
 pp_add_exported('', ' mexp mexpts mlog msqrt mpow 
