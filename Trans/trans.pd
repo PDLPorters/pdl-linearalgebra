@@ -637,10 +637,10 @@ If uplo is true, A is lower triangular.
 	for (i = 0; i < ind;i++)
 		b[i] = 0;
 
-  for (i = 0; i < $SIZE(n); i++){
-	ind = subscr(i,i);
+  loop(n0) %{
+	ind = subscr(n0,n0);
 	cb[ind] = csqrt(ca[ind]);
-  }
+  %}
 
   for (k = 0; k < $SIZE(n)-1; k++)
     {
