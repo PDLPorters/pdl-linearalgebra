@@ -4949,32 +4949,49 @@ pp_def(
 	'ctricpy',
 	Pars => 'A(c=2,m,n);[o] C(c=2,m,n)',
 	OtherPars => 'int uplo',
-	ArgOrder => 1,
+	OtherParsDefaults => {uplo => 0},
+	ArgOrder => [qw(A uplo C)],
 	Code => '
 		if ($COMP(uplo))
 		{
-			loop (n,m) %{
-				loop(c) %{ $C() = $A(); %}
-				if (m >= n) break;
+			broadcastloop %{
+				loop (n,m) %{
+					loop(c) %{ $C() = $A(); %}
+					if (m >= n) break;
+				%}
 			%}
 		}
 		else
 		{
-			loop (m,n) %{
-				loop(c) %{ $C() = $A(); %}
-				if (n >= m) break;
+			broadcastloop %{
+				loop (m,n) %{
+					loop(c) %{ $C() = $A(); %}
+					if (n >= m) break;
+				%}
 			%}
 		}
 		
 
 	',
 	Doc => <<EOT
+=for usage
+
+ctricpy(PDL::Complex(A), int(uplo), PDL::Complex(C))
+
+=for examples
+
+	use PDL::LinearAlgebra;
+
+	\$c = \$a->ctricpy(\$uplo);	# explicit uplo
+	\$c = \$a->ctricpy;			# default to upper
+or
+	use PDL::LinearAlgebra::Complex;
+
+	ctricpy(\$a, \$uplo, \$c);	# modify c
 
 =for ref
 
-Copy triangular part to another matrix.
-The parameters order is A, uplo, C.
-If uplo == 0 (which is the default), copy upper triangular part.
+Copy triangular part to another matrix. If uplo == 0 copy upper triangular part.
 
 =cut
 
