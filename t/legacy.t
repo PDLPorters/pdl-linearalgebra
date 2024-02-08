@@ -37,7 +37,7 @@ EOF
 runtest($aa, '_norm', $aa_exp->abs, [1]);
 runtest($aa, '_norm', $aa_exp->t, [0,1]);
 
-$aa = sequence(2, 3, 3)->cplx;
+$aa = random(2, 3, 3)->cplx;
 my $up = ones(3, 3)->tricpy(0) * $aa;
 my $lo = ones(3, 3)->tricpy(1) * $aa;
 runtest($aa, 'ctricpy', $up, [0]);
