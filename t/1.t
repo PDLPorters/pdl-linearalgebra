@@ -81,4 +81,17 @@ $B = identity(2);
 ok fapprox($got = $A x $B, $A), 'complex first' or diag "got: $got";
 ok fapprox($got = $B x $A, $A), 'complex second' or diag "got: $got";
 
+$A = random(4, 4);
+my $up = $A->copy;
+$up->where(sequence(4) < sequence(1,4)) .= 0;
+my $lo = $A->copy;
+$lo->where(sequence(4) > sequence(1,4)) .= 0;
+ok fapprox($got = $A->tricpy(0), $up), 'upper triangle #1' or diag "got: $got";
+tricpy($A, 0, $got = null);
+ok fapprox($got, $up), 'upper triangle #2' or diag "got: $got";
+ok fapprox($got = $A->tricpy, $up), 'upper triangle #3' or diag "got: $got";
+ok fapprox($got = $A->tricpy(1), $lo), 'lower triangle #1' or diag "got: $got";
+tricpy($A, 1, $got = null);
+ok fapprox($got, $lo), 'lower triangle #2' or diag "got: $got";
+
 done_testing;
