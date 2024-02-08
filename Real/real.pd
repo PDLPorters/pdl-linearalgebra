@@ -10475,7 +10475,7 @@ the exponent range, as is found on a Cray.
 ################################################################################
 pp_def(
 	'tricpy',
-	Pars => 'complex A(m,n);complex [o] C(m,n)',
+	Pars => 'A(m,n);[o] C(m,n)',
 	OtherPars => 'int uplo',
 	OtherParsDefaults => {uplo => 0},
 	ArgOrder => [qw(A uplo C)],
