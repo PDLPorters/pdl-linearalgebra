@@ -4973,7 +4973,7 @@ pp_def(
 		
 
 	',
-	Doc => <<EOT
+	Doc => <<'EOT'
 =for usage
 
 ctricpy(PDL::Complex(A), int(uplo), PDL::Complex(C))
@@ -4982,12 +4982,12 @@ ctricpy(PDL::Complex(A), int(uplo), PDL::Complex(C))
 
 	use PDL::LinearAlgebra;
 
-	\$c = \$a->ctricpy(\$uplo);	# explicit uplo
-	\$c = \$a->ctricpy;			# default to upper
+	$c = $a->ctricpy($uplo);	# explicit uplo
+	$c = $a->ctricpy;			# default to upper
 or
 	use PDL::LinearAlgebra::Complex;
 
-	ctricpy(\$a, \$uplo, \$c);	# modify c
+	ctricpy($a, $uplo, $c);	# modify c
 
 =for ref
 

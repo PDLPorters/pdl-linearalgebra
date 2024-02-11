@@ -10500,7 +10500,7 @@ pp_def(
 			%}
 		}
 	',
-	Doc => <<EOT
+	Doc => <<'EOT'
 =for usage
 
 tricpy(PDL(A), int(uplo), PDL(C))
@@ -10509,12 +10509,12 @@ tricpy(PDL(A), int(uplo), PDL(C))
 
 	use PDL::LinearAlgebra;
 
-	\$c = \$a->tricpy(\$uplo);	# explicit uplo
-	\$c = \$a->tricpy;			# default upper
+	$c = $a->tricpy($uplo);	# explicit uplo
+	$c = $a->tricpy;			# default upper
 or
 	use PDL::LinearAlgebra::Real;
 
-	tricpy(\$a, $uplo, \$c);	# modify c
+	tricpy($a, $uplo, $c);	# modify c
 
 =for ref
 
