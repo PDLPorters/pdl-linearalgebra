@@ -4970,34 +4970,30 @@ pp_def(
 				%}
 			%}
 		}
-		
-
 	',
-	Doc => <<'EOT'
-=for usage
-
-ctricpy(PDL::Complex(A), int(uplo), PDL::Complex(C))
-
-=for examples
-
-	use PDL::LinearAlgebra;
-
-	$c = $a->ctricpy($uplo);	# explicit uplo
-	$c = $a->ctricpy;			# default to upper
-or
-	use PDL::LinearAlgebra::Complex;
-
-	ctricpy($a, $uplo, $c);	# modify c
-
-=for ref
-
-Copy triangular part to another matrix. If uplo == 0 copy upper triangular part.
-
-=cut
-
-EOT
-
+	Doc => undef
 );
+
+#=for usage
+#
+#ctricpy(PDL::Complex(A), int(uplo), PDL::Complex(C))
+#
+#=for examples
+#
+#	use PDL::LinearAlgebra;
+#
+#	$c = $a->ctricpy($uplo);	# explicit uplo
+#	$c = $a->ctricpy;			# default to upper
+#or
+#	use PDL::LinearAlgebra::Complex;
+#
+#	ctricpy($a, $uplo, $c);	# modify c
+#
+#=for ref
+#
+#Copy triangular part to another matrix. If uplo == 0 copy upper triangular part.
+#
+#=cut
 
 pp_bless('PDL');
 pp_def(
