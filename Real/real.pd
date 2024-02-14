@@ -10505,7 +10505,7 @@ pp_def(
 
 tricpy(PDL(A), int(uplo), PDL(C))
 
-=for examples
+=for example
 
 	use PDL::LinearAlgebra;
 
