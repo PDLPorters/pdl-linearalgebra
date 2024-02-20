@@ -10473,28 +10473,49 @@ the exponent range, as is found on a Cray.
 #		OTHER AUXILIARY ROUTINES
 #
 ################################################################################
-
 pp_def(
 	'tricpy',
-	Pars => 'A(m,n);int uplo();[o] C(m,n)',
+	Pars => 'A(m,n);[o] C(m,n)',
+	OtherPars => 'int uplo',
+	OtherParsDefaults => {uplo => 0},
+	ArgOrder => [qw(A uplo C)],
 	GenericTypes => [ppdefs_all()],
 	Code => '
-		if ($uplo())
+		if ($COMP(uplo))
 		{
-			loop(n,m) %{
-				$C() = $A();
-				if (m >= n) break;
+			broadcastloop %{
+				loop(n,m) %{
+					$C() = $A();
+					if (m >= n) break;
+				%}
 			%}
 		}
 		else
 		{
-			loop(m,n) %{
-				$C() = $A();
-				if (n >= m) break;
+			broadcastloop %{
+				loop(m,n) %{
+					$C() = $A();
+					if (n >= m) break;
+				%}
 			%}
 		}
 	',
-	Doc => <<EOT
+	Doc => <<'EOT'
+=for usage
+
+tricpy(PDL(A), int(uplo), PDL(C))
+
+=for example
+
+	use PDL::LinearAlgebra;
+
+	$c = $a->tricpy($uplo);	# explicit uplo
+	$c = $a->tricpy;			# default upper
+or
+	use PDL::LinearAlgebra::Real;
+
+	tricpy($a, $uplo, $c);	# modify c
+
 =for ref
 
 Copy triangular part to another matrix. If uplo == 0 copy upper triangular part.
@@ -10504,7 +10525,6 @@ Copy triangular part to another matrix. If uplo == 0 copy upper triangular part.
 EOT
 
 );
-
 
 pp_def(
 	'cplx_eigen',
