@@ -10584,37 +10584,25 @@ EOT
 );
 
 
-pp_def(
-	'augment',
-	DefaultFlow => 1,
-	TwoWay => 1,
-	Pars => 'x(n); y(p);[o]out(q=CALC($SIZE(n)+$SIZE(p)))',
-	Code => '
-	  loop(n) %{
-		$out(q=>n) = $x();
-	  %}
-	  register PDL_Indx i,j = 0;
-	  for (i=$SIZE(n); i < $SIZE(q); i++,j++)
-		$out(q=>i) = $y(p=>j);
-	',
-       BackCode => '
-	  loop(n) %{
-		$x() = $out(q=>n);
-	  %}
-	  register PDL_Indx i,j = 0;
-	  for (i=$SIZE(n); i < $SIZE(q); i++,j++)
-		$y(p=>j) = $out(q=>i);
-       ',
-	Doc => <<EOT
+pp_def('augment',
+  DefaultFlow => 1,
+  TwoWay => 1,
+  Pars => 'x(n); y(p);[o]out(q=CALC($SIZE(n)+$SIZE(p)))',
+  GenericTypes => [ppdefs_all()],
+  Code => '
+loop (q=:$SIZE(n)) %{ $out() = $x(n=>q); %}
+loop (q=$SIZE(n))  %{ $out() = $y(p=>q-$SIZE(n)); %}
+',
+  BackCode => '
+loop (q=:$SIZE(n)) %{ $x(n=>q)          = $out(); %}
+loop (q=$SIZE(n))  %{ $y(p=>q-$SIZE(n)) = $out(); %}
+',
+  Doc => <<EOT
 =for ref
 
-Combine two ndarrays into a single ndarray.
+Combine two ndarrays into a single ndarray along the 0-th ("horizontal") dim.
 This routine does backward and forward dataflow automatically.
-
-=cut
-
 EOT
-
 );
 
 pp_def('mstack',
