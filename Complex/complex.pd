@@ -4925,46 +4925,25 @@ pp_def(
 );
 
 pp_bless('PDL');
-pp_def(
-	'cmstack',
-	DefaultFlow => 1,
-	TwoWay => 1,
-	Pars => 'x(c,n,m);y(c,n,p);[o]out(c,n,q=CALC($SIZE(m)+$SIZE(n)));',
-	Code => '
-	  loop(m,n,c) %{
-		$out(q=>m) = $x();
-	  %}
-	  register PDL_Indx i,j=0;
-	  for (i = $SIZE(m); i < $SIZE(q); i++,j++)
-	  {
-		  loop(n,c) %{
-			$out(q=>i) = $y(p=>j);
-		  %}
-	  }	
-	',
-
-       BackCode => '
-	  loop(m,n,c) %{
-		$x() = $out(q=>m);
-	  %}
-	  register PDL_Indx i,j=0;
-	  for (i = $SIZE(m); i < $SIZE(q) ;i++,j++)
-	  {
-		  loop(n,c)%{
-			$y(p=>j) = $out(q=>i);
-		  %}
-	  }
-       ',
-	Doc => <<EOT
-
+pp_def('cmstack',
+  DefaultFlow => 1,
+  TwoWay => 1,
+  Pars => 'x(c,n,m);y(c,n,p);[o]out(c,n,q=CALC($SIZE(m)+$SIZE(p)));',
+  Code => '
+loop (m,n,c) %{ $out(q=>m) = $x(); %}
+loop (q=$SIZE(m),n,c) %{ $out() = $y(p=>q-$SIZE(m)); %}
+',
+  BackCode => '
+loop (m,n,c) %{ $x() = $out(q=>m); %}
+loop (q=$SIZE(m),n,c) %{ $y(p=>q-$SIZE(m)) = $out(); %}
+',
+  Doc => <<EOT
 =for ref
 
-Combine two 3D ndarrays into a single ndarray.
+Combine two 3D ndarrays into a single ndarray, along the second
+("vertical") dim.
 This routine does backward and forward dataflow automatically.
-
-=cut
 EOT
-
 );
 
 pp_addhdr('
