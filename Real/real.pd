@@ -100,7 +100,7 @@ use strict;
   BEGIN{ $^W = $warningFlag;}
 }
 
-=encoding Latin-1
+=encoding utf8
 
 =head1 NAME
 

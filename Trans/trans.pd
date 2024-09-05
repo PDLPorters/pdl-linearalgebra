@@ -39,7 +39,7 @@ use PDL::LinearAlgebra::Real qw //;
 use PDL::LinearAlgebra::Complex qw //;
 use strict;
 
-=encoding Latin-1
+=encoding utf8
 
 =head1 NAME
 
