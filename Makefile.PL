@@ -69,7 +69,7 @@ WriteMakefile(
     "ExtUtils::F77" => '1.26',
   },
   PREREQ_PM => {
-    "PDL" => '2.083', # ArgOrder, used by tricpy
+    "PDL" => '2.088', # =CALC
   },
   TEST_REQUIRES =>  {
     "Test::More" => '0.88', # done_testing
