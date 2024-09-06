@@ -10452,63 +10452,6 @@ the exponent range, as is found on a Cray.
  labad ($underflow, $overflow);
 
 ');
-################################################################################
-#
-#		OTHER AUXILIARY ROUTINES
-#
-################################################################################
-pp_def(
-	'tricpy',
-	Pars => 'A(m,n);[o] C(m,n)',
-	OtherPars => 'int uplo',
-	OtherParsDefaults => {uplo => 0},
-	ArgOrder => [qw(A uplo C)],
-	GenericTypes => [ppdefs_all()],
-	Code => '
-		if ($COMP(uplo))
-		{
-			broadcastloop %{
-				loop(n,m) %{
-					$C() = $A();
-					if (m >= n) break;
-				%}
-			%}
-		}
-		else
-		{
-			broadcastloop %{
-				loop(m,n) %{
-					$C() = $A();
-					if (n >= m) break;
-				%}
-			%}
-		}
-	',
-	Doc => <<'EOT'
-=for usage
-
-tricpy(PDL(A), int(uplo), PDL(C))
-
-=for example
-
-	use PDL::LinearAlgebra;
-
-	$c = $a->tricpy($uplo);	# explicit uplo
-	$c = $a->tricpy;			# default upper
-or
-	use PDL::LinearAlgebra::Real;
-
-	tricpy($a, $uplo, $c);	# modify c
-
-=for ref
-
-Copy triangular part to another matrix. If uplo == 0 copy upper triangular part.
-
-=cut
-
-EOT
-
-);
 
 pp_def(
 	'cplx_eigen',
@@ -10580,50 +10523,6 @@ EOF
 Output complex eigen-values/vectors from eigen-values/vectors
 as computed by geev or geevx.
 'fortran' means fortran storage type.
-EOT
-);
-
-
-pp_def('augment',
-  DefaultFlow => 1,
-  TwoWay => 1,
-  Pars => 'x(n); y(p);[o]out(q=CALC($SIZE(n)+$SIZE(p)))',
-  GenericTypes => [ppdefs_all()],
-  Code => '
-loop (q=:$SIZE(n)) %{ $out() = $x(n=>q); %}
-loop (q=$SIZE(n))  %{ $out() = $y(p=>q-$SIZE(n)); %}
-',
-  BackCode => '
-loop (q=:$SIZE(n)) %{ $x(n=>q)          = $out(); %}
-loop (q=$SIZE(n))  %{ $y(p=>q-$SIZE(n)) = $out(); %}
-',
-  Doc => <<EOT
-=for ref
-
-Combine two ndarrays into a single ndarray along the 0-th ("horizontal") dim.
-This routine does backward and forward dataflow automatically.
-EOT
-);
-
-pp_def('mstack',
-  DefaultFlow => 1,
-  TwoWay => 1,
-  Pars => 'x(n,m);y(n,p);[o]out(n,q=CALC($SIZE(m)+$SIZE(p)));',
-  GenericTypes => [ppdefs_all()],
-  Code => '
-loop (m,n) %{ $out(q=>m) = $x(); %}
-loop (q=$SIZE(m),n) %{ $out() = $y(p=>q-$SIZE(m)); %}
-',
-  BackCode => '
-loop (m,n) %{ $x() = $out(q=>m); %}
-loop (q=$SIZE(m),n) %{ $y(p=>q-$SIZE(m)) = $out(); %}
-',
-  Doc => <<EOT
-=for ref
-
-Combine two 3D ndarrays into a single ndarray, along the second
-("vertical") dim.
-This routine does backward and forward dataflow automatically.
 EOT
 );
 

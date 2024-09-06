@@ -4890,62 +4890,6 @@ EOF
 		&(integer){1});
 ');
 
-################################################################################
-#
-#		OTHER AUXILIARY ROUTINES
-#
-################################################################################
-pp_def(
-	'ctricpy',
-	Pars => 'A(c=2,m,n);[o] C(c=2,m,n)',
-	OtherPars => 'int uplo',
-	OtherParsDefaults => {uplo => 0},
-	ArgOrder => [qw(A uplo C)],
-	Code => '
-		if ($COMP(uplo))
-		{
-			broadcastloop %{
-				loop (n,m) %{
-					loop(c) %{ $C() = $A(); %}
-					if (m >= n) break;
-				%}
-			%}
-		}
-		else
-		{
-			broadcastloop %{
-				loop (m,n) %{
-					loop(c) %{ $C() = $A(); %}
-					if (n >= m) break;
-				%}
-			%}
-		}
-	',
-	Doc => undef
-);
-
-pp_bless('PDL');
-pp_def('cmstack',
-  DefaultFlow => 1,
-  TwoWay => 1,
-  Pars => 'x(c,n,m);y(c,n,p);[o]out(c,n,q=CALC($SIZE(m)+$SIZE(p)));',
-  Code => '
-loop (m,n,c) %{ $out(q=>m) = $x(); %}
-loop (q=$SIZE(m),n,c) %{ $out() = $y(p=>q-$SIZE(m)); %}
-',
-  BackCode => '
-loop (m,n,c) %{ $x() = $out(q=>m); %}
-loop (q=$SIZE(m),n,c) %{ $y(p=>q-$SIZE(m)) = $out(); %}
-',
-  Doc => <<EOT
-=for ref
-
-Combine two 3D ndarrays into a single ndarray, along the second
-("vertical") dim.
-This routine does backward and forward dataflow automatically.
-EOT
-);
-
 pp_addhdr('
 void cftrace(int n, void *a1, void *a2);
 void cdtrace(int n, void *a1, void *a2);
