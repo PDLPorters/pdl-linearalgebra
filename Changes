@@ -1,3 +1,5 @@
+- remove support for PDL::Complex entirely
+
 0.40 2024-09-06
 - moved augment, mstack, tricpy, t to PDL 2.091
 
