@@ -1,3 +1,5 @@
+- fix t/cgtsv.t (#27) - thanks @wlmb
+
 0.41 2024-11-26
 - remove support for PDL::Complex entirely
 
