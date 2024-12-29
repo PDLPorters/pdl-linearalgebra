@@ -1170,7 +1170,7 @@ Users\' Guide.
 
 pp_def("ggev",
        HandleBad => 0,
-	Pars => 'A(n,n); int [phys]jobvl();int [phys]jobvr();B(n,n);[o]alphar(n);[o]alphai(n);[o]beta(n);[o]VL(m,m);[o]VR(p,p);int [o]info()',
+	Pars => '[io]A(n,n); int [phys]jobvl();int [phys]jobvr();[io]B(n,n);[o]alphar(n);[o]alphai(n);[o]beta(n);[o]VL(m,m);[o]VR(p,p);int [o]info()',
 	GenericTypes => [F,D],
 	RedoDimsCode => '
 	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvl), tmp, $PDL(VL), $SIZE(m), $SIZE(n))

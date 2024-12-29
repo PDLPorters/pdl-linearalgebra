@@ -2694,10 +2694,11 @@ sub PDL::mgeigen {
 	&_square_same;
 	&_same_dims;
 	my ($a,$b,$jobvl,$jobvr) = @_;
+	$_ = $_->new_or_inplace->t for $a, $b;
 	$_ = null for my ($info, $sdim);
 	my @w = map $a->_similar_null, $a->_is_complex ? 1 : 1..2;
 	$_ = $a->_similar_null for my ($vl, $vr, $beta);
-	$a->t->_call_method('ggev', $jobvl, $jobvr, $b->t, @w, $beta, $vl, $vr, $info);
+	$a->_call_method('ggev', $jobvl, $jobvr, $b, @w, $beta, $vl, $vr, $info);
 	_error($info, "mgeigen: Can't compute eigenvalues/vectors for PDL(s) %s");
 	(my $w, $vl, $vr) = _eigen_extract($jobvl, $jobvr, $vl, $vr, @w);
 	($w, $beta, ($jobvl?$vl->t->sever:()), ($jobvr?$vr->t->sever:()), $info);
