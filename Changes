@@ -1,3 +1,5 @@
+- fix all Pars so their [io] or [o] matches docs enough (#28) - thanks @wlmb for report
+
 0.42 2024-12-07
 - fix t/cgtsv.t (#27) - thanks @wlmb
 

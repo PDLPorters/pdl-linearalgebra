@@ -128,7 +128,7 @@ EOD
 
 pp_def("gtsv",
 	HandleBad => 0,
-	Pars => '[phys]DL(n); [phys]D(n); [phys]DU(n); [io,phys]B(n,nrhs); int [o,phys]info()',
+	Pars => '[io,phys]DL(n); [io,phys]D(n); [io,phys]DU(n); [io,phys]B(n,nrhs); int [o,phys]info()',
 	GenericTypes => [F,D],
 	Code => generate_code '
 		extern int FORTRAN($TFD(s,d)gtsv)(integer *n, integer *nrhs,
@@ -2743,7 +2743,7 @@ workspace than syevx.
 
 pp_def("syevx",
        HandleBad => 0,
-	Pars => 'A(n,n);  int jobz(); int range(); int uplo(); vl(); vu(); int il(); int iu(); abstol(); int [o]m(); [o]w(n); [o]z(p,p);int [o]ifail(n); int [o]info(); int [t]iwork(iworkn=CALC(5*$SIZE(n)));',
+	Pars => '[io]A(n,n);  int jobz(); int range(); int uplo(); vl(); vu(); int il(); int iu(); abstol(); int [o]m(); [o]w(n); [o]z(p,p);int [o]ifail(n); int [o]info(); int [t]iwork(iworkn=CALC(5*$SIZE(n)));',
 	RedoDimsCode => '
 	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobz), tmp, $PDL(z), $SIZE(p), $SIZE(n))
 	',
@@ -2938,7 +2938,7 @@ for the desired eigenvalues.
 
 pp_def("syevr",
        HandleBad => 0,
-	Pars => '[phys]A(n,n);  int jobz(); int range(); int uplo(); [phys]vl(); [phys]vu(); int [phys]il(); int [phys]iu();[phys]abstol();int [o,phys]m();[o,phys]w(n); [o,phys]z(p,q);int [o,phys]isuppz(r); int [o,phys]info()',
+	Pars => '[io,phys]A(n,n);  int jobz(); int range(); int uplo(); [phys]vl(); [phys]vu(); int [phys]il(); int [phys]iu();[phys]abstol();int [o,phys]m();[o,phys]w(n); [o,phys]z(p,q);int [o,phys]isuppz(r); int [o,phys]info()',
 	GenericTypes => [F,D],
 	Code => generate_code '
 		char jz = \'N\';
@@ -5271,7 +5271,7 @@ without guard digits, but we know of none.
 
 pp_def("gglse",
        HandleBad => 0,
-	Pars => '[phys]A(m,n); [phys]B(p,n);[io,phys]c(m);[phys]d(p);[o,phys]x(n);int [o,phys]info()',
+	Pars => '[io,phys]A(m,n); [io,phys]B(p,n);[io,phys]c(m);[io,phys]d(p);[o,phys]x(n);int [o,phys]info()',
 	GenericTypes => [F,D],
 	Code => generate_code '
 		integer lwork = -1;
@@ -5377,7 +5377,7 @@ which is obtained using a GRQ factorization of the matrices B and A.
 
 pp_def("ggglm",
        HandleBad => 0,
-	Pars => '[phys]A(n,m); [phys]B(n,p);[phys]d(n);[o,phys]x(m);[o,phys]y(p);int [o,phys]info()',
+	Pars => '[io,phys]A(n,m); [io,phys]B(n,p);[io,phys]d(n);[o,phys]x(m);[o,phys]y(p);int [o,phys]info()',
 	GenericTypes => [F,D],
 	Code => generate_code '
 		integer lwork = -1;
@@ -8762,7 +8762,7 @@ matrix Q:  A = Q*H*Q**T = (QZ)*T*(QZ)**T.
 
 pp_def("trevc",
        HandleBad => 0,
-	Pars => '[io]T(n,n); int side();int howmny();int select(q);[o]VL(m,m); [o]VR(p,p);int [o]m(); int [o]info(); [t]work(workn=CALC(3*$SIZE(n)));',
+	Pars => 'T(n,n); int side();int howmny();int select(q);[o]VL(m,m); [o]VR(p,p);int [o]m(); int [o]info(); [t]work(workn=CALC(3*$SIZE(n)));',
 	RedoDimsCode => '
 	  PDL_MAYBE_SIZE(PDL_Long, $PDL(side), tmp != 1, $PDL(VL), $SIZE(m), $SIZE(n))
 	  PDL_MAYBE_SIZE(PDL_Long, $PDL(side), tmp != 2, $PDL(VR), $SIZE(p), $SIZE(n))
@@ -8950,7 +8950,7 @@ magnitude has magnitude 1; here the magnitude of a complex number
 
 pp_def("tgevc",
        HandleBad => 0,
-	Pars => '[io]A(n,n); int side();int howmny();[io]B(n,n);int select(q);[o]VL(m,m); [o]VR(p,p);int [o]m(); int [o]info(); [t]work(workn=CALC(6*$SIZE(n)));',
+	Pars => 'A(n,n); int side();int howmny();B(n,n);int select(q);[o]VL(m,m); [o]VR(p,p);int [o]m(); int [o]info(); [t]work(workn=CALC(6*$SIZE(n)));',
 	RedoDimsCode => '
 	  PDL_MAYBE_SIZE(PDL_Long, $PDL(side), tmp != 1, $PDL(VL), $SIZE(m), $SIZE(n))
 	  PDL_MAYBE_SIZE(PDL_Long, $PDL(side), tmp != 2, $PDL(VR), $SIZE(p), $SIZE(n))
@@ -10059,7 +10059,7 @@ Euclidean norm of a vector using Blas.
 =for example
 
  $a = random(5);
- $norm2 = norm2($a)
+ $norm2 = nrm2($a)
 
 ');
 
