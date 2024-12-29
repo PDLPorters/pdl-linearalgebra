@@ -380,11 +380,10 @@ Works inplace.
 
 *positivise = \&PDL::positivise;
 sub PDL::positivise{
-	my $m = shift;
+	my $m = shift->new_or_inplace;
 	my $tmp;
-	$m = $m->copy unless $m->is_inplace(0);
 	$tmp = $m->dice('X', which(($m->lt(0,0)->sumover > ($m->dim(0)/2))>0));
-	$tmp->inplace->mult(-1,0);# .= -$tmp;
+	$tmp->inplace->mult(-1,0);
 	$m;
 }
 
@@ -738,8 +737,7 @@ from Lapack and returns C<inverse, info> in array context.
 *minv = \&PDL::minv;
 sub PDL::minv {
 	&_square;
-	my $m = shift;
-	$m = $m->copy() unless $m->is_inplace(0);
+	my $m = shift->new_or_inplace;
 	$_ = null for my ($ipiv, $info);
 	$m->_call_method('getrf', $ipiv, $info);
 	_error($info, "minv: Factor(s) U (PDL(s) %s) is/are singular (after getrf factorization)");
@@ -772,10 +770,9 @@ Returns C<inverse, info> in array context.
 *mtriinv = \&PDL::mtriinv;
 sub PDL::mtriinv{
 	&_square;
-	my $m = shift;
+	my $m = shift->new_or_inplace;
 	my $upper = @_ ? (1 - shift)  : pdl (long,1);
 	my $diag = shift;
-	$m = $m->copy() unless $m->is_inplace(0);
 	my $info = PDL->null;
 	$m->_call_method('trtri', $upper, $diag, $info);
 	_error($info, "mtriinv: Matrix (PDL(s) %s) is/are singular");
@@ -809,9 +806,8 @@ from Lapack and returns C<inverse, info> in array context.
 sub PDL::msyminv {
 	&_square;
 	my $di = $_[0]->dims_internal;
-	my $m = shift;
+	my $m = shift->new_or_inplace;
 	my $upper = @_ ? (1 - shift)  : pdl (long,1);
-	$m = $m->copy() unless $m->is_inplace(0);
 	$m->_call_method('sytrf', $upper, my $ipiv=null, my $info=null);
 	_error($info, "msyminv: Block diagonal matrix D (PDL(s) %s) is/are singular (after sytrf factorization)");
 	$m->_call_method('sytri',$upper,$ipiv,$info);
@@ -847,9 +843,8 @@ from Lapack and returns C<inverse, info> in array context.
 sub PDL::mposinv {
 	&_square;
 	my $di = $_[0]->dims_internal;
-	my $m = shift;
+	my $m = shift->new_or_inplace;
 	my $upper = @_ ? (1 - shift)  : pdl (long,1);
-	$m = $m->copy() unless $m->is_inplace(0);
 	$m->_call_method('potrf', $upper, my $info=null);
 	_error($info, "mposinv: matrix (PDL(s) %s) is/are not positive definite (after potrf factorization)");
 	$m->_call_method('potri', $upper, $info);
@@ -1135,7 +1130,7 @@ sub PDL::mschur {
 	$mult //= 1;
 	$norm //= 1;
 	$jobv = $jobvl = $jobvr = 0 unless wantarray;
-	my $mm = $m->is_inplace ? $m->t : $m->t->copy;
+	my $mm = $m->new_or_inplace->t;
 	my $v = $m->_similar_null;
 	my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
 	my $select_f = $m->_wrap_select_func($select_func);
@@ -1239,7 +1234,7 @@ sub PDL::mschurx {
 	my $select = long($select_func ? 1 : 0);
 	$sense = pdl(long,0) if !$select_func;
 	$_ = null for my ($info, $sdim, $rconde, $rcondv);
-	my $mm = $m->is_inplace ? $m->t : $m->t->copy;
+	my $mm = $m->new_or_inplace->t;
 	my $v = $m->_similar_null;
 	my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
 	my $select_f = $m->_wrap_select_func($select_func);
@@ -1380,12 +1375,13 @@ sub _eigen_pair {
 }
 
 *mgschur = \&PDL::mgschur;
-sub PDL::mgschur{
+sub PDL::mgschur {
 	my $di = $_[0]->dims_internal;
 	my $slice_prefix = ',' x $di;
 	&_square_same;
 	my($m, $p, $jobvsl, $jobvsr, $jobvl, $jobvr, $select_func, $mult, $norm) = @_;
 	my @mdims  = $m->dims;
+	$_ = $_->new_or_inplace->t for $m, $p;
 	barf("mgschur: threading isn't supported for selected vectors")
 		if ($select_func && ((@mdims > 2+$di) || ($p->ndims > 2+$di)) &&
 			($jobvsl == 2 || $jobvsr == 2 || $jobvl == 2 || $jobvr == 2));
@@ -1393,11 +1389,10 @@ sub PDL::mgschur{
 	$norm //= 1;
 	my $select = $select_func ? pdl(long,1) : pdl(long,0);
 	$_ = null for my ($info, $sdim);
-	my ($mm, $pp) = map $_->is_inplace ? $_->t : $_->t->copy, $m, $p;
 	my $select_f = $m->_wrap_select_func($select_func);
 	my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
 	$_ = $m->_similar_null for my ($beta, $vsl, $vsr);
-	$mm->_call_method('gges', $jobvsl, $jobvsr, $select, $pp, @w, $beta, $vsl, $vsr, $sdim, $info, $select_f);
+	$m->_call_method('gges', $jobvsl, $jobvsr, $select, $p, @w, $beta, $vsl, $vsr, $sdim, $info, $select_f);
 	_error_schur($info, $select_func, $mdims[$di], 'mgschur', 'QZ');
 	my @vl = ('VL', $jobvl);
 	my @vr = ('VR', $jobvr);
@@ -1406,7 +1401,7 @@ sub PDL::mgschur{
 	$ret{n} = $sdim if $select_func;
 	if ($vl[1] || $vr[1]) {
 		my ($vl, $vr) = _eigen_pair(
-		  $mm, $pp, $select_func, $vl[1], $vr[1], $jobvsl, $jobvsr, $vsl, $vsr,
+		  $m, $p, $select_func, $vl[1], $vr[1], $jobvsl, $jobvsr, $vsl, $vsr,
 		  $mult, $norm, $mdims[$di+1], $sdim, @w
 		);
 		$ret{$_->[0]} = $_->[1] for grep defined $_->[1], ['VL',$vl], ['VR',$vr];
@@ -1425,9 +1420,7 @@ sub PDL::mgschur{
 		$ret{SR} = $vsr->t->sever;
 	}
 	$ret{info} = $info;
-	$m = $mm->t->sever unless $m->is_inplace(0);
-	$p = $pp->t->sever unless $p->is_inplace(0);
-	return ($m, $p, $w, $beta, %ret);
+	return ($m->t, $p->t, $w, $beta, %ret);
 }
 
 =head2 mgschurx
@@ -1499,22 +1492,22 @@ from Lapack. Works on transposed array.
 =cut
 
 *mgschurx = \&PDL::mgschurx;
-sub PDL::mgschurx{
+sub PDL::mgschurx {
 	my $di = $_[0]->dims_internal;
 	my $slice_prefix = ',' x $di;
 	&_square_same;
 	my($m, $p, $jobvsl, $jobvsr, $jobvl, $jobvr, $select_func, $sense, $mult, $norm) = @_;
 	my (@mdims) = $m->dims;
+	$_ = $_->new_or_inplace->t for $m, $p;
 	$mult //= 1;
 	$norm //= 1;
 	my $select = $select_func ? 1 : 0;
 	$sense = 0 if !$select_func;
 	$_ = null for my ($info, $rconde, $rcondv, $sdim);
-	my ($mm, $pp) = map $_->is_inplace ? $_->t : $_->t->copy, $m, $p;
 	$_ = $m->_similar_null for my ($beta, $vsl, $vsr);
 	my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
 	my $select_f = $m->_wrap_select_func($select_func);
-	$mm->_call_method('ggesx', $jobvsl, $jobvsr, $select, $sense, $pp, @w, $beta, $vsl, $vsr, $sdim, $rconde, $rcondv,$info, $select_f);
+	$m->_call_method('ggesx', $jobvsl, $jobvsr, $select, $sense, $p, @w, $beta, $vsl, $vsr, $sdim, $rconde, $rcondv,$info, $select_f);
 	_error_schur($info, $select_func, $mdims[$di], 'mgschurx', 'QZ');
 	my @vl = ('VL', $jobvl);
 	my @vr = ('VR', $jobvr);
@@ -1523,7 +1516,7 @@ sub PDL::mgschurx{
 	$ret{n} = $sdim if $select_func;
 	if ($vl[1] || $vr[1]) {
 		my ($vl, $vr) = _eigen_pair(
-		  $mm, $pp, $select_func, $vl[1], $vr[1], $jobvsl, $jobvsr, $vsl, $vsr,
+		  $m, $p, $select_func, $vl[1], $vr[1], $jobvsl, $jobvsr, $vsl, $vsr,
 		  $mult, $norm, $mdims[$di+1], $sdim, @w
 		);
 		$ret{$_->[0]} = $_->[1] for grep defined $_->[1], ['VL',$vl], ['VR',$vr];
@@ -1544,9 +1537,7 @@ sub PDL::mgschurx{
 	$ret{info} = $info;
 	$ret{rconde} = $rconde if $sense & 1;
 	$ret{rcondv} = $rcondv if $sense & 2;
-	$m = $mm->t->sever unless $m->is_inplace(0);
-	$p = $pp->t->sever unless $p->is_inplace(0);
-	return ($m, $p, $w, $beta, %ret);
+	return ($m->t, $p->t, $w, $beta, %ret);
 }
 
 =head2 mqr
@@ -1828,7 +1819,7 @@ sub PDL::msolve {
 	&_same_dims;
 	my($a, $b) = @_;
 	$a = $a->t->copy;
-	my $c = $b->is_inplace ? $b->t : $b->t->copy;
+	my $c = $b->new_or_inplace->t;
 	$a->_call_method('gesv', $c, my $ipiv = null, my $info = null);
 	_error($info, "msolve: Can't solve system of linear equations (after getrf factorization): matrix (PDL(s) %s) is/are singular");
 	$b = $c->t->sever if !$b->is_inplace(0);
@@ -1978,7 +1969,7 @@ sub PDL::mtrisolve{
 	my($a, $b, $trans, $diag) = @_;
 	$uplo = 1 - $uplo;
 	$trans = 1 - $trans;
-	my $c = $b->is_inplace ? $b->t : $b->t->copy;
+	my $c = $b->new_or_inplace->t;
 	$a->_call_method('trtrs', $uplo, $trans, $diag, $c, my $info = null);
 	_error($info, "mtrisolve: Can't solve system of linear equations: matrix (PDL(s) %s) is/are singular");
 	$b = $c->t->sever if !$b->is_inplace(0);
@@ -2022,7 +2013,7 @@ sub PDL::msymsolve {
 	my($a, $b) = @_;
 	$uplo = 1 - $uplo;
 	$a = $a->copy;
-	my $c = $b->is_inplace ? $b->t : $b->t->copy;
+	my $c = $b->new_or_inplace->t;
 	$a->_call_method('sysv', $uplo, $c, my $ipiv = null, my $info = null);
 	_error($info, "msymsolve: Can't solve system of linear equations (after sytrf factorization): matrix (PDL(s) %s) is/are singular");
 	$b = $c->t->sever if !$b->is_inplace(0);
@@ -2139,7 +2130,7 @@ sub PDL::mpossolve {
 	my($a, $b) = @_;
 	$uplo = 1 - $uplo;
 	$a = $a->copy;
-	my $c = $b->is_inplace ? $b->t :  $b->t->copy;
+	my $c = $b->new_or_inplace->t;
 	$a->_call_method('posv', $uplo, $c, my $info=null);
 	_error($info, "mpossolve: Can't solve system of linear equations: matrix (PDL(s) %s) is/are not positive definite");
 	wantarray ? $b->is_inplace(0) ? ($b, $a,$info) : ($c->t->sever , $a,$info) : $b->is_inplace(0) ? $b : $c->t->sever;
