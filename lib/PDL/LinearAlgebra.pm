@@ -1135,7 +1135,6 @@ sub PDL::mschur {
 	$mult //= 1;
 	$norm //= 1;
 	$jobv = $jobvl = $jobvr = 0 unless wantarray;
-	my $type = $m->type;
 	my $mm = $m->is_inplace ? $m->t : $m->t->copy;
 	my $v = $m->_similar_null;
 	my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
@@ -1237,7 +1236,6 @@ sub PDL::mschurx {
 	$mult //= 1;
 	$norm //= 1;
 	$jobv = $jobvl = $jobvr = 0 unless wantarray;
-	my $type = $m->type;
 	my $select = long($select_func ? 1 : 0);
 	$sense = pdl(long,0) if !$select_func;
 	$_ = null for my ($info, $sdim, $rconde, $rcondv);
@@ -1393,7 +1391,6 @@ sub PDL::mgschur{
 			($jobvsl == 2 || $jobvsr == 2 || $jobvl == 2 || $jobvr == 2));
 	$mult //= 1;
 	$norm //= 1;
-	my $type = $m->type;
 	my $select = $select_func ? pdl(long,1) : pdl(long,0);
 	$_ = null for my ($info, $sdim);
 	my ($mm, $pp) = map $_->is_inplace ? $_->t : $_->t->copy, $m, $p;
@@ -1510,7 +1507,6 @@ sub PDL::mgschurx{
 	my (@mdims) = $m->dims;
 	$mult //= 1;
 	$norm //= 1;
-	my $type = $m->type;
 	my $select = $select_func ? 1 : 0;
 	$sense = 0 if !$select_func;
 	$_ = null for my ($info, $rconde, $rcondv, $sdim);
@@ -2284,7 +2280,6 @@ sub PDL::mlls {
 	my(@bdims) = $b->dims;
 	my $x;
 	$a = $a->copy;
-	my $type = $a->type;
 	if ( $adims[$di+1] < $adims[$di]) {
 		$x = $a->_similar($adims[$di], $bdims[$di]);
 		$x->slice("$slice_prefix:@{[$bdims[$di+1]-1]}, :@{[$bdims[$di]-1]}") .= $b->t;
@@ -2338,7 +2333,6 @@ sub PDL::mllsy {
 	my($a, $b) = @_;
 	my(@adims) = $a->dims;
 	my(@bdims) = $b->dims;
-	my $type = $a->type;
 	my $rcond = lamch(0);
 	$rcond = $rcond->sqrt - ($rcond->sqrt - $rcond) / 2;
 	$a = $a->t->copy;
@@ -3148,7 +3142,6 @@ sub PDL::mdsvd {
 	my $di = $_[0]->dims_internal;
 	my($m, $jobz) = @_;
 	my(@dims) = $m->dims;
-	my $type = $m->type;
 	$jobz = !wantarray ? 0 : $jobz // 1;
 	my $min = $dims[$di] > $dims[1+$di] ? $dims[1+$di]: $dims[$di];
 	$m = $m->copy;
