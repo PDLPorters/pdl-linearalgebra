@@ -17,7 +17,7 @@ sub runtest {
   ($expected, my $expected_cplx) = ref($expected) eq 'ARRAY' ? @$expected : ($expected, $expected);
   if (defined $expected) {
     my ($got) = $in->$method(@{$extra||[]});
-    ok fapprox($got, $expected), $method or diag "got(".ref($got)."): $got";
+    ok fapprox($got, $expected), $method or diag "got(".ref($got)."): $got\nexpected:$expected";
   }
   $_ = PDL->topdl($_)->r2C for $in;
   my ($got) = $in->$method(map ref() && ref() ne 'CODE' ? $_->r2C : $_, @{$extra||[]});
