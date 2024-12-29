@@ -2779,17 +2779,16 @@ sub PDL::mgeigenx {
 	my $di = $_[0]->dims_internal;
 	my ($a, $b, %opt) = @_;
 	my @adims = $a->dims;
+	$_ = $_->new_or_inplace->t for $a, $b;
 	my (%result);
 	$_ = $a->_similar_null for my ($vl, $vr, $beta);
-	$a = $a->copy;
-	$b = $b->t->copy;
 	my @w = map $a->_similar_null, $a->_is_complex ? 1 : 1..2;
 	$_ = null for my ($rconde, $rcondv, $info, $ilo, $ihi, $rscale, $lscale, $abnrm, $bbnrm);
 	my $jobvl = $vector2jobvl{$opt{vector}} || $opt{rcondition} ? 1 : 0;
 	my $jobvr = $vector2jobvr{$opt{vector}} || $opt{rcondition} ? 1 : 0;
 	my $sense = $rcondition2sense{$opt{rcondition}} || 0;
-	my $balanc = ($opt{'scale'}?2:0) | ($opt{permute}?1:0);
-	$a->t->_call_method('ggevx', $balanc, $jobvl, $jobvr, $sense, $b, @w,
+	my $balanc = ($opt{scale}?2:0) | ($opt{permute}?1:0);
+	$a->_call_method('ggevx', $balanc, $jobvl, $jobvr, $sense, $b, @w,
 	  $beta, $vl, $vr, $ilo, $ihi, $lscale, $rscale,
 	  $abnrm, $bbnrm, $rconde, $rcondv, $info);
 	(my $w, $vl, $vr) = _eigen_extract($jobvl, $jobvr, $vl, $vr, @w);
@@ -2799,21 +2798,20 @@ sub PDL::mgeigenx {
 	} elsif ($info) {
 		laerror("mgeigenx: Error from hgeqz or tgevc");
 	}
-	$result{'aschur'} = $a if $opt{'schur'};
-	$result{'bschur'} = $b->t->sever if $opt{'schur'};
-	$result{'balance'} = cat $ilo, $ihi if $opt{'permute'};
+	$result{qw(aschur bschur)} = map $_->t, $a, $b if $opt{schur};
+	$result{balance} = cat $ilo, $ihi if $opt{permute};
 	@result{qw(info anorm bnorm)} = ($info, $abnrm, $bbnrm);
-	@result{qw(lscale rscale)} =  ($lscale, $rscale) if $opt{'scale'};
+	@result{qw(lscale rscale)} =  ($lscale, $rscale) if $opt{scale};
 	# Doesn't use lacpy2 =(sqrt **2 , **2) without unnecessary overflow
 	if ($sense & 2) {
-		$result{'rcondv'} =  $rcondv;
-		$result{'verror'} = lamch(0) * sqrt($abnrm->pow(2) + $bbnrm->pow(2)) /$rcondv if $opt{'error'};
+		$result{rcondv} =  $rcondv;
+		$result{verror} = lamch(0) * sqrt($abnrm->pow(2) + $bbnrm->pow(2)) /$rcondv if $opt{error};
 	}
 	if ($sense & 1) {
-		$result{'rconde'} =  $rconde;
-		$result{'eerror'} = lamch(0) * sqrt($abnrm->pow(2) + $bbnrm->pow(2)) /$rconde if $opt{'error'};
+		$result{rconde} =  $rconde;
+		$result{eerror} = lamch(0) * sqrt($abnrm->pow(2) + $bbnrm->pow(2)) /$rconde if $opt{error};
 	}
-	($w, $beta, ($vector2jobvl{$opt{vector}}?$vl->t->sever:()), ($vector2jobvr{$opt{vector}}?$vr->t->sever:()), %result);
+	($w, $beta, ($vector2jobvl{$opt{vector}}?$vl->t:()), ($vector2jobvr{$opt{vector}}?$vr->t:()), %result);
 }
 
 =head2 msymeigen
