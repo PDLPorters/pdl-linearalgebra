@@ -773,7 +773,7 @@ form by taking the nonsingular matrix X as
 
 pp_def("geev",
        HandleBad => 0,
-	Pars => 'A(n,n); int jobvl(); int jobvr(); [o]wr(n); [o]wi(n); [o]vl(m,m); [o]vr(p,p); int [o]info()',
+	Pars => '[io]A(n,n); int jobvl(); int jobvr(); [o]wr(n); [o]wi(n); [o]vl(m,m); [o]vr(p,p); int [o]info()',
 	RedoDimsCode => '
 	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvl), tmp, $PDL(vl), $SIZE(m), $SIZE(n))
 	  PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvr), tmp, $PDL(vr), $SIZE(p), $SIZE(n))
