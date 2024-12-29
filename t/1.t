@@ -81,4 +81,9 @@ $B = identity(2);
 ok fapprox($got = $A x $B, $A), 'complex first' or diag "got: $got";
 ok fapprox($got = $B x $A, $A), 'complex second' or diag "got: $got";
 
+my $d = (identity(2) * 2)->sqrt;
+ok fapprox($got = $d->minv, my $exp = pdl '0.70710678 0; 0 0.70710678'), 'simple minv of double' or diag "got: $got";
+my $ld = (identity(2)->ldouble * 2)->sqrt;
+ok fapprox($got = $ld->minv, $exp->ldouble), 'simple minv of ldouble' or diag "got: $got";
+
 done_testing;
