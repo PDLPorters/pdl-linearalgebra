@@ -14,13 +14,15 @@ sub fapprox {
 sub runtest {
   local $Test::Builder::Level = $Test::Builder::Level + 1;
   my ($in, $method, $expected, $extra) = @_;
+  $_ = $_->copy for $in;
   ($expected, my $expected_cplx) = ref($expected) eq 'ARRAY' ? @$expected : ($expected, $expected);
+  my @extra = map UNIVERSAL::isa($_, 'PDL') ? $_->copy : $_, @{$extra||[]};
   if (defined $expected) {
-    my ($got) = $in->$method(@{$extra||[]});
+    my ($got) = $in->$method(@extra);
     ok fapprox($got, $expected), $method or diag "got(".ref($got)."): $got\nexpected:$expected";
   }
-  $_ = PDL->topdl($_)->r2C for $in;
-  my ($got) = $in->$method(map ref() && ref() ne 'CODE' ? $_->r2C : $_, @{$extra||[]});
+  $_ = $_->r2C for $in;
+  my ($got) = $in->$method(map ref() && ref() ne 'CODE' ? $_->r2C : $_, @extra);
   my @cplx = ref($expected_cplx) eq 'ARRAY' ? @$expected_cplx : $expected_cplx;
   my $ok = grep fapprox($got, PDL->topdl($_)->r2C), @cplx;
   ok $ok, "native complex $method" or diag "got(".ref($got)."): $got\nexpected:@cplx";
