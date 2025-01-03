@@ -1,3 +1,4 @@
+0.431 2025-01-03
 - mschur test with complex data can give different on 32-bit (#29) - thanks @sebastic for report
 
 0.43 2025-01-02
