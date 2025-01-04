@@ -1,10 +1,14 @@
-do('../Config');
+do('./Config');
 
 { # required because PAUSE will reject undefined $VERSION
 require ExtUtils::MM;
 my $MM = bless { NAME => 'Fake' }, 'MM';
-my $global_version = $MM->parse_version('../lib/PDL/LinearAlgebra.pm');
+my $global_version = $MM->parse_version('lib/PDL/LinearAlgebra.pm');
 pp_setversion($global_version);
+}
+
+{ no warnings 'once'; # pass info back to Makefile.PL
+$PDL::Core::Dev::EXTRAS{$::PDLMOD}{OBJECT} .= join '', map " $::PDLBASE-$_\$(OBJ_EXT)", qw(selectfunc);
 }
 
 sub generate_code($){

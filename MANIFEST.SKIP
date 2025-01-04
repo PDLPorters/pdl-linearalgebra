@@ -1,10 +1,11 @@
-/pp-.*
-Real/Real\.
-Trans/Trans\.
-Complex/Complex\.
+/[^/]*pp-.*
+lib/PDL/LinearAlgebra/Complex\.(c|xs|pm)$
+lib/PDL/LinearAlgebra/Real\.(c|xs|pm)$
+lib/PDL/LinearAlgebra/Trans\.(c|xs|pm)$
 cover_db/
 Makefile(\.old)?$
 \.o(bj|)$
+\.bs$
 \.sw.*$
 META
 MANIFEST\.SKIP

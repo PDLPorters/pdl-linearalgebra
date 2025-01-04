@@ -1,8 +1,12 @@
 { # required because PAUSE will reject undefined $VERSION
 require ExtUtils::MM;
 my $MM = bless { NAME => 'Fake' }, 'MM';
-my $global_version = $MM->parse_version('../lib/PDL/LinearAlgebra.pm');
+my $global_version = $MM->parse_version('lib/PDL/LinearAlgebra.pm');
 pp_setversion($global_version);
+}
+
+{ no warnings 'once'; # pass info back to Makefile.PL
+$PDL::Core::Dev::EXTRAS{$::PDLMOD}{OBJECT} .= join '', map " $::PDLBASE-$_\$(OBJ_EXT)", qw(selectfunc);
 }
 
 if ($^O =~ /MSWin/) {
@@ -347,7 +351,7 @@ ACM - Transactions On Mathematical Software, 24(1):130-156, 1998
 EOT
 );
 
-do '../pp_defc.pl'; die if $@;
+do './pp_defc.pl'; die if $@;
 pp_defc('geexp',
         Pars => '[io]A(2,n,n);int deg();scale();int trace();int [o]ns();int [o]info(); int [t] ipiv(n)',
 	Doc => '
