@@ -1,9 +1,11 @@
 do('../Config');
-our $VERSION = '0.14';
-pp_setversion($VERSION);
-$VERSION = eval $VERSION;
 
-use PDL::Exporter;
+{ # required because PAUSE will reject undefined $VERSION
+require ExtUtils::MM;
+my $MM = bless { NAME => 'Fake' }, 'MM';
+my $global_version = $MM->parse_version('../lib/PDL/LinearAlgebra.pm');
+pp_setversion($global_version);
+}
 
 if ($config{CBLAS}){
 	pp_addhdr('#include <cblas.h>');

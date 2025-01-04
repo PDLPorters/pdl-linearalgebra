@@ -13,7 +13,7 @@ $hash{INC} .= " $inc";
 WriteMakefile(
 	%hash,
 	%ldloadlibs,
-	VERSION_FROM => $file,
+	VERSION_FROM => '../lib/PDL/LinearAlgebra.pm',
 	NO_MYMETA => 1,
 );
 
