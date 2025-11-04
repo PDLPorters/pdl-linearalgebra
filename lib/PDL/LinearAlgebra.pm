@@ -841,9 +841,9 @@ sub PDL::mlu {
   my @dims = $m->dims;
         $m = $m->copy;
   $m->t->_call_method('getrf',my $ipiv=null,my $info = null);
-  if($info > 0) {
+  if ($info > 0) {
     $info--;
-    laerror("mlu: Factor U is singular: U($info,$info) = 0 (after cgetrf factorization)");
+    laerror("mlu: Factor U is singular: U($info,$info) = 0 (after getrf factorization)");
     return $m, $m, $ipiv, $info;
   }
   my $u = $m->mtri;
