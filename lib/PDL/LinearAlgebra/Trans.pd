@@ -613,7 +613,7 @@ pp_defc('trsqrt',
 
 =for ref
 
-Root square of complex triangular matrix. Uses a recurrence of Björck and Hammarling.
+Root square of complex triangular matrix. Uses a recurrence of BjÃ¶rck and Hammarling.
 (See Nicholas J. Higham. A new sqrtm for MATLAB. Numerical Analysis
 Report No. 336, Manchester Centre for Computational Mathematics,
 Manchester, England, January 1999. It\'s available at http://www.ma.man.ac.uk/~higham/pap-mf.html)
@@ -1785,7 +1785,7 @@ Improve (msqrt,mlog) / r2C
 
 =head1 AUTHOR
 
-Copyright (C) Grégory Vanuxem 2005-2018.
+Copyright (C) GrÃ©gory Vanuxem 2005-2018.
 
 This library is free software; you can redistribute it and/or modify
 it under the terms of the Perl Artistic License as in the file Artistic_2

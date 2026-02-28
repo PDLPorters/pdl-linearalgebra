@@ -1,4 +1,5 @@
 - fix select-function declarations for C23 (#30) - thanks @sebastic for report
+- change actual encoding of docs to UTF-8, not just saying so
 
 0.433 2025-01-06
 - make Trans::toreal do nothing if given real-typed data

@@ -4932,7 +4932,7 @@ EOF
 pp_addpm({At=>'Bot'},<<'EOD');
 =head1 AUTHOR
 
-Copyright (C) Grégory Vanuxem 2005-2018.
+Copyright (C) GrÃ©gory Vanuxem 2005-2018.
 
 This library is free software; you can redistribute it and/or modify
 it under the terms of the Perl Artistic License as in the file Artistic_2
