@@ -609,17 +609,16 @@ ACM - Transactions On Mathematical Software, 24(1):130-156, 1998
 
 pp_defc('trsqrt',
         Pars => '[io]A(2,n,n);int uplo();[o] B(2,n,n);int [o]info()',
-	Doc => '
-
+	Doc => <<'EOF',
 =for ref
 
 Root square of complex triangular matrix. Uses a recurrence of Björck and Hammarling.
-(See Nicholas J. Higham. A new sqrtm for MATLAB. Numerical Analysis
-Report No. 336, Manchester Centre for Computational Mathematics,
-Manchester, England, January 1999. It\'s available at http://www.ma.man.ac.uk/~higham/pap-mf.html)
 If uplo is true, A is lower triangular.
 
-',
+See Nicholas J. Higham, A new sqrtm for MATLAB. Numerical Analysis
+Report No. 336, Manchester Centre for Computational Mathematics,
+Manchester, England, January 1999, available at L<https://web.archive.org/web/20210420221902/https://www.maths.manchester.ac.uk/~higham/papers/narep336.pdf>
+EOF
 	  GenericTypes => [D],
           Code => '
           PDL_CDouble *cb, *ca;
