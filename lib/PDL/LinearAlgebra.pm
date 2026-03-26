@@ -3133,7 +3133,6 @@ sub PDL::mdsvd {
 	my($m, $jobz) = @_;
 	my(@dims) = $m->dims;
 	$jobz = !wantarray ? 0 : $jobz // 1;
-	my $min = $dims[$di] > $dims[1+$di] ? $dims[1+$di]: $dims[$di];
 	$m = $m->copy;
 	$_ = $m->_similar_null for my ($u, $v);
 	$m->_call_method('gesdd', $jobz, my $s = null, $u, $v, my $info = null);
