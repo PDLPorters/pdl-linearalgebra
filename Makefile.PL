@@ -54,6 +54,7 @@ WriteMakefile(
   AUTHOR => [ 'Grégory Vanuxem <ellipse@cpan.org>' ],
   VERSION_FROM => 'lib/PDL/LinearAlgebra.pm',
   LICENSE => 'artistic_2',
+  MIN_PERL_VERSION => '5.016',
   META_MERGE => {
     "meta-spec" => { version => 2 },
     resources => {
