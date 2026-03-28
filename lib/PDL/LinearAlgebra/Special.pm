@@ -8,16 +8,15 @@ use PDL::LinearAlgebra qw ( );
 use PDL::LinearAlgebra::Real;
 use PDL::LinearAlgebra::Complex;
 use PDL::Exporter;
-no warnings 'uninitialized';
-@EXPORT_OK  = qw( mhilb mvander mpart mhankel mtoeplitz mtri mpascal mcompanion);
-%EXPORT_TAGS = (Func=>[@EXPORT_OK]);
+use strict;
+use warnings;
+our @EXPORT_OK  = qw(mhilb mvander mpart mhankel mtoeplitz mtri mpascal mcompanion);
+our %EXPORT_TAGS = (Func=>\@EXPORT_OK);
 
 our $VERSION = '0.14';
 $VERSION = eval $VERSION;
 
 our @ISA = ( 'PDL::Exporter');
-
-use strict;
 
 =encoding utf8
 
@@ -98,7 +97,7 @@ sub mtri{
 sub PDL::mtri {
 	&PDL::LinearAlgebra::_2d_array;
 	my ($m, $upper) = @_;
-	$m->tricpy($upper, my $b = $m->_similar_null);
+	$m->tricpy($upper // 0, my $b = $m->_similar_null);
 	$b;
 }
 

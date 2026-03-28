@@ -22,15 +22,15 @@ use strict;
 our $VERSION = '0.434';
 $VERSION =~ tr/_//d;
 
-@PDL::LinearAlgebra::ISA = qw/PDL::Exporter/;
-@PDL::LinearAlgebra::EXPORT_OK = qw/diag issym minv mtriinv msyminv mposinv mdet mposdet mrcond positivise
+our @ISA = qw/PDL::Exporter/;
+our @EXPORT_OK = qw/diag issym minv mtriinv msyminv mposinv mdet mposdet mrcond positivise
 				mdsvd msvd mgsvd mpinv mlu mhessen mchol mqr mql mlq mrq meigen meigenx
 				mgeigen  mgeigenx msymeigen msymeigenx msymgeigen msymgeigenx
 				msolve mtrisolve msymsolve mpossolve msolvex msymsolvex mpossolvex
 				mrank mlls mllsy mllss mglm mlse tritosym mnorm mgschur mgschurx
 				mcrossprod mcond morth mschur mschurx
 				NO WARN BARF setlaerror getlaerorr laerror/;
-%PDL::LinearAlgebra::EXPORT_TAGS = (Func=>[@PDL::LinearAlgebra::EXPORT_OK]);
+our %EXPORT_TAGS = (Func=>\@EXPORT_OK);
 
 my $_laerror = BARF;
 
