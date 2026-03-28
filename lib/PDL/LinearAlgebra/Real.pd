@@ -360,8 +360,8 @@ Note that the routine returns VT = V\', not V.
  $vt = zeroes(float, 100,100);
  $info = pdl(long, 0);
  gesvd($a, 2, 2, $s , $u, $vt, $info);
-
 ');
+
 pp_def("gesdd",
        HandleBad => 0,
 	Pars => '[io]A(m,n); int jobz(); [o]s(minmn=CALC(PDLMIN($SIZE(m),$SIZE(n)))); [o]U(p,p); [o]VT(s,s); int [o]info(); int [t]iwork(iworkn);',
@@ -371,7 +371,7 @@ pp_def("gesdd",
 	  $SIZE(iworkn) = 8*$SIZE(minmn);
 	',
 	GenericTypes => [F,D],
-	Code => generate_code '
+	Code => generate_code <<'EOF',
                 integer lwork;
 		integer smlsiz;
 		char tra;
@@ -384,18 +384,15 @@ pp_def("gesdd",
 
 		lwork = -1;
 
-		switch ($jobz())
-		{
-
-			case 1: tra = \'A\';
+		switch ($jobz()) {
+			case 1: tra = 'A';
 				break;
-			case 2: tra = \'S\';
+			case 2: tra = 'S';
 				break;
-			case 3: tra = \'O\';
+			case 3: tra = 'O';
 				break;
-			default: tra = \'N\';
+			default: tra = 'N';
 				break;
-
 		}
 
 		FORTRAN($TFD(s,d)gesdd)(
@@ -417,7 +414,7 @@ pp_def("gesdd",
 		lwork = (integer )tmp_work;
 		{
 			$GENERIC() *work;
-			if (tra == \'N\'){
+			if (tra == 'N'){
 				smlsiz = FORTRAN(ilaenv)(&c_nine, "SGESDD", " ", &c_zero, &c_zero, &c_zero, &c_zero, (ftnlen)6, (ftnlen)1);
 				lwork = PDLMAX(14*PDLMIN($SIZE(m),$SIZE(n))+4, 10*PDLMIN($SIZE(m),
 					$SIZE(n))+2+ smlsiz*(smlsiz+8)) + PDLMAX($SIZE(m),$SIZE(n));
@@ -440,30 +437,29 @@ pp_def("gesdd",
 		$P(info));
 		free(work);
 		}
-',
-      Doc => '
-
+EOF
+      Doc => <<'EOF',
 =for ref
 
 Computes the singular value decomposition (SVD) of a real
 M-by-N matrix A.
 
-This routine use the Coppen\'s divide and conquer algorithm.
+This routine use the Coppen's divide and conquer algorithm.
 It is much faster than the simple driver for large matrices, but uses more workspace.
 
     jobz:    Specifies options for computing all or part of matrix:
 
-            = 0:  no columns of U or rows of V\' are computed;
-	    = 1:  all M columns of U and all N rows of V\' are
+            = 0:  no columns of U or rows of V' are computed;
+	    = 1:  all M columns of U and all N rows of V' are
                     returned in the arrays U and VT;
             = 2:  the first min(M,N) columns of U and the first
-                    min(M,N) rows of V\' are returned in the arrays U
+                    min(M,N) rows of V' are returned in the arrays U
                     and VT;
             = 3:  If M >= N, the first N columns of U are overwritten
-                    on the array A and all rows of V\' are returned in
+                    on the array A and all rows of V' are returned in
                     the array VT;
                     otherwise, all columns of U are returned in the
-                    array U and the first M rows of V\' are overwritten
+                    array U and the first M rows of V' are overwritten
                     on the array A.
 
     A:      On entry, the M-by-N matrix A.
@@ -472,7 +468,7 @@ It is much faster than the simple driver for large matrices, but uses more works
                             of U (the left singular vectors, stored
                             columnwise) if M >= N;
                             A is overwritten with the first M rows
-                            of V\' (the right singular vectors, stored
+                            of V' (the right singular vectors, stored
                             rowwise) otherwise.
             if jobz != 3, the contents of A are destroyed.
 
@@ -486,9 +482,9 @@ It is much faster than the simple driver for large matrices, but uses more works
             Min size  = [1,1].
 
     VT:     If jobz = 1 or jobz = 3 and M >= N, VT contains the
-            N-by-N orthogonal matrix V\';
+            N-by-N orthogonal matrix V';
             if jobz = 2, VT contains the first min(M,N) rows of
-            V\' (the right singular vectors, stored rowwise);
+            V' (the right singular vectors, stored rowwise);
             if jobz = 3 and M < N, or jobz = 0, VT is not referenced.
             Min size  = [1,1].
 
@@ -507,8 +503,8 @@ It is much faster than the simple driver for large matrices, but uses more works
  $vt = zeroes(float, $columns, $columns);
  $info = long (0);
  gesdd($a, 1, $s , $u, $vt, $info);
-
-');
+EOF
+);
 
 pp_def("ggsvd",
        HandleBad => 0,
