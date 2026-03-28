@@ -10566,15 +10566,7 @@ pp_def('charpol',
 	free(p);
 
 	',
-	Doc => <<EOT
-=for ref
-
-Compute adjoint matrix and characteristic polynomial.
-
-=cut
-
-EOT
-
+	Doc => 'Compute adjoint matrix and characteristic polynomial',
 );
 
 pp_addpm({At=>'Bot'},<<'EOD');

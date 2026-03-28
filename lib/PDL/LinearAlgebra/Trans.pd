@@ -311,7 +311,7 @@ pp_def('geexp',
 		}
 	}
 ',
-	Doc => <<EOT
+	Doc => <<'EOT',
 =for ref
 
 Computes exp(t*A), the matrix exponential of a general matrix,
