@@ -3105,7 +3105,7 @@ sub PDL::msymgeigenx {
 
 =for ref
 
-Computes SVD using Coppen's divide and conquer algorithm.
+Computes SVD using Cuppen's divide and conquer algorithm.
 Return singular values in scalar context else left (U),
 singular values, right (V' (hermitian for complex)) singular vectors and info.
 Supports threading.

@@ -444,7 +444,7 @@ EOF
 Computes the singular value decomposition (SVD) of a real
 M-by-N matrix A.
 
-This routine use the Coppen's divide and conquer algorithm.
+This routine use the Cuppen's divide and conquer algorithm.
 It is much faster than the simple driver for large matrices, but uses more workspace.
 
     jobz:    Specifies options for computing all or part of matrix:
