@@ -15,7 +15,7 @@ sub generate_code($){
 	if ($config{WITHOUT_THREAD}){
 	return '
 		#if 0
-		threadloop%{
+		broadcastloop%{
 		%}
 		#endif'.$_[0];
 	}

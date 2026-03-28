@@ -127,7 +127,7 @@ sub laerror{
 
 Convenient function for transposing real or complex 2D array(s).
 For complex data, if conj is true returns conjugate transposed array(s) and doesn't support dataflow.
-Supports threading.
+Supports broadcasting.
 
 =cut
 
@@ -176,7 +176,7 @@ sub PDL::_norm {
 =for ref
 
 Checks symmetricity/Hermitianicity of matrix.
-Supports threading.
+Supports broadcasting.
 
 =cut
 
@@ -282,13 +282,13 @@ sub PDL::issym {
 Returns i-th diagonal if matrix in entry or matrix with i-th diagonal
 with entry. I-th diagonal returned flows data back&forth.
 Can be used as lvalue subs if your perl supports it.
-Supports threading.
+Supports broadcasting.
 
 =for usage
 
  PDL = diag(PDL, SCALAR(i), SCALAR(vector)))
  i	: i-th diagonal, default = 0
- vector	: create diagonal matrices by threading over row vectors, default = 0
+ vector	: create diagonal matrices by broadcasting over row vectors, default = 0
 
 =for example
 
@@ -334,7 +334,7 @@ use attributes 'PDL', \&PDL::diag, 'lvalue';
 =for ref
 
 Returns symmetric or Hermitian matrix from lower or upper triangular matrix.
-Supports inplace and threading.
+Supports inplace and broadcasting.
 
 =for usage
 
@@ -366,7 +366,7 @@ sub PDL::tritosym {
 =for ref
 
 Returns entry pdl with changed sign by row so that average of positive sign > 0.
-In other words threads among dimension 1 and row  =  -row if sum(sign(row)) < 0.
+In other words broadcasts among dimension 1 and row  =  -row if sum(sign(row)) < 0.
 Only makes sense for real ndarrays.
 Works inplace.
 
@@ -393,7 +393,7 @@ sub PDL::positivise{
 
 Computes the cross-product of two matrix: A' x  B.
 If only one matrix is given, takes B to be the same as A.
-Supports threading.
+Supports broadcasting.
 Uses L<crossprod|PDL::LinearAlgebra::Real/crossprod> or L<ccrossprod|PDL::LinearAlgebra::Complex/ccrossprod>.
 
 =for usage
@@ -465,7 +465,7 @@ sub PDL::mrank {
 =for ref
 
 Computes norm of real or complex matrix
-Supports threading.
+Supports broadcasting.
 
 =for usage
 
@@ -503,7 +503,7 @@ sub PDL::mnorm {
 =for ref
 
 Computes determinant of a general square matrix using LU factorization.
-Supports threading.
+Supports broadcasting.
 Uses L<getrf|PDL::LinearAlgebra::Real/getrf> or L<cgetrf|PDL::LinearAlgebra::Complex/cgetrf>
 from Lapack.
 
@@ -537,7 +537,7 @@ sub PDL::mdet {
 =for ref
 
 Compute determinant of a symmetric or Hermitian positive definite square matrix using Cholesky factorization.
-Supports threading.
+Supports broadcasting.
 Uses L<potrf|PDL::LinearAlgebra::Real/potrf> or L<cpotrf|PDL::LinearAlgebra::Complex/cpotrf> from Lapack.
 
 =for usage
@@ -575,7 +575,7 @@ The condition number in two-n is defined:
 	norm (a) * norm (inv (a)).
 
 Uses a singular value decomposition.
-Supports threading.
+Supports broadcasting.
 
 =for usage
 
@@ -616,7 +616,7 @@ The reciprocal condition number is defined:
 
 	1/(norm (a) * norm (inv (a)))
 
-Supports threading.
+Supports broadcasting.
 Works on transposed array(s)
 
 =for usage
@@ -718,7 +718,7 @@ sub PDL::mnull {
 
 =for ref
 
-Computes inverse of a general square matrix using LU factorization. Supports inplace and threading.
+Computes inverse of a general square matrix using LU factorization. Supports inplace and broadcasting.
 Uses L<getrf|PDL::LinearAlgebra::Real/getrf> and L<getri|PDL::LinearAlgebra::Real/getri>
 or L<cgetrf|PDL::LinearAlgebra::Complex/cgetrf> and L<cgetri|PDL::LinearAlgebra::Complex/cgetri>
 from Lapack and returns C<inverse, info> in array context.
@@ -749,7 +749,7 @@ sub PDL::minv {
 
 =for ref
 
-Computes inverse of a triangular matrix. Supports inplace and threading.
+Computes inverse of a triangular matrix. Supports inplace and broadcasting.
 Uses L<trtri|PDL::LinearAlgebra::Real/trtri> or L<ctrtri|PDL::LinearAlgebra::Complex/ctrtri> from Lapack.
 Returns C<inverse, info> in array context.
 
@@ -784,7 +784,7 @@ sub PDL::mtriinv{
 =for ref
 
 Computes inverse of a symmetric square matrix using the Bunch-Kaufman diagonal pivoting method.
-Supports inplace and threading.
+Supports inplace and broadcasting.
 Uses L<sytrf|PDL::LinearAlgebra::Real/sytrf> and L<sytri|PDL::LinearAlgebra::Real/sytri> or
 L<csytrf|PDL::LinearAlgebra::Complex/csytrf> and L<csytri|PDL::LinearAlgebra::Complex/csytri>
 from Lapack and returns C<inverse, info> in array context.
@@ -820,7 +820,7 @@ sub PDL::msyminv {
 =for ref
 
 Computes inverse of a symmetric positive definite square matrix using Cholesky factorization.
-Supports inplace and threading.
+Supports inplace and broadcasting.
 Uses L<potrf|PDL::LinearAlgebra::Real/potrf> and L<potri|PDL::LinearAlgebra::Real/potri> or
 L<cpotrf|PDL::LinearAlgebra::Complex/cpotrf> and L<cpotri|PDL::LinearAlgebra::Complex/cpotri>
 from Lapack and returns C<inverse, info> in array context.
@@ -946,7 +946,7 @@ sub PDL::mlu {
 Computes Cholesky decomposition of a symmetric matrix also known as symmetric square root.
 If inplace flag is set, overwrite  the leading upper or lower triangular part of A else returns
 triangular matrix. Returns C<cholesky, info> in array context.
-Supports threading.
+Supports broadcasting.
 Uses L<potrf|PDL::LinearAlgebra::Real/potrf> or L<cpotrf|PDL::LinearAlgebra::Complex/cpotrf> from Lapack.
 
 =for usage
@@ -1031,7 +1031,7 @@ Computes Schur form, works inplace.
 
 	A = Z x T x Z'
 
-Supports threading for unordered eigenvalues.
+Supports broadcasting for unordered eigenvalues.
 Uses L<gees|PDL::LinearAlgebra::Real/gees> or L<cgees|PDL::LinearAlgebra::Complex/cgees>
 from Lapack and returns schur(T) in scalar context.
 Works on transposed array(s).
@@ -1124,7 +1124,7 @@ sub PDL::mschur {
 	my $slice_prefix = ',' x $di;
 	my ($m, $jobv, $jobvl, $jobvr, $select_func, $mult, $norm) = @_;
 	my @dims = $m->dims;
-	barf("mschur: threading not supported for selected vectors")
+	barf("mschur: broadcasting not supported for selected vectors")
 		if $select_func && @dims > 2+$di
 		  && (grep $_ == 2, $jobv, $jobvl, $jobvr);
 	$mult //= 1;
@@ -1382,7 +1382,7 @@ sub PDL::mgschur {
 	my($m, $p, $jobvsl, $jobvsr, $jobvl, $jobvr, $select_func, $mult, $norm) = @_;
 	my @mdims  = $m->dims;
 	$_ = $_->new_or_inplace->t for $m, $p;
-	barf("mgschur: threading isn't supported for selected vectors")
+	barf("mgschur: broadcasting isn't supported for selected vectors")
 		if ($select_func && ((@mdims > 2+$di) || ($p->ndims > 2+$di)) &&
 			($jobvsl == 2 || $jobvsr == 2 || $jobvl == 2 || $jobvr == 2));
 	$mult //= 1;
@@ -1796,7 +1796,7 @@ Solves linear system of equations using LU decomposition.
 
 Returns X in scalar context else X, LU, pivot vector and info.
 B is overwritten by X if its inplace flag is set.
-Supports threading.
+Supports broadcasting.
 Uses L<gesv|PDL::LinearAlgebra::Real/gesv> or L<cgesv|PDL::LinearAlgebra::Complex/cgesv> from Lapack.
 Works on transposed arrays.
 
@@ -1940,7 +1940,7 @@ Solves linear system of equations with triangular matrix A.
 	A * X = B  or A' * X = B
 
 B is overwritten by X if its inplace flag is set.
-Supports threading.
+Supports broadcasting.
 Uses L<trtrs|PDL::LinearAlgebra::Real/trtrs> or L<ctrtrs|PDL::LinearAlgebra::Complex/ctrtrs> from Lapack.
 Work on transposed array(s).
 
@@ -1986,7 +1986,7 @@ Solves linear system of equations using diagonal pivoting method with symmetric 
 
 Returns X in scalar context else X, block diagonal matrix D (and the
 multipliers), pivot vector an info. B is overwritten by X if its inplace flag is set.
-Supports threading.
+Supports broadcasting.
 Uses L<sysv|PDL::LinearAlgebra::Real/sysv> or L<csysv|PDL::LinearAlgebra::Complex/csysv> from Lapack.
 Works on transposed array(s).
 
@@ -2102,7 +2102,7 @@ symmetric positive definite matrix A.
 
 Returns X in scalar context else X, U or L and info.
 B is overwritten by X if its inplace flag is set.
-Supports threading.
+Supports broadcasting.
 Uses L<posv|PDL::LinearAlgebra::Real/posv> or L<cposv|PDL::LinearAlgebra::Complex/cposv> from Lapack.
 Works on transposed array(s).
 
@@ -2424,7 +2424,7 @@ sub PDL::mllss {
 =for ref
 
 Solves a general Gauss-Markov Linear Model (GLM) problem.
-Supports threading.
+Supports broadcasting.
 Uses L<ggglm|PDL::LinearAlgebra::Real/ggglm> or L<cggglm|PDL::LinearAlgebra::Complex/cggglm>
 from Lapack. Works on transposed arrays.
 
@@ -2529,7 +2529,7 @@ Computes eigenvalues and, optionally, the left and/or right eigenvectors of a ge
 Eigenvectors are normalized (Euclidean norm = 1) and largest component real.
 The eigenvalues and eigenvectors returned are complex ndarrays.
 If only eigenvalues are requested, info is returned in array context.
-Supports threading.
+Supports broadcasting.
 Uses L<geev|PDL::LinearAlgebra::Real/geev> or L<cgeev|PDL::LinearAlgebra::Complex/cgeev> from Lapack.
 Works on transposed arrays.
 
@@ -2671,7 +2671,7 @@ sub PDL::meigenx {
 Computes generalized eigenvalues and, optionally, the left and/or right generalized eigenvectors
 for a pair of N-by-N real nonsymmetric matrices (A,B) .
 The alpha from ratio alpha/beta is a complex ndarray.
-Supports threading. Uses L<ggev|PDL::LinearAlgebra::Real/ggev> or
+Supports broadcasting. Uses L<ggev|PDL::LinearAlgebra::Real/ggev> or
 L<cggev|PDL::LinearAlgebra::Complex/cggev> from Lapack.
 Works on transposed arrays.
 
@@ -2822,7 +2822,7 @@ Computes eigenvalues and, optionally eigenvectors of a real symmetric square or
 complex Hermitian matrix (spectral decomposition).
 The eigenvalues are computed from lower or upper triangular matrix.
 If only eigenvalues are requested, info is returned in array context.
-Supports threading and works inplace if eigenvectors are requested.
+Supports broadcasting and works inplace if eigenvectors are requested.
 From Lapack, uses L<syev|PDL::LinearAlgebra::Real/syev> or L<syevd|PDL::LinearAlgebra::Real/syevd> for real
 and L<cheev|PDL::LinearAlgebra::Complex/cheev> or L<cheevd|PDL::LinearAlgebra::Complex/cheevd> for complex.
 Works on transposed array(s).
@@ -2968,7 +2968,7 @@ Computes eigenvalues and, optionally eigenvectors of a real generalized
 symmetric-definite or Hermitian-definite eigenproblem.
 The eigenvalues are computed from lower or upper triangular matrix
 If only eigenvalues are requested, info is returned in array context.
-Supports threading. From Lapack, uses L<sygv|PDL::LinearAlgebra::Real/sygv> or L<sygvd|PDL::LinearAlgebra::Real/sygvd> for real
+Supports broadcasting. From Lapack, uses L<sygv|PDL::LinearAlgebra::Real/sygv> or L<sygvd|PDL::LinearAlgebra::Real/sygvd> for real
 or L<chegv|PDL::LinearAlgebra::Complex/chegv> or L<chegvd|PDL::LinearAlgebra::Complex/chegvd> for complex.
 Works on transposed array(s).
 
@@ -3108,7 +3108,7 @@ sub PDL::msymgeigenx {
 Computes SVD using Cuppen's divide and conquer algorithm.
 Return singular values in scalar context else left (U),
 singular values, right (V' (hermitian for complex)) singular vectors and info.
-Supports threading.
+Supports broadcasting.
 If only singulars values are requested, info is only returned in array context.
 Uses L<gesdd|PDL::LinearAlgebra::Real/gesdd> or L<cgesdd|PDL::LinearAlgebra::Complex/cgesdd> from Lapack.
 
@@ -3149,7 +3149,7 @@ Computes SVD.
 Can compute singular values, either U or V or neither.
 Return singular values in scalar context else left (U),
 singular values, right (V' (hermitian for complex) singular vector and info.
-Supports threading.
+Supports broadcasting.
 If only singular values are requested, info is returned in array context.
 Uses L<gesvd|PDL::LinearAlgebra::Real/gesvd> or L<cgesvd|PDL::LinearAlgebra::Complex/cgesvd> from Lapack.
 
@@ -3301,7 +3301,7 @@ sub PDL::mgsvd {
 #	rectangular diag
 #	usage
 #	is_inplace and function which modify entry matrix
-#	threading support
+#	broadcasting support
 #	automatically create PDL
 #	inplace operation and memory
 #	PDL type, verify float/double

@@ -74,7 +74,7 @@ sub PDL::mhilb {
 
 Return zeroed matrix with upper or lower triangular part from another matrix.
 Return trapezoid matrix if entry matrix is not square.
-Supports threading.
+Supports broadcasting.
 Uses L<tricpy|PDL::LinearAlgebra::Real/tricpy> or L<tricpy|PDL::LinearAlgebra::Complex/ctricpy>.
 
 =for usage
