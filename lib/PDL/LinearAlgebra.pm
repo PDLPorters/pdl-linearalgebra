@@ -12,9 +12,9 @@ use PDL::LinearAlgebra::Special qw//;
 use PDL::Exporter;
 no warnings 'uninitialized';
 use constant {
-	NO => 0,
-	WARN => 1,
-	BARF => 2,
+  NO => 0,
+  WARN => 1,
+  BARF => 2,
 };
 
 use strict;
@@ -24,12 +24,12 @@ $VERSION =~ tr/_//d;
 
 our @ISA = qw/PDL::Exporter/;
 our @EXPORT_OK = qw/diag issym minv mtriinv msyminv mposinv mdet mposdet mrcond positivise
-				mdsvd msvd mgsvd mpinv mlu mhessen mchol mqr mql mlq mrq meigen meigenx
-				mgeigen  mgeigenx msymeigen msymeigenx msymgeigen msymgeigenx
-				msolve mtrisolve msymsolve mpossolve msolvex msymsolvex mpossolvex
-				mrank mlls mllsy mllss mglm mlse tritosym mnorm mgschur mgschurx
-				mcrossprod mcond morth mschur mschurx
-				NO WARN BARF setlaerror getlaerorr laerror/;
+        mdsvd msvd mgsvd mpinv mlu mhessen mchol mqr mql mlq mrq meigen meigenx
+        mgeigen  mgeigenx msymeigen msymeigenx msymgeigen msymgeigenx
+        msolve mtrisolve msymsolve mpossolve msolvex msymsolvex mpossolvex
+        mrank mlls mllsy mllss mglm mlse tritosym mnorm mgschur mgschurx
+        mcrossprod mcond morth mschur mschurx
+        NO WARN BARF setlaerror getlaerorr laerror/;
 our %EXPORT_TAGS = (Func=>\@EXPORT_OK);
 
 my $_laerror = BARF;
@@ -85,9 +85,9 @@ warn about singularity or barf. BARF is the default value.
 =cut
 
 sub setlaerror($){
-	my $err = $_laerror;
-	$_laerror = shift;
-	$err;
+  my $err = $_laerror;
+  $_laerror = shift;
+  $err;
 }
 
 =head2 getlaerror
@@ -96,24 +96,24 @@ sub setlaerror($){
 
 Gets action type when an error is encountered.
 
-	0 => NO,
-	1 => WARN,
-	2 => BARF
+  0 => NO,
+  1 => WARN,
+  2 => BARF
 
 =cut
 
 sub getlaerror{
-	$_laerror;
+  $_laerror;
 }
 
 sub laerror{
-	return unless $_laerror;
-	if ($_laerror < 2){
-		warn "$_[0]\n";
-	}
-	else{
-		barf "$_[0]\n";
-	}
+  return unless $_laerror;
+  if ($_laerror < 2){
+    warn "$_[0]\n";
+  }
+  else{
+    barf "$_[0]\n";
+  }
 }
 
 =head2 t
@@ -152,17 +152,17 @@ sub _ecplx {
 }
 sub PDL::_is_complex { !$_[0]->type->real }
 sub PDL::_norm {
-	my ($m, $real, $trans) = @_;
-	# If trans == true => transpose output matrix
-	# If real == true => rotate (complex as a vector)
-	#		     such that max abs will be real
-	my $ret = PDL::LinearAlgebra::Complex::cnrm2($m);
-	return ($trans ? $m->t/$ret->dummy(0)->t : $m/$ret->dummy(0))->reshape(-1) if !$real;
-	$m = ($m/$ret->dummy(0))->reshape(-1);
-	my $index = $m->abs->maximum_ind;
-	my $scale = $m->mv(0,-1)->index($index)->mv(-1,0);
-	$scale = $scale->conj/$scale->abs;
-	return $trans ? $m->t*$scale->dummy(2) : $m*$scale->dummy(2)->t;
+  my ($m, $real, $trans) = @_;
+  # If trans == true => transpose output matrix
+  # If real == true => rotate (complex as a vector)
+  #         such that max abs will be real
+  my $ret = PDL::LinearAlgebra::Complex::cnrm2($m);
+  return ($trans ? $m->t/$ret->dummy(0)->t : $m/$ret->dummy(0))->reshape(-1) if !$real;
+  $m = ($m/$ret->dummy(0))->reshape(-1);
+  my $index = $m->abs->maximum_ind;
+  my $scale = $m->mv(0,-1)->index($index)->mv(-1,0);
+  $scale = $scale->conj/$scale->abs;
+  return $trans ? $m->t*$scale->dummy(2) : $m*$scale->dummy(2)->t;
 }
 
 =head2 issym
@@ -246,8 +246,8 @@ sub _error_schur {
   if (!($index = which($info == $N+1))->isempty) {
     if ($algo eq 'QR') {
       laerror("$func: The eigenvalues could not be reordered because some\n".
-	"eigenvalues were too close to separate (the problem".
-	" is very ill-conditioned) for PDL(s) @{[$index->list]}: \$info = $info");
+  "eigenvalues were too close to separate (the problem".
+  " is very ill-conditioned) for PDL(s) @{[$index->list]}: \$info = $info");
     } else {
       laerror("$func: Error in hgeqz for matrix (PDL(s) @{[$index->list]}): \$info = $info");
     }
@@ -265,14 +265,14 @@ sub PDL::_wrap_select_func {
 
 *issym = \&PDL::issym;
 sub PDL::issym {
-	&_square;
-	my ($m, $tol, $conj) = @_;
-	$tol //= ($m->type >= double) ? 1e-8 : 1e-5;
-	$m = $m - $m->t($conj);
-	my ($min,$max) = PDL::Ufunc::minmaximum($m);
-	$min = $min->minimum;
-	$max = $max->maximum;
-	return  (((abs($max) > $tol) + (abs($min) > $tol)) == 0);
+  &_square;
+  my ($m, $tol, $conj) = @_;
+  $tol //= ($m->type >= double) ? 1e-8 : 1e-5;
+  $m = $m - $m->t($conj);
+  my ($min,$max) = PDL::Ufunc::minmaximum($m);
+  $min = $min->minimum;
+  $max = $max->maximum;
+  return  (((abs($max) > $tol) + (abs($min) > $tol)) == 0);
 }
 
 =head2 diag
@@ -287,8 +287,8 @@ Supports broadcasting.
 =for usage
 
  PDL = diag(PDL, SCALAR(i), SCALAR(vector)))
- i	: i-th diagonal, default = 0
- vector	: create diagonal matrices by broadcasting over row vectors, default = 0
+ i  : i-th diagonal, default = 0
+ vector  : create diagonal matrices by broadcasting over row vectors, default = 0
 
 =for example
 
@@ -304,28 +304,28 @@ Supports broadcasting.
 
 *diag = \&PDL::diag;
 sub PDL::diag {
-	my $di = $_[0]->dims_internal;
-	my @diag_args = ($di, $di+1);
-	my $slice_prefix = ',' x $di;
-	my ($a,$i, $vec) = @_;
-	my $z;
-	my @dims = $a->dims;
-	my $diag = ($i < 0) ? -$i : $i ;
-	if (@dims == $di+1 || $vec){
-		my $dim = $dims[0];
-		my $zz = $dim + $diag;
-		my $v = $z = $a->_similar($zz,$zz,@dims[$di+1..$#dims]);
-		$v = ($i < 0) ? $v->slice("$slice_prefix:@{[$dim-1]},$diag:") : $v->slice("$slice_prefix$diag:,:@{[$dim-1]}") if $i;
-		$v->diagonal(@diag_args) .= $a;
-	}
-	elsif($i < 0){
-		$z = $a->slice("$slice_prefix:-@{[$diag+1]} , $diag:")->diagonal(@diag_args);
-	}
-	elsif($i){
-		$z = $a->slice("$slice_prefix$diag:, :-@{[$diag+1]}")->diagonal(@diag_args);
-	}
-	else{$z = $a->diagonal(@diag_args);}
-	$z;
+  my $di = $_[0]->dims_internal;
+  my @diag_args = ($di, $di+1);
+  my $slice_prefix = ',' x $di;
+  my ($a,$i, $vec) = @_;
+  my $z;
+  my @dims = $a->dims;
+  my $diag = ($i < 0) ? -$i : $i ;
+  if (@dims == $di+1 || $vec){
+    my $dim = $dims[0];
+    my $zz = $dim + $diag;
+    my $v = $z = $a->_similar($zz,$zz,@dims[$di+1..$#dims]);
+    $v = ($i < 0) ? $v->slice("$slice_prefix:@{[$dim-1]},$diag:") : $v->slice("$slice_prefix$diag:,:@{[$dim-1]}") if $i;
+    $v->diagonal(@diag_args) .= $a;
+  }
+  elsif($i < 0){
+    $z = $a->slice("$slice_prefix:-@{[$diag+1]} , $diag:")->diagonal(@diag_args);
+  }
+  elsif($i){
+    $z = $a->slice("$slice_prefix$diag:, :-@{[$diag+1]}")->diagonal(@diag_args);
+  }
+  else{$z = $a->diagonal(@diag_args);}
+  $z;
 }
 use attributes 'PDL', \&PDL::diag, 'lvalue';
 
@@ -352,13 +352,13 @@ Supports inplace and broadcasting.
 
 *tritosym = \&PDL::tritosym;
 sub PDL::tritosym {
-	&_square;
-	my ($m, $upper, $conj) = @_;
-	my $b = $m->is_inplace ? $m->t : $m->_similar_null;
-	($conj ? $m->conj : $m)->tricpy($upper, $b);
-	$m->tricpy($upper, $b->t) unless (!$conj && $m->is_inplace(0));
-	$b->im->diagonal(0,1) .= 0 if $conj;
-	$b;
+  &_square;
+  my ($m, $upper, $conj) = @_;
+  my $b = $m->is_inplace ? $m->t : $m->_similar_null;
+  ($conj ? $m->conj : $m)->tricpy($upper, $b);
+  $m->tricpy($upper, $b->t) unless (!$conj && $m->is_inplace(0));
+  $b->im->diagonal(0,1) .= 0 if $conj;
+  $b;
 }
 
 =head2 positivise
@@ -380,11 +380,11 @@ Works inplace.
 
 *positivise = \&PDL::positivise;
 sub PDL::positivise{
-	my $m = shift->new_or_inplace;
-	my $tmp;
-	$tmp = $m->dice('X', which(($m->lt(0,0)->sumover > ($m->dim(0)/2))>0));
-	$tmp->inplace->mult(-1,0);
-	$m;
+  my $m = shift->new_or_inplace;
+  my $tmp;
+  $tmp = $m->dice('X', which(($m->lt(0,0)->sumover > ($m->dim(0)/2))>0));
+  $tmp->inplace->mult(-1,0);
+  $m;
 }
 
 =head2 mcrossprod
@@ -415,10 +415,10 @@ sub PDL::_call_method {
 }
 *mcrossprod = \&PDL::mcrossprod;
 sub PDL::mcrossprod {
-	&_2d_array;
-	my($a, $b) = @_;
-	$b = $a unless defined $b;
-	$a->_call_method('crossprod', $b);
+  &_2d_array;
+  my($a, $b) = @_;
+  $b = $a unless defined $b;
+  $a->_call_method('crossprod', $b);
 }
 
 =head2 mrank
@@ -432,7 +432,7 @@ from Lapack.
 =for usage
 
  SCALAR = mrank(PDL, SCALAR(TOL))
- TOL:	tolerance value, default : mnorm(dims(PDL),'inf') * mnorm(PDL) * EPS
+ TOL:  tolerance value, default : mnorm(dims(PDL),'inf') * mnorm(PDL) * EPS
 
 =for example
 
@@ -444,20 +444,20 @@ from Lapack.
 *mrank = \&PDL::mrank;
 
 sub PDL::mrank {
-	&_2d_array;
-	my $di = $_[0]->dims_internal;
-	my($m, $tol) = @_;
-	my(@dims) = $m->dims;
-	my $err = setlaerror(NO);
-	# Sometimes mdsvd bugs for  float (SGEBRD)
-	# ($sv, $info) = $m->msvd(0, 0);
-	my ($sv, $info) = $m->mdsvd(0);
-	setlaerror($err);
-	barf("mrank: SVD algorithm did not converge\n") if $info;
-	unless (defined $tol){
-		$tol =  ($dims[$di+1] > $dims[$di] ? $dims[$di+1] : $dims[$di]) * $sv((0)) * lamch(3);
-	}
-	(which($sv > $tol))->dim(0);
+  &_2d_array;
+  my $di = $_[0]->dims_internal;
+  my($m, $tol) = @_;
+  my(@dims) = $m->dims;
+  my $err = setlaerror(NO);
+  # Sometimes mdsvd bugs for  float (SGEBRD)
+  # ($sv, $info) = $m->msvd(0, 0);
+  my ($sv, $info) = $m->mdsvd(0);
+  setlaerror($err);
+  barf("mrank: SVD algorithm did not converge\n") if $info;
+  unless (defined $tol){
+    $tol =  ($dims[$di+1] > $dims[$di] ? $dims[$di+1] : $dims[$di]) * $sv((0)) * lamch(3);
+  }
+  (which($sv > $tol))->dim(0);
 }
 
 =head2 mnorm
@@ -471,10 +471,10 @@ Supports broadcasting.
 
  PDL(norm) = mnorm(PDL, SCALAR(ord));
  ord :
-	0|'inf' : Infinity norm
-	1|'one' : One norm
-	2|'two'	: norm 2 (default)
-	3|'fro' : frobenius norm
+  0|'inf' : Infinity norm
+  1|'one' : One norm
+  2|'two'  : norm 2 (default)
+  3|'fro' : frobenius norm
 
 =for example
 
@@ -487,15 +487,15 @@ my %norms = (inf=>0, one=>1, two=>2, fro=>3);
 my %norm2arg = (0=>1, 1=>2, 3=>3);
 *mnorm = \&PDL::mnorm;
 sub PDL::mnorm {
-	my ($m, $ord) = @_;
-	$ord //= 2;
-	$ord = $norms{$ord} if exists $norms{$ord};
-	return $m->_call_method('lange', $norm2arg{$ord}) if exists $norm2arg{$ord};
-	my $err = setlaerror(NO);
-	my ($sv, $info) = $m->msvd(0, 0);
-	setlaerror($err);
-	_error($info, "mnorm: SVD algorithm did not converge for matrix (PDL(s) %s");
-	$sv->slice('(0)')->reshape(-1)->sever;
+  my ($m, $ord) = @_;
+  $ord //= 2;
+  $ord = $norms{$ord} if exists $norms{$ord};
+  return $m->_call_method('lange', $norm2arg{$ord}) if exists $norm2arg{$ord};
+  my $err = setlaerror(NO);
+  my ($sv, $info) = $m->msvd(0, 0);
+  setlaerror($err);
+  _error($info, "mnorm: SVD algorithm did not converge for matrix (PDL(s) %s");
+  $sv->slice('(0)')->reshape(-1)->sever;
 }
 
 =head2 mdet
@@ -520,16 +520,16 @@ from Lapack.
 
 *mdet = \&PDL::mdet;
 sub PDL::mdet {
-	&_square;
-	my $di = $_[0]->dims_internal;
-	my $m_orig = my $m = shift->copy;
-	$m->_call_method('getrf', my $ipiv = null, my $info = null);
-	$m = $m->diagonal($di,$di+1);
-	$m = $m->prodover;
-	$m = $m * ((PDL::Ufunc::sumover(sequence($ipiv->dim(0))->plus(1,0) != $ipiv)%2)*(-2)+1);
-	$info = which($info != 0);
-	$m->flat->index($info) .= 0 if !$info->isempty;
-	$m;
+  &_square;
+  my $di = $_[0]->dims_internal;
+  my $m_orig = my $m = shift->copy;
+  $m->_call_method('getrf', my $ipiv = null, my $info = null);
+  $m = $m->diagonal($di,$di+1);
+  $m = $m->prodover;
+  $m = $m * ((PDL::Ufunc::sumover(sequence($ipiv->dim(0))->plus(1,0) != $ipiv)%2)*(-2)+1);
+  $info = which($info != 0);
+  $m->flat->index($info) .= 0 if !$info->isempty;
+  $m;
 }
 
 =head2 mposdet
@@ -554,14 +554,14 @@ Uses L<potrf|PDL::LinearAlgebra::Real/potrf> or L<cpotrf|PDL::LinearAlgebra::Com
 
 *mposdet = \&PDL::mposdet;
 sub PDL::mposdet {
-	&_square;
-	my ($m, $upper) = @_;
-	$m = $m->copy;
-	$m->_call_method('potrf', $upper, my $info = null);
-	_error($info, "mposdet: Matrix (PDL(s) %s) is/are not positive definite (after potrf factorization)");
-	$m = $m->re if $m->_is_complex;
-	$m = $m->diagonal(0,1)->prodover->pow(2);
-	return wantarray ? ($m, $info) : $m;
+  &_square;
+  my ($m, $upper) = @_;
+  $m = $m->copy;
+  $m->_call_method('potrf', $upper, my $info = null);
+  _error($info, "mposdet: Matrix (PDL(s) %s) is/are not positive definite (after potrf factorization)");
+  $m = $m->re if $m->_is_complex;
+  $m = $m->diagonal(0,1)->prodover->pow(2);
+  return wantarray ? ($m, $info) : $m;
 }
 
 =head2 mcond
@@ -572,7 +572,7 @@ Computes the condition number (two-norm) of a general matrix.
 
 The condition number in two-n is defined:
 
-	norm (a) * norm (inv (a)).
+  norm (a) * norm (inv (a)).
 
 Uses a singular value decomposition.
 Supports broadcasting.
@@ -590,18 +590,18 @@ Supports broadcasting.
 
 *mcond = \&PDL::mcond;
 sub PDL::mcond {
-	&_2d_array;
-	my $m = shift;
-	my @dims = $m->dims;
-	my $err = setlaerror(NO);
-	my ($sv, $info) = $m->msvd(0, 0);
-	setlaerror($err);
-	_error($info, "mcond: Algorithm did not converge for matrix (PDL(s) %s)");
-	my $temp = $sv->slice('(0)');
+  &_2d_array;
+  my $m = shift;
+  my @dims = $m->dims;
+  my $err = setlaerror(NO);
+  my ($sv, $info) = $m->msvd(0, 0);
+  setlaerror($err);
+  _error($info, "mcond: Algorithm did not converge for matrix (PDL(s) %s)");
+  my $temp = $sv->slice('(0)');
         my $ret = $temp/$sv->((-1));
-	$info = $ret->flat->index(which($temp == 0));
-	$info .= inf() unless $info->isempty;
-	return $ret;
+  $info = $ret->flat->index(which($temp == 0));
+  $info .= inf() unless $info->isempty;
+  return $ret;
 }
 
 =head2 mrcond
@@ -614,7 +614,7 @@ in either the 1-norm or the infinity-norm.
 
 The reciprocal condition number is defined:
 
-	1/(norm (a) * norm (inv (a)))
+  1/(norm (a) * norm (inv (a)))
 
 Supports broadcasting.
 Works on transposed array(s)
@@ -623,8 +623,8 @@ Works on transposed array(s)
 
  PDL = mrcond(PDL, SCALAR(ord))
  ord :
-	0 : Infinity norm (default)
-	1 : One norm
+  0 : Infinity norm (default)
+  1 : One norm
 
 =for example
 
@@ -635,16 +635,16 @@ Works on transposed array(s)
 
 *mrcond = \&PDL::mrcond;
 sub PDL::mrcond {
-	&_square;
-	my ($m,$anorm) = @_;
-	$anorm = 0 unless defined $anorm;
-	$_ = null for my ($ipiv, $info, $rcond);
-	my $norm = $m->mnorm($anorm);
-	$m = $m->t->copy();
-	$m->_call_method('getrf', $ipiv, $info);
-	_error($info, "mrcond: Factor(s) U (PDL(s) %s) is/are singular (after getrf factorization)");
-	$m->_call_method('gecon',$anorm,$norm,$rcond,$info);
-	return wantarray ? ($rcond, $info) : $rcond;
+  &_square;
+  my ($m,$anorm) = @_;
+  $anorm = 0 unless defined $anorm;
+  $_ = null for my ($ipiv, $info, $rcond);
+  my $norm = $m->mnorm($anorm);
+  $m = $m->t->copy();
+  $m->_call_method('getrf', $ipiv, $info);
+  _error($info, "mrcond: Factor(s) U (PDL(s) %s) is/are singular (after getrf factorization)");
+  $m->_call_method('gecon',$anorm,$norm,$rcond,$info);
+  return wantarray ? ($rcond, $info) : $rcond;
 }
 
 =head2 morth
@@ -668,15 +668,15 @@ Returns an orthonormal basis of the range space of matrix A.
 *morth = \&PDL::morth;
 
 sub PDL::morth {
-	&_2d_array;
-	my $di = $_[0]->dims_internal;
-	my $slice_prefix = ',' x $di;
-	my ($m, $tol) = @_;
-	$tol =  (defined $tol) ? $tol  : ($m->type == double) ? 1e-8 : 1e-5;
-	(my $u, my $s, undef, my $info) = $m->mdsvd;
-	barf("morth: SVD algorithm did not converge\n") if $info;
-	my $rank = (which($s > $tol))->dim(0) - 1;
-	$rank < 0 ? $m->_similar_null : $u->slice("$slice_prefix:$rank,")->sever;
+  &_2d_array;
+  my $di = $_[0]->dims_internal;
+  my $slice_prefix = ',' x $di;
+  my ($m, $tol) = @_;
+  $tol =  (defined $tol) ? $tol  : ($m->type == double) ? 1e-8 : 1e-5;
+  (my $u, my $s, undef, my $info) = $m->mdsvd;
+  barf("morth: SVD algorithm did not converge\n") if $info;
+  my $rank = (which($s > $tol))->dim(0) - 1;
+  $rank < 0 ? $m->_similar_null : $u->slice("$slice_prefix:$rank,")->sever;
 }
 
 =head2 mnull
@@ -701,17 +701,17 @@ Works on transposed array.
 *mnull = \&PDL::mnull;
 
 sub PDL::mnull {
-	&_2d_array;
-	my $di = $_[0]->dims_internal;
-	my $slice_prefix = ',' x $di;
-	my ($m, $tol) = @_;
-	my @dims = $m->dims;
-	$tol //= ($m->type == double) ? 1e-8 : 1e-5;
-	(undef, my $s, my $v, my $info) = $m->mdsvd;
-	barf("mnull: SVD algorithm did not converge\n") if $info;
-	#TODO: USE TRANSPOSED A
-	my $rank = (which($s > $tol))->dim(0);
-	$rank < $dims[$di] ? $v->t->slice("$slice_prefix$rank:")->sever : $m->_similar_null;
+  &_2d_array;
+  my $di = $_[0]->dims_internal;
+  my $slice_prefix = ',' x $di;
+  my ($m, $tol) = @_;
+  my @dims = $m->dims;
+  $tol //= ($m->type == double) ? 1e-8 : 1e-5;
+  (undef, my $s, my $v, my $info) = $m->mdsvd;
+  barf("mnull: SVD algorithm did not converge\n") if $info;
+  #TODO: USE TRANSPOSED A
+  my $rank = (which($s > $tol))->dim(0);
+  $rank < $dims[$di] ? $v->t->slice("$slice_prefix$rank:")->sever : $m->_similar_null;
 }
 
 =head2 minv
@@ -736,13 +736,13 @@ from Lapack and returns C<inverse, info> in array context.
 
 *minv = \&PDL::minv;
 sub PDL::minv {
-	&_square;
-	my $m = shift->new_or_inplace;
-	$_ = null for my ($ipiv, $info);
-	$m->_call_method('getrf', $ipiv, $info);
-	_error($info, "minv: Factor(s) U (PDL(s) %s) is/are singular (after getrf factorization)");
-	$m->_call_method('getri', $ipiv, $info);
-	return wantarray ? ($m, $info) : $m;
+  &_square;
+  my $m = shift->new_or_inplace;
+  $_ = null for my ($ipiv, $info);
+  $m->_call_method('getrf', $ipiv, $info);
+  _error($info, "minv: Factor(s) U (PDL(s) %s) is/are singular (after getrf factorization)");
+  $m->_call_method('getri', $ipiv, $info);
+  return wantarray ? ($m, $info) : $m;
 }
 
 =head2 mtriinv
@@ -769,14 +769,14 @@ Returns C<inverse, info> in array context.
 
 *mtriinv = \&PDL::mtriinv;
 sub PDL::mtriinv{
-	&_square;
-	my $m = shift->new_or_inplace;
-	my $upper = @_ ? (1 - shift)  : pdl (long,1);
-	my $diag = shift;
-	my $info = PDL->null;
-	$m->_call_method('trtri', $upper, $diag, $info);
-	_error($info, "mtriinv: Matrix (PDL(s) %s) is/are singular");
-	return wantarray ? ($m, $info) : $m;
+  &_square;
+  my $m = shift->new_or_inplace;
+  my $upper = @_ ? (1 - shift)  : pdl (long,1);
+  my $diag = shift;
+  my $info = PDL->null;
+  $m->_call_method('trtri', $upper, $diag, $info);
+  _error($info, "mtriinv: Matrix (PDL(s) %s) is/are singular");
+  return wantarray ? ($m, $info) : $m;
 }
 
 =head2 msyminv
@@ -804,15 +804,15 @@ from Lapack and returns C<inverse, info> in array context.
 
 *msyminv = \&PDL::msyminv;
 sub PDL::msyminv {
-	&_square;
-	my $di = $_[0]->dims_internal;
-	my $m = shift->new_or_inplace;
-	my $upper = @_ ? (1 - shift)  : pdl (long,1);
-	$m->_call_method('sytrf', $upper, my $ipiv=null, my $info=null);
-	_error($info, "msyminv: Block diagonal matrix D (PDL(s) %s) is/are singular (after sytrf factorization)");
-	$m->_call_method('sytri',$upper,$ipiv,$info);
-	$m = $m->t->tritosym($upper, 0);
-	return wantarray ? ($m, $info) : $m;
+  &_square;
+  my $di = $_[0]->dims_internal;
+  my $m = shift->new_or_inplace;
+  my $upper = @_ ? (1 - shift)  : pdl (long,1);
+  $m->_call_method('sytrf', $upper, my $ipiv=null, my $info=null);
+  _error($info, "msyminv: Block diagonal matrix D (PDL(s) %s) is/are singular (after sytrf factorization)");
+  $m->_call_method('sytri',$upper,$ipiv,$info);
+  $m = $m->t->tritosym($upper, 0);
+  return wantarray ? ($m, $info) : $m;
 }
 
 =head2 mposinv
@@ -841,14 +841,14 @@ from Lapack and returns C<inverse, info> in array context.
 
 *mposinv = \&PDL::mposinv;
 sub PDL::mposinv {
-	&_square;
-	my $di = $_[0]->dims_internal;
-	my $m = shift->new_or_inplace;
-	my $upper = @_ ? (1 - shift)  : pdl (long,1);
-	$m->_call_method('potrf', $upper, my $info=null);
-	_error($info, "mposinv: matrix (PDL(s) %s) is/are not positive definite (after potrf factorization)");
-	$m->_call_method('potri', $upper, $info);
-	return wantarray ? ($m, $info) : $m;
+  &_square;
+  my $di = $_[0]->dims_internal;
+  my $m = shift->new_or_inplace;
+  my $upper = @_ ? (1 - shift)  : pdl (long,1);
+  $m->_call_method('potrf', $upper, my $info=null);
+  _error($info, "mposinv: matrix (PDL(s) %s) is/are not positive definite (after potrf factorization)");
+  $m->_call_method('potri', $upper, $info);
+  return wantarray ? ($m, $info) : $m;
 }
 
 =head2 mpinv
@@ -861,7 +861,7 @@ Works on transposed array.
 =for usage
 
  PDL(pseudo-inv)  = mpinv(PDL, SCALAR(tol))
- TOL:	tolerance value, default : mnorm(dims(PDL),'inf') * mnorm(PDL) * EPS
+ TOL:  tolerance value, default : mnorm(dims(PDL),'inf') * mnorm(PDL) * EPS
 
 =for example
 
@@ -872,23 +872,23 @@ Works on transposed array.
 
 *mpinv = \&PDL::mpinv;
 sub PDL::mpinv{
-	&_2d_array;
-	my $di = $_[0]->dims_internal;
-	my ($m, $tol) = @_;
-	my @dims = $m->dims;
-	my $err = setlaerror(NO);
-	#TODO: don't transpose
-	my ($u, $s, $v, $info) = $m->mdsvd(2);
-	setlaerror($err);
-	_error($info, "mpinv: SVD algorithm did not converge (PDL %s)");
-	unless (defined $tol){
-		$tol =  ($dims[$di+1] > $dims[$di] ? $dims[$di+1] : $dims[$di]) * $s((0)) * lamch(3);
-	}
-	my ($ind, $cind) = which_both( $s > $tol );
-	$s->index($cind) .= 0 if defined $cind;
-	$s->index($ind)  .= 1/$s->index($ind) ;
-	$ind = ($v->t * ($m->_is_complex ? $s->r2C : $s)) x $u->t;
-	return wantarray ? ($ind, $info) : $ind;
+  &_2d_array;
+  my $di = $_[0]->dims_internal;
+  my ($m, $tol) = @_;
+  my @dims = $m->dims;
+  my $err = setlaerror(NO);
+  #TODO: don't transpose
+  my ($u, $s, $v, $info) = $m->mdsvd(2);
+  setlaerror($err);
+  _error($info, "mpinv: SVD algorithm did not converge (PDL %s)");
+  unless (defined $tol){
+    $tol =  ($dims[$di+1] > $dims[$di] ? $dims[$di+1] : $dims[$di]) * $s((0)) * lamch(3);
+  }
+  my ($ind, $cind) = which_both( $s > $tol );
+  $s->index($cind) .= 0 if defined $cind;
+  $s->index($ind)  .= 1/$s->index($ind) ;
+  $ind = ($v->t * ($m->_is_complex ? $s->r2C : $s)) x $u->t;
+  return wantarray ? ($ind, $info) : $ind;
 }
 
 =head2 mlu
@@ -914,29 +914,29 @@ Works on transposed array.
 *mlu = \&PDL::mlu;
 
 sub PDL::mlu {
-	my $di = $_[0]->dims_internal;
-	&_2d_array;
-	my $m = shift;
-	my @dims = $m->dims;
+  my $di = $_[0]->dims_internal;
+  &_2d_array;
+  my $m = shift;
+  my @dims = $m->dims;
         $m = $m->copy;
-	$m->t->_call_method('getrf',my $ipiv=null,my $info = null);
-	if($info > 0) {
-		$info--;
-		laerror("mlu: Factor U is singular: U($info,$info) = 0 (after cgetrf factorization)");
-		return $m, $m, $ipiv, $info;
-	}
-	my $u = $m->mtri;
-	my $l = $m->mtri(1);
-	my $slice_prefix = ',' x $di;
-	my $smallerm1 = ($dims[$di] < $dims[$di+1] ? $dims[$di] : $dims[$di+1]) - 1;
-	if ($dims[$di+1] > $dims[$di]) {
-		$u = $u->slice("$slice_prefix,:$smallerm1")->sever;
-		$l->slice("$slice_prefix :$smallerm1, :$smallerm1")->diagonal($di,$di+1) .= 1;
-	} else {
-		$l = $l->slice("$slice_prefix:$smallerm1")->sever if $dims[$di+1] < $dims[$di];
-		$l->diagonal($di,$di+1) .= 1;
-	}
-	$l, $u, $ipiv, $info;
+  $m->t->_call_method('getrf',my $ipiv=null,my $info = null);
+  if($info > 0) {
+    $info--;
+    laerror("mlu: Factor U is singular: U($info,$info) = 0 (after cgetrf factorization)");
+    return $m, $m, $ipiv, $info;
+  }
+  my $u = $m->mtri;
+  my $l = $m->mtri(1);
+  my $slice_prefix = ',' x $di;
+  my $smallerm1 = ($dims[$di] < $dims[$di+1] ? $dims[$di] : $dims[$di+1]) - 1;
+  if ($dims[$di+1] > $dims[$di]) {
+    $u = $u->slice("$slice_prefix,:$smallerm1")->sever;
+    $l->slice("$slice_prefix :$smallerm1, :$smallerm1")->diagonal($di,$di+1) .= 1;
+  } else {
+    $l = $l->slice("$slice_prefix:$smallerm1")->sever if $dims[$di+1] < $dims[$di];
+    $l->diagonal($di,$di+1) .= 1;
+  }
+  $l, $u, $ipiv, $info;
 }
 
 =head2 mchol
@@ -964,16 +964,16 @@ Uses L<potrf|PDL::LinearAlgebra::Real/potrf> or L<cpotrf|PDL::LinearAlgebra::Com
 
 *mchol = \&PDL::mchol;
 sub PDL::mchol {
-	&_square;
-	my $di = $_[0]->dims_internal;
-	my($m, $upper) = @_;
-	my(@dims) = $m->dims;
-	$m = $m->mtri($upper) unless $m->is_inplace(0);
-	@dims = @dims[2+$di..$#dims];
-	my $uplo =  1 - $upper;
-	$m->_call_method('potrf',$uplo,my $info=null);
-	_error($info, "mchol: matrix (PDL(s) %s) is/are not positive definite (after potrf factorization)");
-	return wantarray ? ($m, $info) : $m;
+  &_square;
+  my $di = $_[0]->dims_internal;
+  my($m, $upper) = @_;
+  my(@dims) = $m->dims;
+  $m = $m->mtri($upper) unless $m->is_inplace(0);
+  @dims = @dims[2+$di..$#dims];
+  my $uplo =  1 - $upper;
+  $m->_call_method('potrf',$uplo,my $info=null);
+  _error($info, "mchol: matrix (PDL(s) %s) is/are not positive definite (after potrf factorization)");
+  return wantarray ? ($m, $info) : $m;
 }
 
 =head2 mhessen
@@ -985,11 +985,11 @@ Reduces a square matrix to Hessenberg form H and orthogonal matrix Q.
 It reduces a general matrix A to upper Hessenberg form H by an orthogonal
 similarity transformation:
 
-	Q' x A x Q = H
+  Q' x A x Q = H
 
 or
 
-	A = Q x H x Q'
+  A = Q x H x Q'
 
 Uses L<gehrd|PDL::LinearAlgebra::Real/gehrd> and L<orghr|PDL::LinearAlgebra::Real/orghr> or
 L<cgehrd|PDL::LinearAlgebra::Complex/cgehrd> and L<cunghr|PDL::LinearAlgebra::Complex/cunghr>
@@ -1009,18 +1009,18 @@ Works on transposed array.
 
 *mhessen = \&PDL::mhessen;
 sub PDL::mhessen {
-	&_square;
-	my $di = $_[0]->dims_internal;
-	my @diag_args = ($di, $di+1);
-	my $slice_arg = (',' x $di) . ":-2, 1:";
-	my $m = shift;
-	my(@dims) = $m->dims;
-	$m = $m->t->copy;
-	$m->_call_method('gehrd',1,$dims[$di], my $tau = $m->_similar($dims[$di]-1),my $info = null);
-	(my $q = $m->copy)->_call_method(['orghr','cunghr'], 1, $dims[$di], $tau, $info) if wantarray;
-	my $h = ($m = $m->t)->mtri;
-	$h->slice($slice_arg)->diagonal(@diag_args) .= $m->slice($slice_arg)->diagonal(@diag_args);
-	wantarray ? return ($h, $q->t->sever) : $h;
+  &_square;
+  my $di = $_[0]->dims_internal;
+  my @diag_args = ($di, $di+1);
+  my $slice_arg = (',' x $di) . ":-2, 1:";
+  my $m = shift;
+  my(@dims) = $m->dims;
+  $m = $m->t->copy;
+  $m->_call_method('gehrd',1,$dims[$di], my $tau = $m->_similar($dims[$di]-1),my $info = null);
+  (my $q = $m->copy)->_call_method(['orghr','cunghr'], 1, $dims[$di], $tau, $info) if wantarray;
+  my $h = ($m = $m->t)->mtri;
+  $h->slice($slice_arg)->diagonal(@diag_args) .= $m->slice($slice_arg)->diagonal(@diag_args);
+  wantarray ? return ($h, $q->t->sever) : $h;
 }
 
 =head2 mschur
@@ -1029,7 +1029,7 @@ sub PDL::mhessen {
 
 Computes Schur form, works inplace.
 
-	A = Z x T x Z'
+  A = Z x T x Z'
 
 Supports broadcasting for unordered eigenvalues.
 Uses L<gees|PDL::LinearAlgebra::Real/gees> or L<cgees|PDL::LinearAlgebra::Complex/cgees>
@@ -1039,40 +1039,40 @@ Works on transposed array(s).
 =for usage
 
  ( PDL(schur), (PDL(eigenvalues), (PDL(left schur vectors), PDL(right schur vectors), $sdim), $info) ) = mschur(PDL(A), SCALAR(schur vector),SCALAR(left eigenvector), SCALAR(right eigenvector),SCALAR(select_func), SCALAR(backtransform), SCALAR(norm))
- schur vector	     : Schur vectors returned, none = 0 | all = 1 | selected = 2, default = 0
+ schur vector       : Schur vectors returned, none = 0 | all = 1 | selected = 2, default = 0
  left eigenvector    : Left eigenvectors returned, none = 0 | all = 1 | selected = 2, default = 0
  right eigenvector   : Right eigenvectors returned, none = 0 | all = 1 | selected = 2, default = 0
- select_func	     : Select_func is used to select eigenvalues to sort
-		       to the top left of the Schur form.
-		       An eigenvalue is selected if PerlInt select_func(w) is true;
-		       (the inputs are converted to complex ndarrays for you)
-		       Note that a selected complex eigenvalue may no longer
-		       satisfy select_func(w) = 1 after ordering, since
-		       ordering may change the value of complex eigenvalues
-		       (especially if the eigenvalue is ill-conditioned).
-		       All eigenvalues/vectors are selected if select_func is undefined.
- backtransform	     : Whether or not backtransforms eigenvectors to those of A.
-		       Only supported if schur vectors are computed, default = 1.
+ select_func       : Select_func is used to select eigenvalues to sort
+           to the top left of the Schur form.
+           An eigenvalue is selected if PerlInt select_func(w) is true;
+           (the inputs are converted to complex ndarrays for you)
+           Note that a selected complex eigenvalue may no longer
+           satisfy select_func(w) = 1 after ordering, since
+           ordering may change the value of complex eigenvalues
+           (especially if the eigenvalue is ill-conditioned).
+           All eigenvalues/vectors are selected if select_func is undefined.
+ backtransform       : Whether or not backtransforms eigenvectors to those of A.
+           Only supported if schur vectors are computed, default = 1.
  norm                : Whether or not computed eigenvectors are normalized to have Euclidean norm equal to
-		       1 and largest component real, default = 1
+           1 and largest component real, default = 1
 
  Returned values     :
-		       Schur form T (SCALAR CONTEXT),
-		       eigenvalues,
-		       Schur vectors (Z) if requested,
-		       left eigenvectors if requested
-		       right eigenvectors if requested
-		       sdim: Number of eigenvalues selected if select_func is defined.
-		       info: Info output from gees/cgees.
+           Schur form T (SCALAR CONTEXT),
+           eigenvalues,
+           Schur vectors (Z) if requested,
+           left eigenvectors if requested
+           right eigenvectors if requested
+           sdim: Number of eigenvalues selected if select_func is defined.
+           info: Info output from gees/cgees.
 
 =for example
 
  my $a = random(10,10);
  my $schur  = mschur($a);
  sub select{
-	my $w = shift;
-	# select "discrete time" eigenspace
-	return $w->Cabs < 1 ? 1 : 0;
+  my $w = shift;
+  # select "discrete time" eigenspace
+  return $w->Cabs < 1 ? 1 : 0;
  }
  my ($schur,$eigen,$svectors,$evectors)  = mschur($a,1,1,0,\&select);
 
@@ -1119,44 +1119,44 @@ sub _eigen_one {
 
 *mschur = \&PDL::mschur;
 sub PDL::mschur {
-	&_square;
-	my $di = $_[0]->dims_internal;
-	my $slice_prefix = ',' x $di;
-	my ($m, $jobv, $jobvl, $jobvr, $select_func, $mult, $norm) = @_;
-	my @dims = $m->dims;
-	barf("mschur: broadcasting not supported for selected vectors")
-		if $select_func && @dims > 2+$di
-		  && (grep $_ == 2, $jobv, $jobvl, $jobvr);
-	$mult //= 1;
-	$norm //= 1;
-	$jobv = $jobvl = $jobvr = 0 unless wantarray;
-	my $mm = $m->new_or_inplace->t;
-	my $v = $m->_similar_null;
-	my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
-	my $select_f = $m->_wrap_select_func($select_func);
-	$mm->_call_method('gees',
-		$jobv, $select_func ? 1 : 0, @w,
-		$v, my $sdim = null, my $info = null, $select_f
-	);
-	_error_schur($info, $select_func, $dims[$di], 'mschur', 'QR');
-	my @ret = !$select_func || $sdim ? () : map _complex_null(), grep $_ == 2, $jobvl, $jobvr;
-	push @ret, $sdim if $select_func;
-	$_ = 0 for grep $select_func && $_ == 2 && !$sdim, $jobvl, $jobvr;
-	my $w = @w == 2 ? _ecplx(@w) : @w[0];
-	if ($jobvl || $jobvr){
-		unshift @ret, grep defined, _eigen_one(
-		  $mm, $select_func, $jobv, $jobvl, $jobvr,
-		  $mult, $norm, $dims[$di+1], $sdim, @w
-		);
-	}
-	if ($jobv == 2 && $select_func) {
-		unshift @ret, $sdim > 0 ? $v->t->slice("$slice_prefix:@{[$sdim-1]}")->sever : $m->_similar_null;
-	}
-	elsif($jobv){
-		unshift @ret, $v->t->sever;
-	}
-	$m = $mm->t->sever unless $m->is_inplace(0);
-	return wantarray ? ($m, $w, @ret, $info) : $m;
+  &_square;
+  my $di = $_[0]->dims_internal;
+  my $slice_prefix = ',' x $di;
+  my ($m, $jobv, $jobvl, $jobvr, $select_func, $mult, $norm) = @_;
+  my @dims = $m->dims;
+  barf("mschur: broadcasting not supported for selected vectors")
+    if $select_func && @dims > 2+$di
+      && (grep $_ == 2, $jobv, $jobvl, $jobvr);
+  $mult //= 1;
+  $norm //= 1;
+  $jobv = $jobvl = $jobvr = 0 unless wantarray;
+  my $mm = $m->new_or_inplace->t;
+  my $v = $m->_similar_null;
+  my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
+  my $select_f = $m->_wrap_select_func($select_func);
+  $mm->_call_method('gees',
+    $jobv, $select_func ? 1 : 0, @w,
+    $v, my $sdim = null, my $info = null, $select_f
+  );
+  _error_schur($info, $select_func, $dims[$di], 'mschur', 'QR');
+  my @ret = !$select_func || $sdim ? () : map _complex_null(), grep $_ == 2, $jobvl, $jobvr;
+  push @ret, $sdim if $select_func;
+  $_ = 0 for grep $select_func && $_ == 2 && !$sdim, $jobvl, $jobvr;
+  my $w = @w == 2 ? _ecplx(@w) : @w[0];
+  if ($jobvl || $jobvr){
+    unshift @ret, grep defined, _eigen_one(
+      $mm, $select_func, $jobv, $jobvl, $jobvr,
+      $mult, $norm, $dims[$di+1], $sdim, @w
+    );
+  }
+  if ($jobv == 2 && $select_func) {
+    unshift @ret, $sdim > 0 ? $v->t->slice("$slice_prefix:@{[$sdim-1]}")->sever : $m->_similar_null;
+  }
+  elsif($jobv){
+    unshift @ret, $v->t->sever;
+  }
+  $m = $mm->t->sever unless $m->is_inplace(0);
+  return wantarray ? ($m, $w, @ret, $info) : $m;
 }
 
 =head2 mschurx
@@ -1171,51 +1171,51 @@ Works on transposed array.
 =for usage
 
  ( PDL(schur) (,PDL(eigenvalues))  (, PDL(schur vectors), HASH(result)) ) = mschurx(PDL, SCALAR(schur vector), SCALAR(left eigenvector), SCALAR(right eigenvector),SCALAR(select_func), SCALAR(sense), SCALAR(backtransform), SCALAR(norm))
- schur vector	     : Schur vectors returned, none = 0 | all = 1 | selected = 2, default = 0
+ schur vector       : Schur vectors returned, none = 0 | all = 1 | selected = 2, default = 0
  left eigenvector    : Left eigenvectors returned, none = 0 | all = 1 | selected = 2, default = 0
  right eigenvector   : Right eigenvectors returned, none = 0 | all = 1 | selected = 2, default = 0
  select_func         : Select_func is used to select eigenvalues to sort
-		       to the top left of the Schur form.
-		       An eigenvalue is selected if PerlInt select_func(w) is true;
-		       (the inputs are converted to complex ndarrays for you)
-		       Note that a selected complex eigenvalue may no longer
-		       satisfy select_func(w) = 1 after ordering, since
-		       ordering may change the value of complex eigenvalues
-		       (especially if the eigenvalue is ill-conditioned).
-		       All  eigenvalues/vectors are selected if select_func is undefined.
- sense		     : Determines which reciprocal condition numbers will be computed.
-			0: None are computed
-			1: Computed for average of selected eigenvalues only
-			2: Computed for selected right invariant subspace only
-			3: Computed for both
-			If select_func is undefined, sense is not used.
- backtransform	     : Whether or not backtransforms eigenvectors to those of A.
-		       Only supported if schur vector are computed, default = 1
+           to the top left of the Schur form.
+           An eigenvalue is selected if PerlInt select_func(w) is true;
+           (the inputs are converted to complex ndarrays for you)
+           Note that a selected complex eigenvalue may no longer
+           satisfy select_func(w) = 1 after ordering, since
+           ordering may change the value of complex eigenvalues
+           (especially if the eigenvalue is ill-conditioned).
+           All  eigenvalues/vectors are selected if select_func is undefined.
+ sense         : Determines which reciprocal condition numbers will be computed.
+      0: None are computed
+      1: Computed for average of selected eigenvalues only
+      2: Computed for selected right invariant subspace only
+      3: Computed for both
+      If select_func is undefined, sense is not used.
+ backtransform       : Whether or not backtransforms eigenvectors to those of A.
+           Only supported if schur vector are computed, default = 1
  norm                : Whether or not computed eigenvectors are normalized to have Euclidean norm equal to
-		       1 and largest component real, default = 1
+           1 and largest component real, default = 1
 
  Returned values     :
-		       Schur form T (SCALAR CONTEXT),
-		       eigenvalues,
-		       Schur vectors if requested,
-		       HASH{VL}: left eigenvectors if requested
-		       HASH{VR}: right eigenvectors if requested
-		       HASH{info}: info output from gees/cgees.
-		       if select_func is defined:
-			HASH{n}: number of eigenvalues selected,
-			HASH{rconde}: reciprocal condition numbers for the average of
-			the selected eigenvalues if requested,
-			HASH{rcondv}: reciprocal condition numbers for the selected
-			right invariant subspace if requested.
+           Schur form T (SCALAR CONTEXT),
+           eigenvalues,
+           Schur vectors if requested,
+           HASH{VL}: left eigenvectors if requested
+           HASH{VR}: right eigenvectors if requested
+           HASH{info}: info output from gees/cgees.
+           if select_func is defined:
+      HASH{n}: number of eigenvalues selected,
+      HASH{rconde}: reciprocal condition numbers for the average of
+      the selected eigenvalues if requested,
+      HASH{rcondv}: reciprocal condition numbers for the selected
+      right invariant subspace if requested.
 
 =for example
 
  my $a = random(10,10);
  my $schur  = mschurx($a);
  sub select{
-	my $m = shift;
-	# select "discrete time" eigenspace
-	return $m->Cabs < 1 ? 1 : 0;
+  my $m = shift;
+  # select "discrete time" eigenspace
+  return $m->Cabs < 1 ? 1 : 0;
  }
  my ($schur,$eigen, $vectors,%ret)  = mschurx($a,1,0,0,\&select);
 
@@ -1223,56 +1223,56 @@ Works on transposed array.
 
 *mschurx = \&PDL::mschurx;
 sub PDL::mschurx {
-	&_square;
-	my $di = $_[0]->dims_internal;
-	my $slice_prefix = ',' x $di;
-	my($m, $jobv, $jobvl, $jobvr, $select_func, $sense, $mult,$norm) = @_;
-	my(@dims) = $m->dims;
-	$mult //= 1;
-	$norm //= 1;
-	$jobv = $jobvl = $jobvr = 0 unless wantarray;
-	my $select = long($select_func ? 1 : 0);
-	$sense = pdl(long,0) if !$select_func;
-	$_ = null for my ($info, $sdim, $rconde, $rcondv);
-	my $mm = $m->new_or_inplace->t;
-	my $v = $m->_similar_null;
-	my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
-	my $select_f = $m->_wrap_select_func($select_func);
-	$mm->_call_method('geesx', $jobv, $select, $sense, @w, $v, $sdim, $rconde, $rcondv,$info, $select_f);
-	_error_schur($info, $select_func, $dims[$di], 'mschurx', 'QR');
-	my @vl = ('VL', $jobvl);
-	my @vr = ('VR', $jobvr);
-	my %ret;
-	$ret{$_->[0]} = _complex_null(), $_->[1]=0 for grep $select_func && !$sdim && $_->[1] == 2, \@vl, \@vr;
-	$ret{n} = $sdim if $select_func;
-	if ($vl[1] || $vr[1]) {
-		my ($vl, $vr) = _eigen_one(
-		  $mm, $select_func, $jobv, $vl[1], $vr[1],
-		  $mult, $norm, $dims[$di+1], $sdim, @w
-		);
-		$ret{$_->[0]} = $_->[1] for grep defined $_->[1], ['VL',$vl], ['VR',$vr];
-	}
-	my $w = _ecplx(@w);
-	if ($jobv == 2 && $select_func) {
-		$v = $sdim > 0 ? $v->t->slice("$slice_prefix:@{[$sdim-1]},")->sever : $m->_similar_null;
-	}
-	elsif($jobv){
-		$v =  $v->t->sever;
-	}
-	$ret{info} = $info;
-	$ret{rconde} = $rconde if $sense & 1;
-	$ret{rcondv} = $rcondv if $sense & 2;
-	$m = $mm->t->sever unless $m->is_inplace(0);
-	!wantarray ? $m : ($m, $w, ($jobv ? $v : ()), %ret);
+  &_square;
+  my $di = $_[0]->dims_internal;
+  my $slice_prefix = ',' x $di;
+  my($m, $jobv, $jobvl, $jobvr, $select_func, $sense, $mult,$norm) = @_;
+  my(@dims) = $m->dims;
+  $mult //= 1;
+  $norm //= 1;
+  $jobv = $jobvl = $jobvr = 0 unless wantarray;
+  my $select = long($select_func ? 1 : 0);
+  $sense = pdl(long,0) if !$select_func;
+  $_ = null for my ($info, $sdim, $rconde, $rcondv);
+  my $mm = $m->new_or_inplace->t;
+  my $v = $m->_similar_null;
+  my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
+  my $select_f = $m->_wrap_select_func($select_func);
+  $mm->_call_method('geesx', $jobv, $select, $sense, @w, $v, $sdim, $rconde, $rcondv,$info, $select_f);
+  _error_schur($info, $select_func, $dims[$di], 'mschurx', 'QR');
+  my @vl = ('VL', $jobvl);
+  my @vr = ('VR', $jobvr);
+  my %ret;
+  $ret{$_->[0]} = _complex_null(), $_->[1]=0 for grep $select_func && !$sdim && $_->[1] == 2, \@vl, \@vr;
+  $ret{n} = $sdim if $select_func;
+  if ($vl[1] || $vr[1]) {
+    my ($vl, $vr) = _eigen_one(
+      $mm, $select_func, $jobv, $vl[1], $vr[1],
+      $mult, $norm, $dims[$di+1], $sdim, @w
+    );
+    $ret{$_->[0]} = $_->[1] for grep defined $_->[1], ['VL',$vl], ['VR',$vr];
+  }
+  my $w = _ecplx(@w);
+  if ($jobv == 2 && $select_func) {
+    $v = $sdim > 0 ? $v->t->slice("$slice_prefix:@{[$sdim-1]},")->sever : $m->_similar_null;
+  }
+  elsif($jobv){
+    $v =  $v->t->sever;
+  }
+  $ret{info} = $info;
+  $ret{rconde} = $rconde if $sense & 1;
+  $ret{rcondv} = $rcondv if $sense & 2;
+  $m = $mm->t->sever unless $m->is_inplace(0);
+  !wantarray ? $m : ($m, $w, ($jobv ? $v : ()), %ret);
 }
 
 # scale by max(abs(real)+abs(imag))
 sub magn_norm {
-	my ($m, $trans) = @_;
-	# If trans == true => transpose output matrix
-	my $ret = PDL::cat(map $m->$_, qw(re im))->mv(-1,0)->abs->sumover->maxover->dummy(0);
-	$m = $m->t, $ret = $ret->t if $trans;
-	($m/$ret)->reshape(-1);
+  my ($m, $trans) = @_;
+  # If trans == true => transpose output matrix
+  my $ret = PDL::cat(map $m->$_, qw(re im))->mv(-1,0)->abs->sumover->maxover->dummy(0);
+  $m = $m->t, $ret = $ret->t if $trans;
+  ($m/$ret)->reshape(-1);
 }
 
 #TODO: inplace ?
@@ -1283,8 +1283,8 @@ sub magn_norm {
 
 Computes generalized Schur decomposition of the pair (A,B).
 
-	A = Q x S x Z'
-	B = Q x T x Z'
+  A = Q x S x Z'
+  B = Q x T x Z'
 
 Uses L<gges|PDL::LinearAlgebra::Real/gges> or L<cgges|PDL::LinearAlgebra::Complex/cgges>
 from Lapack.
@@ -1297,32 +1297,32 @@ Works on transposed array.
  right schur vector  : Right Schur vectors returned, none = 0 | all = 1 | selected = 2, default = 0
  left eigenvector    : Left eigenvectors returned, none = 0 | all = 1 | selected = 2, default = 0
  right eigenvector   : Right eigenvectors returned, none = 0 | all = 1 | selected = 2, default = 0
- select_func	     : Select_func is used to select eigenvalues to sort.
-		       to the top left of the Schur form.
-		       An eigenvalue w = wr(j)+sqrt(-1)*wi(j) is selected if
-		       PerlInt select_func(alpha,beta) is true;
-		       (the inputs are converted to complex ndarrays for you)
-		       Note that a selected complex eigenvalue may no longer
-		       satisfy select_func = 1 after ordering, since
-		       ordering may change the value of complex eigenvalues
-		       (especially if the eigenvalue is ill-conditioned).
-		       All eigenvalues/vectors are selected if select_func is undefined.
- backtransform	     : Whether or not backtransforms eigenvectors to those of (A,B).
-		       Only supported if right and/or left schur vector are computed,
+ select_func       : Select_func is used to select eigenvalues to sort.
+           to the top left of the Schur form.
+           An eigenvalue w = wr(j)+sqrt(-1)*wi(j) is selected if
+           PerlInt select_func(alpha,beta) is true;
+           (the inputs are converted to complex ndarrays for you)
+           Note that a selected complex eigenvalue may no longer
+           satisfy select_func = 1 after ordering, since
+           ordering may change the value of complex eigenvalues
+           (especially if the eigenvalue is ill-conditioned).
+           All eigenvalues/vectors are selected if select_func is undefined.
+ backtransform       : Whether or not backtransforms eigenvectors to those of (A,B).
+           Only supported if right and/or left schur vector are computed,
  scale               : Whether or not computed eigenvectors are scaled so the largest component
-		       will have abs(real part) + abs(imag. part) = 1, default = 1
+           will have abs(real part) + abs(imag. part) = 1, default = 1
 
  Returned values     :
-		       Schur form S,
-		       Schur form T,
-		       alpha,
-		       beta (eigenvalues = alpha/beta),
-		       HASH{info}: info output from gges/cgges.
-		       HASH{SL}: left Schur vectors if requested
-		       HASH{SR}: right Schur vectors if requested
-		       HASH{VL}: left eigenvectors if requested
-		       HASH{VR}: right eigenvectors if requested
-		       HASH{n} : Number of eigenvalues selected if select_func is defined.
+           Schur form S,
+           Schur form T,
+           alpha,
+           beta (eigenvalues = alpha/beta),
+           HASH{info}: info output from gges/cgges.
+           HASH{SL}: left Schur vectors if requested
+           HASH{SR}: right Schur vectors if requested
+           HASH{VL}: left eigenvectors if requested
+           HASH{VR}: right eigenvectors if requested
+           HASH{n} : Number of eigenvalues selected if select_func is defined.
 
 =for example
 
@@ -1330,8 +1330,8 @@ Works on transposed array.
  my $b = random(10,10);
  my ($S,$T) = mgschur($a,$b);
  sub select{
-	my ($alpha,$beta) = @_;
-	return $alpha->Cabs < abs($beta) ? 1 : 0;
+  my ($alpha,$beta) = @_;
+  return $alpha->Cabs < abs($beta) ? 1 : 0;
  }
  my ($S, $T, $alpha, $beta, %res)  = mgschur( $a, $b, 1, 1, 1, 1,\&select);
 
@@ -1376,51 +1376,51 @@ sub _eigen_pair {
 
 *mgschur = \&PDL::mgschur;
 sub PDL::mgschur {
-	my $di = $_[0]->dims_internal;
-	my $slice_prefix = ',' x $di;
-	&_square_same;
-	my($m, $p, $jobvsl, $jobvsr, $jobvl, $jobvr, $select_func, $mult, $norm) = @_;
-	my @mdims  = $m->dims;
-	$_ = $_->new_or_inplace->t for $m, $p;
-	barf("mgschur: broadcasting isn't supported for selected vectors")
-		if ($select_func && ((@mdims > 2+$di) || ($p->ndims > 2+$di)) &&
-			($jobvsl == 2 || $jobvsr == 2 || $jobvl == 2 || $jobvr == 2));
-	$mult //= 1;
-	$norm //= 1;
-	my $select = $select_func ? pdl(long,1) : pdl(long,0);
-	$_ = null for my ($info, $sdim);
-	my $select_f = $m->_wrap_select_func($select_func);
-	my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
-	$_ = $m->_similar_null for my ($beta, $vsl, $vsr);
-	$m->_call_method('gges', $jobvsl, $jobvsr, $select, $p, @w, $beta, $vsl, $vsr, $sdim, $info, $select_f);
-	_error_schur($info, $select_func, $mdims[$di], 'mgschur', 'QZ');
-	my @vl = ('VL', $jobvl);
-	my @vr = ('VR', $jobvr);
-	my %ret;
-	$ret{$_->[0]} = _complex_null(), $_->[1]=0 for grep $select_func && !$sdim && $_->[1] == 2, \@vl, \@vr;
-	$ret{n} = $sdim if $select_func;
-	if ($vl[1] || $vr[1]) {
-		my ($vl, $vr) = _eigen_pair(
-		  $m, $p, $select_func, $vl[1], $vr[1], $jobvsl, $jobvsr, $vsl, $vsr,
-		  $mult, $norm, $mdims[$di+1], $sdim, @w
-		);
-		$ret{$_->[0]} = $_->[1] for grep defined $_->[1], ['VL',$vl], ['VR',$vr];
-	}
-	my $w = @w == 2 ? _ecplx(@w) : @w[0];
-	if ($jobvsl == 2 && $select_func) {
-		$ret{SL} = $sdim ? $vsl->t->slice("$slice_prefix:@{[$sdim-1]},")->sever : $m->_similar_null;
-	}
-	elsif($jobvsl){
-		$ret{SL} = $vsl->t->sever;
-	}
-	if ($jobvsr == 2 && $select_func) {
-		$ret{SR} = $sdim ? $vsr->t->slice("$slice_prefix:@{[$sdim-1]},")->sever : $m->_similar_null;
-	}
-	elsif($jobvsr){
-		$ret{SR} = $vsr->t->sever;
-	}
-	$ret{info} = $info;
-	return ($m->t, $p->t, $w, $beta, %ret);
+  my $di = $_[0]->dims_internal;
+  my $slice_prefix = ',' x $di;
+  &_square_same;
+  my($m, $p, $jobvsl, $jobvsr, $jobvl, $jobvr, $select_func, $mult, $norm) = @_;
+  my @mdims  = $m->dims;
+  $_ = $_->new_or_inplace->t for $m, $p;
+  barf("mgschur: broadcasting isn't supported for selected vectors")
+    if ($select_func && ((@mdims > 2+$di) || ($p->ndims > 2+$di)) &&
+      ($jobvsl == 2 || $jobvsr == 2 || $jobvl == 2 || $jobvr == 2));
+  $mult //= 1;
+  $norm //= 1;
+  my $select = $select_func ? pdl(long,1) : pdl(long,0);
+  $_ = null for my ($info, $sdim);
+  my $select_f = $m->_wrap_select_func($select_func);
+  my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
+  $_ = $m->_similar_null for my ($beta, $vsl, $vsr);
+  $m->_call_method('gges', $jobvsl, $jobvsr, $select, $p, @w, $beta, $vsl, $vsr, $sdim, $info, $select_f);
+  _error_schur($info, $select_func, $mdims[$di], 'mgschur', 'QZ');
+  my @vl = ('VL', $jobvl);
+  my @vr = ('VR', $jobvr);
+  my %ret;
+  $ret{$_->[0]} = _complex_null(), $_->[1]=0 for grep $select_func && !$sdim && $_->[1] == 2, \@vl, \@vr;
+  $ret{n} = $sdim if $select_func;
+  if ($vl[1] || $vr[1]) {
+    my ($vl, $vr) = _eigen_pair(
+      $m, $p, $select_func, $vl[1], $vr[1], $jobvsl, $jobvsr, $vsl, $vsr,
+      $mult, $norm, $mdims[$di+1], $sdim, @w
+    );
+    $ret{$_->[0]} = $_->[1] for grep defined $_->[1], ['VL',$vl], ['VR',$vr];
+  }
+  my $w = @w == 2 ? _ecplx(@w) : @w[0];
+  if ($jobvsl == 2 && $select_func) {
+    $ret{SL} = $sdim ? $vsl->t->slice("$slice_prefix:@{[$sdim-1]},")->sever : $m->_similar_null;
+  }
+  elsif($jobvsl){
+    $ret{SL} = $vsl->t->sever;
+  }
+  if ($jobvsr == 2 && $select_func) {
+    $ret{SR} = $sdim ? $vsr->t->slice("$slice_prefix:@{[$sdim-1]},")->sever : $m->_similar_null;
+  }
+  elsif($jobvsr){
+    $ret{SR} = $vsr->t->sever;
+  }
+  $ret{info} = $info;
+  return ($m->t, $p->t, $w, $beta, %ret);
 }
 
 =head2 mgschurx
@@ -1429,8 +1429,8 @@ sub PDL::mgschur {
 
 Computes generalized Schur decomposition of the pair (A,B).
 
-	A = Q x S x Z'
-	B = Q x T x Z'
+  A = Q x S x Z'
+  B = Q x T x Z'
 
 Uses L<ggesx|PDL::LinearAlgebra::Real/ggesx> or L<cggesx|PDL::LinearAlgebra::Complex/cggesx>
 from Lapack. Works on transposed array.
@@ -1442,41 +1442,41 @@ from Lapack. Works on transposed array.
  right schur vector  : Right Schur vectors returned, none = 0 | all = 1 | selected = 2, default = 0
  left eigenvector    : Left eigenvectors returned, none = 0 | all = 1 | selected = 2, default = 0
  right eigenvector   : Right eigenvectors returned, none = 0 | all = 1 | selected = 2, default = 0
- select_func	     : Select_func is used to select eigenvalues to sort.
-		       to the top left of the Schur form.
-		       An eigenvalue w = wr(j)+sqrt(-1)*wi(j) is selected if
-		       PerlInt select_func(alpha,beta) is true;
-		       (the inputs are converted to complex ndarrays for you)
-		       Note that a selected complex eigenvalue may no longer
-		       satisfy select_func = 1 after ordering, since
-		       ordering may change the value of complex eigenvalues
-		       (especially if the eigenvalue is ill-conditioned).
-		       All eigenvalues/vectors are selected if select_func is undefined.
- sense		     : Determines which reciprocal condition numbers will be computed.
-			0: None are computed
-			1: Computed for average of selected eigenvalues only
-			2: Computed for selected deflating subspaces only
-			3: Computed for both
-			If select_func is undefined, sense is not used.
+ select_func       : Select_func is used to select eigenvalues to sort.
+           to the top left of the Schur form.
+           An eigenvalue w = wr(j)+sqrt(-1)*wi(j) is selected if
+           PerlInt select_func(alpha,beta) is true;
+           (the inputs are converted to complex ndarrays for you)
+           Note that a selected complex eigenvalue may no longer
+           satisfy select_func = 1 after ordering, since
+           ordering may change the value of complex eigenvalues
+           (especially if the eigenvalue is ill-conditioned).
+           All eigenvalues/vectors are selected if select_func is undefined.
+ sense         : Determines which reciprocal condition numbers will be computed.
+      0: None are computed
+      1: Computed for average of selected eigenvalues only
+      2: Computed for selected deflating subspaces only
+      3: Computed for both
+      If select_func is undefined, sense is not used.
 
- backtransform	     : Whether or not backtransforms eigenvectors to those of (A,B).
-		       Only supported if right and/or left schur vector are computed, default = 1
+ backtransform       : Whether or not backtransforms eigenvectors to those of (A,B).
+           Only supported if right and/or left schur vector are computed, default = 1
  scale               : Whether or not computed eigenvectors are scaled so the largest component
-		       will have abs(real part) + abs(imag. part) = 1, default = 1
+           will have abs(real part) + abs(imag. part) = 1, default = 1
 
  Returned values     :
-		       Schur form S,
-		       Schur form T,
-		       alpha,
-		       beta (eigenvalues = alpha/beta),
-		       HASH{info}: info output from gges/cgges.
-		       HASH{SL}: left Schur vectors if requested
-		       HASH{SR}: right Schur vectors if requested
-		       HASH{VL}: left eigenvectors if requested
-		       HASH{VR}: right eigenvectors if requested
-		       HASH{rconde}: reciprocal condition numbers for average of selected eigenvalues if requested
-		       HASH{rcondv}: reciprocal condition numbers for selected deflating subspaces if requested
-		       HASH{n} : Number of eigenvalues selected if select_func is defined.
+           Schur form S,
+           Schur form T,
+           alpha,
+           beta (eigenvalues = alpha/beta),
+           HASH{info}: info output from gges/cgges.
+           HASH{SL}: left Schur vectors if requested
+           HASH{SR}: right Schur vectors if requested
+           HASH{VL}: left eigenvectors if requested
+           HASH{VR}: right eigenvectors if requested
+           HASH{rconde}: reciprocal condition numbers for average of selected eigenvalues if requested
+           HASH{rcondv}: reciprocal condition numbers for selected deflating subspaces if requested
+           HASH{n} : Number of eigenvalues selected if select_func is defined.
 
 =for example
 
@@ -1484,8 +1484,8 @@ from Lapack. Works on transposed array.
  my $b = random(10,10);
  my ($S,$T) = mgschurx($a,$b);
  sub select{
-	my ($alpha,$beta) = @_;
-	return $alpha->Cabs < abs($beta) ? 1 : 0;
+  my ($alpha,$beta) = @_;
+  return $alpha->Cabs < abs($beta) ? 1 : 0;
  }
  my ($S, $T, $alpha, $beta, %res)  = mgschurx( $a, $b, 1, 1, 1, 1,\&select,3);
 
@@ -1493,51 +1493,51 @@ from Lapack. Works on transposed array.
 
 *mgschurx = \&PDL::mgschurx;
 sub PDL::mgschurx {
-	my $di = $_[0]->dims_internal;
-	my $slice_prefix = ',' x $di;
-	&_square_same;
-	my($m, $p, $jobvsl, $jobvsr, $jobvl, $jobvr, $select_func, $sense, $mult, $norm) = @_;
-	my (@mdims) = $m->dims;
-	$_ = $_->new_or_inplace->t for $m, $p;
-	$mult //= 1;
-	$norm //= 1;
-	my $select = $select_func ? 1 : 0;
-	$sense = 0 if !$select_func;
-	$_ = null for my ($info, $rconde, $rcondv, $sdim);
-	$_ = $m->_similar_null for my ($beta, $vsl, $vsr);
-	my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
-	my $select_f = $m->_wrap_select_func($select_func);
-	$m->_call_method('ggesx', $jobvsl, $jobvsr, $select, $sense, $p, @w, $beta, $vsl, $vsr, $sdim, $rconde, $rcondv,$info, $select_f);
-	_error_schur($info, $select_func, $mdims[$di], 'mgschurx', 'QZ');
-	my @vl = ('VL', $jobvl);
-	my @vr = ('VR', $jobvr);
-	my %ret;
-	$ret{$_->[0]} = _complex_null(), $_->[1]=0 for grep $select_func && !$sdim && $_->[1] == 2, \@vl, \@vr;
-	$ret{n} = $sdim if $select_func;
-	if ($vl[1] || $vr[1]) {
-		my ($vl, $vr) = _eigen_pair(
-		  $m, $p, $select_func, $vl[1], $vr[1], $jobvsl, $jobvsr, $vsl, $vsr,
-		  $mult, $norm, $mdims[$di+1], $sdim, @w
-		);
-		$ret{$_->[0]} = $_->[1] for grep defined $_->[1], ['VL',$vl], ['VR',$vr];
-	}
-	if ($jobvsl == 2 && $select_func) {
-		$ret{SL} = $sdim ? $vsl->t->slice("$slice_prefix:@{[$sdim-1]},")->sever : $m->_similar_null;
-	}
-	elsif($jobvsl){
-		$ret{SL} = $vsl->t->sever;
-	}
-	if ($jobvsr == 2 && $select_func) {
-		$ret{SR} = $sdim ? $vsr->t->slice("$slice_prefix:@{[$sdim-1]},")->sever : $m->_similar_null;
-	}
-	elsif($jobvsr){
-		$ret{SR} = $vsr->t->sever;
-	}
-	my $w = @w == 2 ? _ecplx(@w) : @w[0];
-	$ret{info} = $info;
-	$ret{rconde} = $rconde if $sense & 1;
-	$ret{rcondv} = $rcondv if $sense & 2;
-	return ($m->t, $p->t, $w, $beta, %ret);
+  my $di = $_[0]->dims_internal;
+  my $slice_prefix = ',' x $di;
+  &_square_same;
+  my($m, $p, $jobvsl, $jobvsr, $jobvl, $jobvr, $select_func, $sense, $mult, $norm) = @_;
+  my (@mdims) = $m->dims;
+  $_ = $_->new_or_inplace->t for $m, $p;
+  $mult //= 1;
+  $norm //= 1;
+  my $select = $select_func ? 1 : 0;
+  $sense = 0 if !$select_func;
+  $_ = null for my ($info, $rconde, $rcondv, $sdim);
+  $_ = $m->_similar_null for my ($beta, $vsl, $vsr);
+  my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
+  my $select_f = $m->_wrap_select_func($select_func);
+  $m->_call_method('ggesx', $jobvsl, $jobvsr, $select, $sense, $p, @w, $beta, $vsl, $vsr, $sdim, $rconde, $rcondv,$info, $select_f);
+  _error_schur($info, $select_func, $mdims[$di], 'mgschurx', 'QZ');
+  my @vl = ('VL', $jobvl);
+  my @vr = ('VR', $jobvr);
+  my %ret;
+  $ret{$_->[0]} = _complex_null(), $_->[1]=0 for grep $select_func && !$sdim && $_->[1] == 2, \@vl, \@vr;
+  $ret{n} = $sdim if $select_func;
+  if ($vl[1] || $vr[1]) {
+    my ($vl, $vr) = _eigen_pair(
+      $m, $p, $select_func, $vl[1], $vr[1], $jobvsl, $jobvsr, $vsl, $vsr,
+      $mult, $norm, $mdims[$di+1], $sdim, @w
+    );
+    $ret{$_->[0]} = $_->[1] for grep defined $_->[1], ['VL',$vl], ['VR',$vr];
+  }
+  if ($jobvsl == 2 && $select_func) {
+    $ret{SL} = $sdim ? $vsl->t->slice("$slice_prefix:@{[$sdim-1]},")->sever : $m->_similar_null;
+  }
+  elsif($jobvsl){
+    $ret{SL} = $vsl->t->sever;
+  }
+  if ($jobvsr == 2 && $select_func) {
+    $ret{SR} = $sdim ? $vsr->t->slice("$slice_prefix:@{[$sdim-1]},")->sever : $m->_similar_null;
+  }
+  elsif($jobvsr){
+    $ret{SR} = $vsr->t->sever;
+  }
+  my $w = @w == 2 ? _ecplx(@w) : @w[0];
+  $ret{info} = $info;
+  $ret{rconde} = $rconde if $sense & 1;
+  $ret{rcondv} = $rcondv if $sense & 2;
+  return ($m->t, $p->t, $w, $beta, %ret);
 }
 
 =head2 mqr
@@ -1567,26 +1567,26 @@ from Lapack and returns C<Q> in scalar context. Works on transposed array.
 
 *mqr = \&PDL::mqr;
 sub PDL::mqr {
-	&_2d_array;
-	my $di = $_[0]->dims_internal;
-	my @di_vals = $_[0]->dims_internal_values;
-	my($m, $full) = @_;
-	my(@dims) = $m->dims;
-	$m = $m->t->copy;
-	my $min = $dims[$di] < $dims[$di+1] ? $dims[$di] : $dims[$di+1];
-	my $slice_arg = (',' x $di) . ",:@{[$min-1]}";
-	my $tau = $m->_similar($min);
-	$m->_call_method('geqrf', $tau, my $info = null);
-	if ($info){
-		laerror ("mqr: Error $info in geqrf\n");
-		return ($m->t->sever, $m, $info);
-	}
-	my $q = ($dims[$di] > $dims[$di+1] ? $m->slice($slice_arg) : $m)->copy;
-	$q->reshape(@di_vals, @dims[$di+1,$di+1]) if $full && $dims[$di] < $dims[$di+1];
-	$q->_call_method(['orgqr','cungqr'], $tau, $info);
-	return $q->t->sever unless wantarray;
-	my $r = (($dims[$di] < $dims[$di+1] && !$full) ? $m->t->slice($slice_arg) : $m->t)->tricpy(0);
-	return ($q->t->sever, $r, $info);
+  &_2d_array;
+  my $di = $_[0]->dims_internal;
+  my @di_vals = $_[0]->dims_internal_values;
+  my($m, $full) = @_;
+  my(@dims) = $m->dims;
+  $m = $m->t->copy;
+  my $min = $dims[$di] < $dims[$di+1] ? $dims[$di] : $dims[$di+1];
+  my $slice_arg = (',' x $di) . ",:@{[$min-1]}";
+  my $tau = $m->_similar($min);
+  $m->_call_method('geqrf', $tau, my $info = null);
+  if ($info){
+    laerror ("mqr: Error $info in geqrf\n");
+    return ($m->t->sever, $m, $info);
+  }
+  my $q = ($dims[$di] > $dims[$di+1] ? $m->slice($slice_arg) : $m)->copy;
+  $q->reshape(@di_vals, @dims[$di+1,$di+1]) if $full && $dims[$di] < $dims[$di+1];
+  $q->_call_method(['orgqr','cungqr'], $tau, $info);
+  return $q->t->sever unless wantarray;
+  my $r = (($dims[$di] < $dims[$di+1] && !$full) ? $m->t->slice($slice_arg) : $m->t)->tricpy(0);
+  return ($q->t->sever, $r, $info);
 }
 
 =head2 mrq
@@ -1616,47 +1616,47 @@ from Lapack and returns C<Q> in scalar context. Works on transposed array.
 
 *mrq = \&PDL::mrq;
 sub PDL::mrq {
-	&_2d_array;
-	my $di = $_[0]->dims_internal;
-	my $slice_prefix = ',' x $di;
-	my @diag_args = ($di, $di+1);
-	my($m, $full) = @_;
-	my(@dims) = $m->dims;
-	my ($q, $r);
+  &_2d_array;
+  my $di = $_[0]->dims_internal;
+  my $slice_prefix = ',' x $di;
+  my @diag_args = ($di, $di+1);
+  my($m, $full) = @_;
+  my(@dims) = $m->dims;
+  my ($q, $r);
         $m = $m->t->copy;
-	my $min = $dims[$di] < $dims[$di+1] ? $dims[$di] : $dims[$di+1];
-	my $tau = $m->_similar($min);
-	$m->_call_method('gerqf', $tau, my $info = null);
-	if ($info){
-		laerror ("mrq: Error $info in gerqf\n");
-		return ($m, $m->t->sever, $info);
-	}
-	if ($dims[$di] > $dims[$di+1] && $full){
-		$q = $m->_similar(@dims[$di,$di]);
-		$q->slice("$slice_prefix@{[$dims[$di] - $dims[$di+1]]}:") .= $m;
-	}
-	elsif ($dims[$di] < $dims[$di+1]){
-		$q = $m->slice("$slice_prefix@{[$dims[$di+1] - $dims[$di]]}:")->copy;
-	}
-	else{
-		$q = $m->copy;
-	}
-	$q->_call_method(['orgrq','cungrq'], $tau, $info);
-	return $q->t->sever unless wantarray;
-	if ($dims[$di] > $dims[$di+1] && $full){
-		$r = $m->t->tricpy(0);
-		$r->slice("$slice_prefix:@{[$min-1]},:@{[$min-1]}")->diagonal(@diag_args) .= 0;
-	}
-	elsif ($dims[$di] < $dims[$di+1]){
-		my $temp = $m->_similar(@dims[$di+1,$di+1]);
-		$temp->slice("$slice_prefix-$min:") .= $m->t;
-		$r = $temp->tricpy(0);
-		$r = $r->slice("$slice_prefix-$min:")->sever;
-	}
-	else{
-		$r = $m->t->slice("$slice_prefix@{[$dims[$di] - $dims[$di+1]]}:")->tricpy(0);
-	}
-	return ($r, $q->t->sever, $info);
+  my $min = $dims[$di] < $dims[$di+1] ? $dims[$di] : $dims[$di+1];
+  my $tau = $m->_similar($min);
+  $m->_call_method('gerqf', $tau, my $info = null);
+  if ($info){
+    laerror ("mrq: Error $info in gerqf\n");
+    return ($m, $m->t->sever, $info);
+  }
+  if ($dims[$di] > $dims[$di+1] && $full){
+    $q = $m->_similar(@dims[$di,$di]);
+    $q->slice("$slice_prefix@{[$dims[$di] - $dims[$di+1]]}:") .= $m;
+  }
+  elsif ($dims[$di] < $dims[$di+1]){
+    $q = $m->slice("$slice_prefix@{[$dims[$di+1] - $dims[$di]]}:")->copy;
+  }
+  else{
+    $q = $m->copy;
+  }
+  $q->_call_method(['orgrq','cungrq'], $tau, $info);
+  return $q->t->sever unless wantarray;
+  if ($dims[$di] > $dims[$di+1] && $full){
+    $r = $m->t->tricpy(0);
+    $r->slice("$slice_prefix:@{[$min-1]},:@{[$min-1]}")->diagonal(@diag_args) .= 0;
+  }
+  elsif ($dims[$di] < $dims[$di+1]){
+    my $temp = $m->_similar(@dims[$di+1,$di+1]);
+    $temp->slice("$slice_prefix-$min:") .= $m->t;
+    $r = $temp->tricpy(0);
+    $r = $r->slice("$slice_prefix-$min:")->sever;
+  }
+  else{
+    $r = $m->t->slice("$slice_prefix@{[$dims[$di] - $dims[$di+1]]}:")->tricpy(0);
+  }
+  return ($r, $q->t->sever, $info);
 }
 
 =head2 mql
@@ -1686,47 +1686,47 @@ from Lapack and returns C<Q> in scalar context. Works on transposed array.
 
 *mql = \&PDL::mql;
 sub PDL::mql {
-	&_2d_array;
-	my $di = $_[0]->dims_internal;
-	my $slice_prefix = ',' x $di;
-	my @diag_args = ($di, $di+1);
-	my($m, $full) = @_;
-	my(@dims) = $m->dims;
-	my ($q, $l);
+  &_2d_array;
+  my $di = $_[0]->dims_internal;
+  my $slice_prefix = ',' x $di;
+  my @diag_args = ($di, $di+1);
+  my($m, $full) = @_;
+  my(@dims) = $m->dims;
+  my ($q, $l);
         $m = $m->t->copy;
-	my $min = $dims[$di] < $dims[$di+1] ? $dims[$di] : $dims[$di+1];
-	my $tau = $m->_similar($min);
-	$m->_call_method('geqlf', $tau, my $info = null);
-	if ($info){
-		laerror("mql: Error $info in geqlf\n");
-		return ($m->t->sever, $m, $info);
-	}
-	if ($dims[$di] < $dims[$di+1] && $full){
-		$q = $m->_similar(@dims[$di+1,$di+1]);
-		$q->slice("$slice_prefix:,-$dims[$di]:") .= $m;
-	}
-	elsif ($dims[$di] > $dims[$di+1]){
-		$q = $m->slice("$slice_prefix:,-$min:")->copy;
-	}
-	else{
-		$q = $m->copy;
-	}
-	$q->_call_method(['orgql','cungql'], $tau, $info);
-	return $q->t->sever unless wantarray;
-	if ($dims[$di] < $dims[$di+1] && $full){
-		$l = $m->t->tricpy(1);
-		$l->slice("$slice_prefix:@{[$min-1]},:@{[$min-1]}")->diagonal(@diag_args) .= 0;
-	}
-	elsif ($dims[$di] > $dims[$di+1]){
-		my $temp = $m->_similar(@dims[$di,$di]);
-		$temp->slice("$slice_prefix:,-$dims[$di+1]:") .= $m->t;
-		$l = $temp->tricpy(0);
-		$l = $l->slice("$slice_prefix:,-$dims[$di+1]:");
-	}
-	else{
-		$l = $m->t->slice("$slice_prefix:,@{[$dims[$di+1] - $min]}:")->tricpy(1);
-	}
-	return ($q->t->sever, $l, $info);
+  my $min = $dims[$di] < $dims[$di+1] ? $dims[$di] : $dims[$di+1];
+  my $tau = $m->_similar($min);
+  $m->_call_method('geqlf', $tau, my $info = null);
+  if ($info){
+    laerror("mql: Error $info in geqlf\n");
+    return ($m->t->sever, $m, $info);
+  }
+  if ($dims[$di] < $dims[$di+1] && $full){
+    $q = $m->_similar(@dims[$di+1,$di+1]);
+    $q->slice("$slice_prefix:,-$dims[$di]:") .= $m;
+  }
+  elsif ($dims[$di] > $dims[$di+1]){
+    $q = $m->slice("$slice_prefix:,-$min:")->copy;
+  }
+  else{
+    $q = $m->copy;
+  }
+  $q->_call_method(['orgql','cungql'], $tau, $info);
+  return $q->t->sever unless wantarray;
+  if ($dims[$di] < $dims[$di+1] && $full){
+    $l = $m->t->tricpy(1);
+    $l->slice("$slice_prefix:@{[$min-1]},:@{[$min-1]}")->diagonal(@diag_args) .= 0;
+  }
+  elsif ($dims[$di] > $dims[$di+1]){
+    my $temp = $m->_similar(@dims[$di,$di]);
+    $temp->slice("$slice_prefix:,-$dims[$di+1]:") .= $m->t;
+    $l = $temp->tricpy(0);
+    $l = $l->slice("$slice_prefix:,-$dims[$di+1]:");
+  }
+  else{
+    $l = $m->t->slice("$slice_prefix:,@{[$dims[$di+1] - $min]}:")->tricpy(1);
+  }
+  return ($q->t->sever, $l, $info);
 }
 
 =head2 mlq
@@ -1756,34 +1756,34 @@ from Lapack and returns C<Q> in scalar context. Works on transposed array.
 
 *mlq = \&PDL::mlq;
 sub PDL::mlq {
-	&_2d_array;
-	my $di = $_[0]->dims_internal;
-	my($m, $full) = @_;
-	my(@dims) = $m->dims;
-	my ($q);
-	$m = $m->t->copy;
-	my $min = $dims[$di] < $dims[$di+1] ? $dims[$di] : $dims[$di+1];
-	my $slice_arg = (',' x $di) . ":@{[$min-1]}";
-	my $tau = $m->_similar($min);
-	$m->_call_method('gelqf', $tau, my $info = null);
-	if ($info){
-		laerror("mlq: Error $info in gelqf\n");
-		return ($m, $m->t->sever, $info);
-	}
-	if ($dims[$di] > $dims[$di+1] && $full){
-		$q = $m->_similar(@dims[$di,$di]);
-		$q->slice($slice_arg) .= $m;
-	}
-	elsif ($dims[$di] < $dims[$di+1]){
-		$q = $m->slice($slice_arg)->copy;
-	}
-	else{
-		$q = $m->copy;
-	}
-	$q->_call_method(['orglq','cunglq'], $tau, $info);
-	return $q->t->sever unless wantarray;
-	my $l = (($dims[$di] > $dims[$di+1] && !$full) ? $m->t->slice($slice_arg) : $m->t)->tricpy(1);
-	return ($l, $q->t->sever, $info);
+  &_2d_array;
+  my $di = $_[0]->dims_internal;
+  my($m, $full) = @_;
+  my(@dims) = $m->dims;
+  my ($q);
+  $m = $m->t->copy;
+  my $min = $dims[$di] < $dims[$di+1] ? $dims[$di] : $dims[$di+1];
+  my $slice_arg = (',' x $di) . ":@{[$min-1]}";
+  my $tau = $m->_similar($min);
+  $m->_call_method('gelqf', $tau, my $info = null);
+  if ($info){
+    laerror("mlq: Error $info in gelqf\n");
+    return ($m, $m->t->sever, $info);
+  }
+  if ($dims[$di] > $dims[$di+1] && $full){
+    $q = $m->_similar(@dims[$di,$di]);
+    $q->slice($slice_arg) .= $m;
+  }
+  elsif ($dims[$di] < $dims[$di+1]){
+    $q = $m->slice($slice_arg)->copy;
+  }
+  else{
+    $q = $m->copy;
+  }
+  $q->_call_method(['orglq','cunglq'], $tau, $info);
+  return $q->t->sever unless wantarray;
+  my $l = (($dims[$di] > $dims[$di+1] && !$full) ? $m->t->slice($slice_arg) : $m->t)->tricpy(1);
+  return ($l, $q->t->sever, $info);
 }
 
 =head2 msolve
@@ -1792,7 +1792,7 @@ sub PDL::mlq {
 
 Solves linear system of equations using LU decomposition.
 
-	A * X = B
+  A * X = B
 
 Returns X in scalar context else X, LU, pivot vector and info.
 B is overwritten by X if its inplace flag is set.
@@ -1814,16 +1814,16 @@ Works on transposed arrays.
 
 *msolve = \&PDL::msolve;
 sub PDL::msolve {
-	&_square;
-	&_matrices_match;
-	&_same_dims;
-	my($a, $b) = @_;
-	$a = $a->t->copy;
-	my $c = $b->new_or_inplace->t;
-	$a->_call_method('gesv', $c, my $ipiv = null, my $info = null);
-	_error($info, "msolve: Can't solve system of linear equations (after getrf factorization): matrix (PDL(s) %s) is/are singular");
-	$b = $c->t->sever if !$b->is_inplace(0);
-	wantarray ? ($b, $a->t->sever, $ipiv, $info) : $b;
+  &_square;
+  &_matrices_match;
+  &_same_dims;
+  my($a, $b) = @_;
+  $a = $a->t->copy;
+  my $c = $b->new_or_inplace->t;
+  $a->_call_method('gesv', $c, my $ipiv = null, my $info = null);
+  _error($info, "msolve: Can't solve system of linear equations (after getrf factorization): matrix (PDL(s) %s) is/are singular");
+  $b = $c->t->sever if !$b->is_inplace(0);
+  wantarray ? ($b, $a->t->sever, $ipiv, $info) : $b;
 }
 
 =head2 msolvex
@@ -1832,7 +1832,7 @@ sub PDL::msolve {
 
 Solves linear system of equations using LU decomposition.
 
-	A * X = B
+  A * X = B
 
 Can optionally equilibrate the matrix.
 Uses L<gesvx|PDL::LinearAlgebra::Real/gesvx> or L<cgesvx|PDL::LinearAlgebra::Complex/cgesvx> from Lapack.
@@ -1842,50 +1842,50 @@ Works on transposed arrays.
 
  (PDL, (HASH(result))) = msolvex(PDL(A), PDL(B), HASH(options))
  where options are:
- transpose:	solves A' * X = B
-		0: false
-		1: true
- equilibrate:	equilibrates A if necessary.
-		form equilibration is returned in HASH{'equilibration'}:
-			0: no equilibration
-			1: row equilibration
-			2: column equilibration
-		row scale factors are returned in HASH{'row'}
-		column scale factors are returned in HASH{'column'}
-		0: false
-		1: true
- LU:		returns lu decomposition in HASH{LU}
-		0: false
-		1: true
- A:		returns scaled A if equilibration was done in HASH{A}
-		0: false
-		1: true
- B:		returns scaled B if equilibration was done in HASH{B}
-		0: false
-		1: true
+ transpose:  solves A' * X = B
+    0: false
+    1: true
+ equilibrate:  equilibrates A if necessary.
+    form equilibration is returned in HASH{'equilibration'}:
+      0: no equilibration
+      1: row equilibration
+      2: column equilibration
+    row scale factors are returned in HASH{'row'}
+    column scale factors are returned in HASH{'column'}
+    0: false
+    1: true
+ LU:    returns lu decomposition in HASH{LU}
+    0: false
+    1: true
+ A:    returns scaled A if equilibration was done in HASH{A}
+    0: false
+    1: true
+ B:    returns scaled B if equilibration was done in HASH{B}
+    0: false
+    1: true
  Returned values:
-		X (SCALAR CONTEXT),
-		HASH{'pivot'}:
-		 Pivot indice from LU factorization
-		HASH{'rcondition'}:
-		 Reciprocal condition of the matrix
-		HASH{'ferror'}:
-		 Forward error bound
-		HASH{'berror'}:
-		 Componentwise relative backward error
-		HASH{'rpvgrw'}:
-		 Reciprocal pivot growth factor
-		HASH{'info'}:
-		 Info: output from gesvx
+    X (SCALAR CONTEXT),
+    HASH{'pivot'}:
+     Pivot indice from LU factorization
+    HASH{'rcondition'}:
+     Reciprocal condition of the matrix
+    HASH{'ferror'}:
+     Forward error bound
+    HASH{'berror'}:
+     Componentwise relative backward error
+    HASH{'rpvgrw'}:
+     Reciprocal pivot growth factor
+    HASH{'info'}:
+     Info: output from gesvx
 
 =for example
 
  my $a = random(10,10);
  my $b = random(5,10);
  my %options = (
-		LU=>1,
-		equilibrate => 1,
-		);
+    LU=>1,
+    equilibrate => 1,
+    );
  my( $X, %result) = msolvex($a,$b,%options);
 
 =cut
@@ -1894,41 +1894,41 @@ Works on transposed arrays.
 *msolvex = \&PDL::msolvex;
 
 sub PDL::msolvex {
-	&_square;
-	&_matrices_match;
-	my $di = $_[0]->dims_internal;
-	my($a, $b, %opt) = @_;
-	my(@adims) = $a->dims;
-	$a = $a->t->copy;
-	$b = $b->t->copy;
-	my $x = $a->_similar_null;
-	my $af = PDL::zeroes $a;
-	$_ = null for my ($info, $rcond, $rpvgrw, $ferr, $berr);
-	my $equed = pdl(long, 0);
-	my $ipiv = zeroes(long, $adims[$di]);
-	$a->_call_method('gesvx', $opt{transpose}, $opt{equilibrate} ? 2 : 1, $b, $af, $ipiv, $equed, my $r = null, my $c = null, $x, $rcond, $ferr, $berr, $rpvgrw,$info);
-	if( $info < $adims[$di] && $info > 0){
-		$info--;
-		laerror("msolvex: Can't solve system of linear equations:\nfactor U($info,$info)".
-		" of coefficient matrix is exactly 0");
-	}
-	elsif ($info != 0 and $_laerror){
-		warn ("msolvex: The matrix is singular to working precision");
-	}
-	return $x->t->sever unless wantarray;
-	my %result = (rcondition => $rcond, ferror => $ferr, berror => $berr);
-	if ($opt{equilibrate}){
-		$result{equilibration} = $equed;
-		$result{row} = $r if $equed & 1;
-		$result{column} = $c if $equed & 2;
-		if ($equed){
-			$result{A} = $a->t->sever if $opt{A};
-			$result{B} = $b->t->sever if $opt{B};
-		}
-	}
-	@result{qw(pivot rpvgrw info)} = ($ipiv, $rpvgrw, $info);
+  &_square;
+  &_matrices_match;
+  my $di = $_[0]->dims_internal;
+  my($a, $b, %opt) = @_;
+  my(@adims) = $a->dims;
+  $a = $a->t->copy;
+  $b = $b->t->copy;
+  my $x = $a->_similar_null;
+  my $af = PDL::zeroes $a;
+  $_ = null for my ($info, $rcond, $rpvgrw, $ferr, $berr);
+  my $equed = pdl(long, 0);
+  my $ipiv = zeroes(long, $adims[$di]);
+  $a->_call_method('gesvx', $opt{transpose}, $opt{equilibrate} ? 2 : 1, $b, $af, $ipiv, $equed, my $r = null, my $c = null, $x, $rcond, $ferr, $berr, $rpvgrw,$info);
+  if( $info < $adims[$di] && $info > 0){
+    $info--;
+    laerror("msolvex: Can't solve system of linear equations:\nfactor U($info,$info)".
+    " of coefficient matrix is exactly 0");
+  }
+  elsif ($info != 0 and $_laerror){
+    warn ("msolvex: The matrix is singular to working precision");
+  }
+  return $x->t->sever unless wantarray;
+  my %result = (rcondition => $rcond, ferror => $ferr, berror => $berr);
+  if ($opt{equilibrate}){
+    $result{equilibration} = $equed;
+    $result{row} = $r if $equed & 1;
+    $result{column} = $c if $equed & 2;
+    if ($equed){
+      $result{A} = $a->t->sever if $opt{A};
+      $result{B} = $b->t->sever if $opt{B};
+    }
+  }
+  @result{qw(pivot rpvgrw info)} = ($ipiv, $rpvgrw, $info);
         $result{LU} = $af->t->sever if $opt{LU};
-	return ($x->t->sever, %result);
+  return ($x->t->sever, %result);
 }
 
 =head2 mtrisolve
@@ -1937,7 +1937,7 @@ sub PDL::msolvex {
 
 Solves linear system of equations with triangular matrix A.
 
-	A * X = B  or A' * X = B
+  A * X = B  or A' * X = B
 
 B is overwritten by X if its inplace flag is set.
 Supports broadcasting.
@@ -1947,9 +1947,9 @@ Work on transposed array(s).
 =for usage
 
  (PDL(X), (PDL(info)) = mtrisolve(PDL(A), SCALAR(uplo), PDL(B), SCALAR(trans), SCALAR(diag))
- uplo	: UPPER  = 0 | LOWER = 1
- trans	: NOTRANSPOSE  = 0 | TRANSPOSE = 1, default = 0
- uplo	: UNITARY DIAGONAL = 1, default = 0
+ uplo  : UPPER  = 0 | LOWER = 1
+ trans  : NOTRANSPOSE  = 0 | TRANSPOSE = 1, default = 0
+ uplo  : UNITARY DIAGONAL = 1, default = 0
 
 =for example
 
@@ -1962,18 +1962,18 @@ Work on transposed array(s).
 
 *mtrisolve = \&PDL::mtrisolve;
 sub PDL::mtrisolve{
-	&_square;
-	my $uplo = splice @_, 1, 1;
-	&_matrices_match;
-	&_same_dims;
-	my($a, $b, $trans, $diag) = @_;
-	$uplo = 1 - $uplo;
-	$trans = 1 - $trans;
-	my $c = $b->new_or_inplace->t;
-	$a->_call_method('trtrs', $uplo, $trans, $diag, $c, my $info = null);
-	_error($info, "mtrisolve: Can't solve system of linear equations: matrix (PDL(s) %s) is/are singular");
-	$b = $c->t->sever if !$b->is_inplace(0);
-	wantarray ? ($b, $info) : $b;
+  &_square;
+  my $uplo = splice @_, 1, 1;
+  &_matrices_match;
+  &_same_dims;
+  my($a, $b, $trans, $diag) = @_;
+  $uplo = 1 - $uplo;
+  $trans = 1 - $trans;
+  my $c = $b->new_or_inplace->t;
+  $a->_call_method('trtrs', $uplo, $trans, $diag, $c, my $info = null);
+  _error($info, "mtrisolve: Can't solve system of linear equations: matrix (PDL(s) %s) is/are singular");
+  $b = $c->t->sever if !$b->is_inplace(0);
+  wantarray ? ($b, $info) : $b;
 }
 
 =head2 msymsolve
@@ -1982,7 +1982,7 @@ sub PDL::mtrisolve{
 
 Solves linear system of equations using diagonal pivoting method with symmetric matrix A.
 
-	A * X = B
+  A * X = B
 
 Returns X in scalar context else X, block diagonal matrix D (and the
 multipliers), pivot vector an info. B is overwritten by X if its inplace flag is set.
@@ -2006,18 +2006,18 @@ Works on transposed array(s).
 
 *msymsolve = \&PDL::msymsolve;
 sub PDL::msymsolve {
-	&_square;
-	my $uplo = splice @_, 1, 1;
-	&_matrices_match;
-	&_same_dims;
-	my($a, $b) = @_;
-	$uplo = 1 - $uplo;
-	$a = $a->copy;
-	my $c = $b->new_or_inplace->t;
-	$a->_call_method('sysv', $uplo, $c, my $ipiv = null, my $info = null);
-	_error($info, "msymsolve: Can't solve system of linear equations (after sytrf factorization): matrix (PDL(s) %s) is/are singular");
-	$b = $c->t->sever if !$b->is_inplace(0);
-	wantarray ? ($b, $a, $ipiv, $info) : $b;
+  &_square;
+  my $uplo = splice @_, 1, 1;
+  &_matrices_match;
+  &_same_dims;
+  my($a, $b) = @_;
+  $uplo = 1 - $uplo;
+  $a = $a->copy;
+  my $c = $b->new_or_inplace->t;
+  $a->_call_method('sysv', $uplo, $c, my $ipiv = null, my $info = null);
+  _error($info, "msymsolve: Can't solve system of linear equations (after sytrf factorization): matrix (PDL(s) %s) is/are singular");
+  $b = $c->t->sever if !$b->is_inplace(0);
+  wantarray ? ($b, $a, $ipiv, $info) : $b;
 }
 
 =head2 msymsolvex
@@ -2026,7 +2026,7 @@ sub PDL::msymsolve {
 
 Solves linear system of equations using diagonal pivoting method with symmetric matrix A.
 
-	A * X = B
+  A * X = B
 
 Uses L<sysvx|PDL::LinearAlgebra::Real/sysvx> or L<csysvx|PDL::LinearAlgebra::Complex/csysvx>
 from Lapack. Works on transposed array.
@@ -2036,21 +2036,21 @@ from Lapack. Works on transposed array.
  (PDL, (HASH(result))) = msymsolvex(PDL(A), SCALAR (uplo), PDL(B), SCALAR(d))
  uplo : UPPER  = 0 | LOWER = 1, default = 0
  d    : whether return diagonal matrix d and pivot vector
-	FALSE  = 0 | TRUE = 1, default = 0
+  FALSE  = 0 | TRUE = 1, default = 0
  Returned values:
-		X (SCALAR CONTEXT),
-		HASH{'D'}:
-		 Block diagonal matrix D (and the multipliers) (if requested)
-		HASH{'pivot'}:
-		 Pivot indice from LU factorization (if requested)
-		HASH{'rcondition'}:
-		 Reciprocal condition of the matrix
-		HASH{'ferror'}:
-		 Forward error bound
-		HASH{'berror'}:
-		 Componentwise relative backward error
-		HASH{'info'}:
-		 Info: output from sysvx
+    X (SCALAR CONTEXT),
+    HASH{'D'}:
+     Block diagonal matrix D (and the multipliers) (if requested)
+    HASH{'pivot'}:
+     Pivot indice from LU factorization (if requested)
+    HASH{'rcondition'}:
+     Reciprocal condition of the matrix
+    HASH{'ferror'}:
+     Forward error bound
+    HASH{'berror'}:
+     Componentwise relative backward error
+    HASH{'info'}:
+     Info: output from sysvx
 
 =for example
 
@@ -2065,30 +2065,30 @@ from Lapack. Works on transposed array.
 
 *msymsolvex = \&PDL::msymsolvex;
 sub PDL::msymsolvex {
-	&_square;
-	my $uplo = splice @_, 1, 1;
-	&_matrices_match;
-	my $di = $_[0]->dims_internal;
-	my($a, $b, $d) = @_;
-	my(@adims) = $a->dims;
-	$uplo = 1 - $uplo;
-	$b = $b->t;
-	my $x = $a->_similar_null;
-	my $af =  PDL::zeroes $a;
-	$_ = null for my ($info, $rcond, $ferr, $berr);
-	my $ipiv = zeroes(long, $adims[$di]);
-	$a->_call_method('sysvx', $uplo, 0, $b, $af, $ipiv, $x, $rcond, $ferr, $berr, $info);
-	if( $info < $adims[$di] && $info > 0){
-		$info--;
-		laerror("msymsolvex: Can't solve system of linear equations:\nfactor D($info,$info)".
-		" of coefficient matrix is exactly 0");
-	}
-	elsif ($info != 0 and $_laerror){
-		warn("msymsolvex: The matrix is singular to working precision");
-	}
-	my %result = (rcondition => $rcond, ferror => $ferr, berror => $berr, info => $info);
-	@result{qw(pivot D)} = ($ipiv, $af) if $d;
-	wantarray ? ($x->t->sever, %result): $x->t->sever;
+  &_square;
+  my $uplo = splice @_, 1, 1;
+  &_matrices_match;
+  my $di = $_[0]->dims_internal;
+  my($a, $b, $d) = @_;
+  my(@adims) = $a->dims;
+  $uplo = 1 - $uplo;
+  $b = $b->t;
+  my $x = $a->_similar_null;
+  my $af =  PDL::zeroes $a;
+  $_ = null for my ($info, $rcond, $ferr, $berr);
+  my $ipiv = zeroes(long, $adims[$di]);
+  $a->_call_method('sysvx', $uplo, 0, $b, $af, $ipiv, $x, $rcond, $ferr, $berr, $info);
+  if( $info < $adims[$di] && $info > 0){
+    $info--;
+    laerror("msymsolvex: Can't solve system of linear equations:\nfactor D($info,$info)".
+    " of coefficient matrix is exactly 0");
+  }
+  elsif ($info != 0 and $_laerror){
+    warn("msymsolvex: The matrix is singular to working precision");
+  }
+  my %result = (rcondition => $rcond, ferror => $ferr, berror => $berr, info => $info);
+  @result{qw(pivot D)} = ($ipiv, $af) if $d;
+  wantarray ? ($x->t->sever, %result): $x->t->sever;
 }
 
 =head2 mpossolve
@@ -2098,7 +2098,7 @@ sub PDL::msymsolvex {
 Solves linear system of equations using Cholesky decomposition with
 symmetric positive definite matrix A.
 
-	A * X = B
+  A * X = B
 
 Returns X in scalar context else X, U or L and info.
 B is overwritten by X if its inplace flag is set.
@@ -2123,17 +2123,17 @@ Works on transposed array(s).
 
 *mpossolve = \&PDL::mpossolve;
 sub PDL::mpossolve {
-	&_square;
-	my $uplo = splice @_, 1, 1;
-	&_matrices_match;
-	&_same_dims;
-	my($a, $b) = @_;
-	$uplo = 1 - $uplo;
-	$a = $a->copy;
-	my $c = $b->new_or_inplace->t;
-	$a->_call_method('posv', $uplo, $c, my $info=null);
-	_error($info, "mpossolve: Can't solve system of linear equations: matrix (PDL(s) %s) is/are not positive definite");
-	wantarray ? $b->is_inplace(0) ? ($b, $a,$info) : ($c->t->sever , $a,$info) : $b->is_inplace(0) ? $b : $c->t->sever;
+  &_square;
+  my $uplo = splice @_, 1, 1;
+  &_matrices_match;
+  &_same_dims;
+  my($a, $b) = @_;
+  $uplo = 1 - $uplo;
+  $a = $a->copy;
+  my $c = $b->new_or_inplace->t;
+  $a->_call_method('posv', $uplo, $c, my $info=null);
+  _error($info, "mpossolve: Can't solve system of linear equations: matrix (PDL(s) %s) is/are not positive definite");
+  wantarray ? $b->is_inplace(0) ? ($b, $a,$info) : ($c->t->sever , $a,$info) : $b->is_inplace(0) ? $b : $c->t->sever;
 }
 
 =head2 mpossolvex
@@ -2143,7 +2143,7 @@ sub PDL::mpossolve {
 Solves linear system of equations using Cholesky decomposition with
 symmetric positive definite matrix A
 
-	A * X = B
+  A * X = B
 
 Can optionally equilibrate the matrix.
 Uses L<posvx|PDL::LinearAlgebra::Real/posvx> or
@@ -2155,32 +2155,32 @@ Works on transposed array(s).
  (PDL, (HASH(result))) = mpossolvex(PDL(A), SCARA(uplo), PDL(B), HASH(options))
  uplo : UPPER  = 0 | LOWER = 1, default = 0
  where options are:
- equilibrate:	equilibrates A if necessary.
-		form equilibration is returned in HASH{'equilibration'}:
-			0: no equilibration
-			1: equilibration
-		scale factors are returned in HASH{'scale'}
-		0: false
-		1: true
- U|L:		returns Cholesky factorization in HASH{U} or HASH{L}
-		0: false
-		1: true
- A:		returns scaled A if equilibration was done in HASH{A}
-		0: false
-		1: true
- B:		returns scaled B if equilibration was done in HASH{B}
-		0: false
-		1: true
+ equilibrate:  equilibrates A if necessary.
+    form equilibration is returned in HASH{'equilibration'}:
+      0: no equilibration
+      1: equilibration
+    scale factors are returned in HASH{'scale'}
+    0: false
+    1: true
+ U|L:    returns Cholesky factorization in HASH{U} or HASH{L}
+    0: false
+    1: true
+ A:    returns scaled A if equilibration was done in HASH{A}
+    0: false
+    1: true
+ B:    returns scaled B if equilibration was done in HASH{B}
+    0: false
+    1: true
  Returned values:
-		X (SCALAR CONTEXT),
-		HASH{'rcondition'}:
-		 Reciprocal condition of the matrix
-		HASH{'ferror'}:
-		 Forward error bound
-		HASH{'berror'}:
-		 Componentwise relative backward error
-		HASH{'info'}:
-		 Info: output from gesvx
+    X (SCALAR CONTEXT),
+    HASH{'rcondition'}:
+     Reciprocal condition of the matrix
+    HASH{'ferror'}:
+     Forward error bound
+    HASH{'berror'}:
+     Componentwise relative backward error
+    HASH{'info'}:
+     Info: output from gesvx
 
 =for example
 
@@ -2188,8 +2188,8 @@ Works on transposed array(s).
  my $a = random(10,10);
  my $b = random(5,10);
  my %options = (U=>1,
-		equilibrate => 1,
-		);
+    equilibrate => 1,
+    );
  my ($X, %result) = msolvex($a, 0, $b,%opt);
 
 =cut
@@ -2198,43 +2198,43 @@ Works on transposed array(s).
 *mpossolvex = \&PDL::mpossolvex;
 
 sub PDL::mpossolvex {
-	&_square;
-	my $uplo = splice(@_, 1, 1) ? 0 : 1;
-	&_matrices_match;
-	my $di = $_[0]->dims_internal;
-	my($a, $b, %opt) = @_;
-	my(@adims) = $a->dims;
-	my(@bdims) = $b->dims;
-	my $equilibrate = $opt{'equilibrate'} ? 2: 1;
-	$a = $a->copy;
-	$b = $b->t->copy;
-	my $x = $a->_similar_null;
-	my $af = PDL::zeroes $a;
-	my $equed = pdl(long, 0);
-	$a->_call_method('posvx', $uplo, $equilibrate, $b, $af, $equed, my $s = null, $x, my $rcond=null, my $ferr=null, my $berr=null, my $info=null);
-	if( $info < $adims[$di] && $info > 0){
-		$info--;
-		barf("mpossolvex: Can't solve system of linear equations:\n".
-			"the leading minor of order $info of A is".
+  &_square;
+  my $uplo = splice(@_, 1, 1) ? 0 : 1;
+  &_matrices_match;
+  my $di = $_[0]->dims_internal;
+  my($a, $b, %opt) = @_;
+  my(@adims) = $a->dims;
+  my(@bdims) = $b->dims;
+  my $equilibrate = $opt{'equilibrate'} ? 2: 1;
+  $a = $a->copy;
+  $b = $b->t->copy;
+  my $x = $a->_similar_null;
+  my $af = PDL::zeroes $a;
+  my $equed = pdl(long, 0);
+  $a->_call_method('posvx', $uplo, $equilibrate, $b, $af, $equed, my $s = null, $x, my $rcond=null, my $ferr=null, my $berr=null, my $info=null);
+  if( $info < $adims[$di] && $info > 0){
+    $info--;
+    barf("mpossolvex: Can't solve system of linear equations:\n".
+      "the leading minor of order $info of A is".
                          " not positive definite");
-		return;
-	}
-	elsif ( $info  and $_laerror){
-		warn("mpossolvex: The matrix is singular to working precision");
-	}
-	my %result = (rcondition=>$rcond, ferror=>$ferr, berror=>$berr);
-	if ($opt{equilibrate}){
-		$result{equilibration} = $equed;
-		if ($equed){
-			$result{scale} = $s if $equed;
-			$result{A} = $a if $opt{A};
-			$result{B} = $b->t->sever if $opt{B};
-		}
-	}
-	$result{info} = $info;
+    return;
+  }
+  elsif ( $info  and $_laerror){
+    warn("mpossolvex: The matrix is singular to working precision");
+  }
+  my %result = (rcondition=>$rcond, ferror=>$ferr, berror=>$berr);
+  if ($opt{equilibrate}){
+    $result{equilibration} = $equed;
+    if ($equed){
+      $result{scale} = $s if $equed;
+      $result{A} = $a if $opt{A};
+      $result{B} = $b->t->sever if $opt{B};
+    }
+  }
+  $result{info} = $info;
         $result{L} = $af if $opt{L};
         $result{U} = $af if $opt{U};
-	wantarray ? ($x->t->sever, %result): $x->t->sever;
+  wantarray ? ($x->t->sever, %result): $x->t->sever;
 }
 
 =head2 mlls
@@ -2263,27 +2263,27 @@ Works on transposed arrays.
 *mlls = \&PDL::mlls;
 
 sub PDL::mlls {
-	my $di = $_[0]->dims_internal;
-	my $slice_prefix = ',' x $di;
-	&_matrices_matchrows;
-	my($a, $b, $trans) = @_;
-	my(@adims) = $a->dims;
-	my(@bdims) = $b->dims;
-	my $x;
-	$a = $a->copy;
-	if ( $adims[$di+1] < $adims[$di]) {
-		$x = $a->_similar($adims[$di], $bdims[$di]);
-		$x->slice("$slice_prefix:@{[$bdims[$di+1]-1]}, :@{[$bdims[$di]-1]}") .= $b->t;
-	} else {
-		$x = $b->t->copy;
-	}
-	$a->_call_method('gels', $trans ? 0 : 1, $x, my $info = null);
-	$x = $x->t;
-	return $x->sever if $adims[$di+1] <= $adims[$di];
-	my $sliced = $x->slice("$slice_prefix, :@{[$adims[$di]-1]}")->sever;
-	return $sliced if !wantarray;
-	my $power = $a->_similar(1); $power .= 2;
-	($sliced, ($x->slice("$slice_prefix, $adims[$di]:")->t ** $power)->sumover);
+  my $di = $_[0]->dims_internal;
+  my $slice_prefix = ',' x $di;
+  &_matrices_matchrows;
+  my($a, $b, $trans) = @_;
+  my(@adims) = $a->dims;
+  my(@bdims) = $b->dims;
+  my $x;
+  $a = $a->copy;
+  if ( $adims[$di+1] < $adims[$di]) {
+    $x = $a->_similar($adims[$di], $bdims[$di]);
+    $x->slice("$slice_prefix:@{[$bdims[$di+1]-1]}, :@{[$bdims[$di]-1]}") .= $b->t;
+  } else {
+    $x = $b->t->copy;
+  }
+  $a->_call_method('gels', $trans ? 0 : 1, $x, my $info = null);
+  $x = $x->t;
+  return $x->sever if $adims[$di+1] <= $adims[$di];
+  my $sliced = $x->slice("$slice_prefix, :@{[$adims[$di]-1]}")->sever;
+  return $sliced if !wantarray;
+  my $power = $a->_similar(1); $power .= 2;
+  ($sliced, ($x->slice("$slice_prefix, $adims[$di]:")->t ** $power)->sumover);
 }
 
 =head2 mllsy
@@ -2300,13 +2300,13 @@ from Lapack. Works on transposed arrays.
 
  ( PDL(X), ( HASH(result) ) ) = mllsy(PDL(A), PDL(B))
  Returned values:
-		X (SCALAR CONTEXT),
-		HASH{'A'}:
-		 complete orthogonal factorization of A
-		HASH{'jpvt'}:
-		 details of columns interchanges
-		HASH{'rank'}:
-		 effective rank of A
+    X (SCALAR CONTEXT),
+    HASH{'A'}:
+     complete orthogonal factorization of A
+    HASH{'jpvt'}:
+     details of columns interchanges
+    HASH{'rank'}:
+     effective rank of A
 
 =for example
 
@@ -2318,31 +2318,31 @@ from Lapack. Works on transposed arrays.
 
 *mllsy = \&PDL::mllsy;
 sub PDL::mllsy {
-	my $di = $_[0]->dims_internal;
-	my $slice_prefix = ',' x $di;
-	&_matrices_matchrows;
-	my($a, $b) = @_;
-	my(@adims) = $a->dims;
-	my(@bdims) = $b->dims;
-	my $rcond = lamch(0);
-	$rcond = $rcond->sqrt - ($rcond->sqrt - $rcond) / 2;
-	$a = $a->t->copy;
-	my ($x);
-	if ( $adims[1+$di] < $adims[0+$di]){
-		$x = $a->_similar($adims[$di], $bdims[$di]);
-		$x->slice("$slice_prefix:@{[$bdims[$di+1]-1]}, :@{[$bdims[$di]-1]}") .= $b->t;
-	}
-	else{
-		$x = $b->t->copy;
-	}
-	my $info = null;
-	my $rank = null;
-	my $jpvt = zeroes(long, $adims[$di]);
-	$a->_call_method('gelsy', $x,  $rcond, $jpvt, $rank, $info);
-	my %ret = !wantarray ? () : ('A'=> $a->t->sever, 'rank' => $rank, 'jpvt'=>$jpvt);
-	return wantarray ? ($x->t->sever, %ret) : $x->t->sever if $adims[$di+1] <= $adims[$di];
-	$x = $x->t->slice("$slice_prefix, :@{[$adims[$di]-1]}")->sever;
-	wantarray ? ($x, %ret) : $x;
+  my $di = $_[0]->dims_internal;
+  my $slice_prefix = ',' x $di;
+  &_matrices_matchrows;
+  my($a, $b) = @_;
+  my(@adims) = $a->dims;
+  my(@bdims) = $b->dims;
+  my $rcond = lamch(0);
+  $rcond = $rcond->sqrt - ($rcond->sqrt - $rcond) / 2;
+  $a = $a->t->copy;
+  my ($x);
+  if ( $adims[1+$di] < $adims[0+$di]){
+    $x = $a->_similar($adims[$di], $bdims[$di]);
+    $x->slice("$slice_prefix:@{[$bdims[$di+1]-1]}, :@{[$bdims[$di]-1]}") .= $b->t;
+  }
+  else{
+    $x = $b->t->copy;
+  }
+  my $info = null;
+  my $rank = null;
+  my $jpvt = zeroes(long, $adims[$di]);
+  $a->_call_method('gelsy', $x,  $rcond, $jpvt, $rank, $info);
+  my %ret = !wantarray ? () : ('A'=> $a->t->sever, 'rank' => $rank, 'jpvt'=>$jpvt);
+  return wantarray ? ($x->t->sever, %ret) : $x->t->sever if $adims[$di+1] <= $adims[$di];
+  $x = $x->t->slice("$slice_prefix, :@{[$adims[$di]-1]}")->sever;
+  wantarray ? ($x, %ret) : $x;
 }
 
 =head2 mllss
@@ -2359,19 +2359,19 @@ Works on transposed arrays.
 
  ( PDL(X), ( HASH(result) ) )= mllss(PDL(A), PDL(B), SCALAR(method))
  method: specifies which method to use (see Lapack for further details)
-	'(c)gelss' or '(c)gelsd', default = '(c)gelsd'
+  '(c)gelss' or '(c)gelsd', default = '(c)gelsd'
  Returned values:
-		X (SCALAR CONTEXT),
-		HASH{'V'}:
-		 if method = (c)gelss, the right singular vectors, stored columnwise
-		HASH{'s'}:
-		 singular values from SVD
-		HASH{'res'}:
-		 if A has full rank the residual sum-of-squares for the solution
-		HASH{'rank'}:
-		 effective rank of A
-		HASH{'info'}:
-		 info output from method
+    X (SCALAR CONTEXT),
+    HASH{'V'}:
+     if method = (c)gelss, the right singular vectors, stored columnwise
+    HASH{'s'}:
+     singular values from SVD
+    HASH{'res'}:
+     if A has full rank the residual sum-of-squares for the solution
+    HASH{'rank'}:
+     effective rank of A
+    HASH{'info'}:
+     info output from method
 
 =for example
 
@@ -2384,39 +2384,39 @@ Works on transposed arrays.
 *mllss = \&PDL::mllss;
 
 sub PDL::mllss {
-	my $di = $_[0]->dims_internal;
-	my $slice_prefix = ',' x $di;
-	&_matrices_matchrows;
-	my($a, $b, $method) = @_;
-	my @adims = $a->dims;
-	my @bdims = $b->dims;
-	#TODO: Add this in option
-	my $rcond = lamch(0);
-	$rcond = $rcond->sqrt - ($rcond->sqrt - $rcond) / 2;
-	$a = $a->t->copy;
-	my $x;
-	if ($adims[1+$di] < $adims[0+$di]){
-		$x = $a->_similar($adims[$di], $bdims[$di]);
-		$x->slice("$slice_prefix:@{[$bdims[$di+1]-1]}, :@{[$bdims[$di]-1]}") .= $b->t;
-	}
-	else{
-		$x = $b->t->copy;
-	}
-	$_ = null for my ($info, $rank, $s);
-	my $min = ($adims[$di] > $adims[$di+1]) ? $adims[$di+1] : $adims[$di];
-	$method ||= 'gelsd';
-	$a->_call_method($method, $x,  $rcond, $s, $rank, $info);
-	laerror("mllss: The algorithm for computing the SVD failed to converge\n") if $info;
-	$x = $x->t;
-	my %ret = !wantarray ? () : (rank => $rank, s=>$s, info=>$info);
-	$ret{V} = $a if wantarray and $method =~ /gelss/;
-	return wantarray ? ($x->sever, %ret) : $x->sever if $adims[1+$di] <= $adims[0+$di];
-	if (wantarray and $rank == $min) {
-		my $power = $a->_similar(1); $power .= 2;
-		$ret{res} = ($x->slice("$slice_prefix, $adims[$di]:")->t ** $power)->sumover;
-	}
-	$x = $x->slice("$slice_prefix, :@{[$adims[$di]-1]}")->sever;
-	wantarray ? ($x->sever, %ret) : $x->sever;
+  my $di = $_[0]->dims_internal;
+  my $slice_prefix = ',' x $di;
+  &_matrices_matchrows;
+  my($a, $b, $method) = @_;
+  my @adims = $a->dims;
+  my @bdims = $b->dims;
+  #TODO: Add this in option
+  my $rcond = lamch(0);
+  $rcond = $rcond->sqrt - ($rcond->sqrt - $rcond) / 2;
+  $a = $a->t->copy;
+  my $x;
+  if ($adims[1+$di] < $adims[0+$di]){
+    $x = $a->_similar($adims[$di], $bdims[$di]);
+    $x->slice("$slice_prefix:@{[$bdims[$di+1]-1]}, :@{[$bdims[$di]-1]}") .= $b->t;
+  }
+  else{
+    $x = $b->t->copy;
+  }
+  $_ = null for my ($info, $rank, $s);
+  my $min = ($adims[$di] > $adims[$di+1]) ? $adims[$di+1] : $adims[$di];
+  $method ||= 'gelsd';
+  $a->_call_method($method, $x,  $rcond, $s, $rank, $info);
+  laerror("mllss: The algorithm for computing the SVD failed to converge\n") if $info;
+  $x = $x->t;
+  my %ret = !wantarray ? () : (rank => $rank, s=>$s, info=>$info);
+  $ret{V} = $a if wantarray and $method =~ /gelss/;
+  return wantarray ? ($x->sever, %ret) : $x->sever if $adims[1+$di] <= $adims[0+$di];
+  if (wantarray and $rank == $min) {
+    my $power = $a->_similar(1); $power .= 2;
+    $ret{res} = ($x->slice("$slice_prefix, $adims[$di]:")->t ** $power)->sumover;
+  }
+  $x = $x->slice("$slice_prefix, :@{[$adims[$di]-1]}")->sever;
+  wantarray ? ($x->sever, %ret) : $x->sever;
 }
 
 =head2 mglm
@@ -2444,22 +2444,22 @@ from Lapack. Works on transposed arrays.
 
 *mglm = \&PDL::mglm;
 sub PDL::mglm{
-	my($a, $b, $d) = @_;
-	my $di = $_[0]->dims_internal;
-	my(@adims) = $a->dims;
-	my(@bdims) = $b->dims;
-	my(@ddims) = $d->dims;
-	barf("mglm: Require arrays with equal number of rows")
-		unless( @adims >= 2+$di && @bdims >= 2+$di && $adims[1+$di] == $bdims[1+$di]);
-	barf "mglm: Require that column(A) <= row(A) <= column(A) + column(B)" unless
-		( ($adims[0+$di] <= $adims[1+$di] ) && ($adims[1+$di] <= ($adims[0+$di] + $bdims[0+$di])) );
-	barf("mglm: Require vector(s) with size equal to number of rows of A")
-		unless( @ddims >= 1+$di  && $adims[1+$di] == $ddims[0+$di]);
-	$a = $a->t->copy;
-	$b = $b->t->copy;
-	$d = $d->copy;
-	my ($x, $y, $info) = $a->_call_method('ggglm', $b, $d);
-	$x, $y;
+  my($a, $b, $d) = @_;
+  my $di = $_[0]->dims_internal;
+  my(@adims) = $a->dims;
+  my(@bdims) = $b->dims;
+  my(@ddims) = $d->dims;
+  barf("mglm: Require arrays with equal number of rows")
+    unless( @adims >= 2+$di && @bdims >= 2+$di && $adims[1+$di] == $bdims[1+$di]);
+  barf "mglm: Require that column(A) <= row(A) <= column(A) + column(B)" unless
+    ( ($adims[0+$di] <= $adims[1+$di] ) && ($adims[1+$di] <= ($adims[0+$di] + $bdims[0+$di])) );
+  barf("mglm: Require vector(s) with size equal to number of rows of A")
+    unless( @ddims >= 1+$di  && $adims[1+$di] == $ddims[0+$di]);
+  $a = $a->t->copy;
+  $b = $b->t->copy;
+  $d = $d->copy;
+  my ($x, $y, $info) = $a->_call_method('ggglm', $b, $d);
+  $x, $y;
 }
 
 =head2 mlse
@@ -2474,13 +2474,13 @@ from Lapack. Works on transposed arrays.
 
  (PDL(x), PDL(res2)) = mlse(PDL(a), PDL(b), PDL(c), PDL(d))
  where
- c	: The right hand side vector for the
-	  least squares part of the LSE problem.
- d	: The right hand side vector for the
-	  constrained equation.
- x	: The solution of the LSE problem.
- res2	: The residual sum of squares for the solution
-	  (returned only in array context)
+ c  : The right hand side vector for the
+    least squares part of the LSE problem.
+ d  : The right hand side vector for the
+    constrained equation.
+ x  : The solution of the LSE problem.
+ res2  : The residual sum of squares for the solution
+    (returned only in array context)
 
 
 =for example
@@ -2496,28 +2496,28 @@ from Lapack. Works on transposed arrays.
 *mlse = \&PDL::mlse;
 
 sub PDL::mlse {
-	my $di = $_[0]->dims_internal;
-	my $slice_prefix = ',' x $di;
-	my($a, $b, $c, $d) = @_;
-	my(@adims) = $a->dims;
-	my(@bdims) = $b->dims;
-	my(@cdims) = $c->dims;
-	my(@ddims) = $d->dims;
-	&_matrices_matchcolumns;
-	barf("mlse: Require 1D vector C with size equal to number of A rows")
-		unless( (@cdims == $di+1)&& $adims[$di+2] == $cdims[$di+2]);
-	barf("mlse: Require 1D vector D with size equal to number of B rows")
-		unless( (@ddims == $di+1)&& $bdims[$di+2] == $ddims[$di+2]);
-	barf "mlse: Require that row(B) <= column(A) <= row(A) + row(B)" unless
-		( ($bdims[$di+1] <= $adims[$di] ) && ($adims[$di] <= ($adims[$di+1]+ $bdims[$di+1])) );
-	$a = $a->t->copy;
-	$b = $b->t->copy;
-	$c = $c->copy;
-	$d = $d->copy;
-	my ($x, $info) = $a->_call_method('gglse', $b, $c, $d);
-	my $power = $a->_similar(1); $power .= 2;
-	my $sumsq = ($c->slice("$slice_prefix @{[$adims[$di]-$bdims[$di+1]]}:@{[$adims[$di+1]-1]}") ** $power)->sumover;
-	wantarray ? ($x, $sumsq) : $x;
+  my $di = $_[0]->dims_internal;
+  my $slice_prefix = ',' x $di;
+  my($a, $b, $c, $d) = @_;
+  my(@adims) = $a->dims;
+  my(@bdims) = $b->dims;
+  my(@cdims) = $c->dims;
+  my(@ddims) = $d->dims;
+  &_matrices_matchcolumns;
+  barf("mlse: Require 1D vector C with size equal to number of A rows")
+    unless( (@cdims == $di+1)&& $adims[$di+2] == $cdims[$di+2]);
+  barf("mlse: Require 1D vector D with size equal to number of B rows")
+    unless( (@ddims == $di+1)&& $bdims[$di+2] == $ddims[$di+2]);
+  barf "mlse: Require that row(B) <= column(A) <= row(A) + row(B)" unless
+    ( ($bdims[$di+1] <= $adims[$di] ) && ($adims[$di] <= ($adims[$di+1]+ $bdims[$di+1])) );
+  $a = $a->t->copy;
+  $b = $b->t->copy;
+  $c = $c->copy;
+  $d = $d->copy;
+  my ($x, $info) = $a->_call_method('gglse', $b, $c, $d);
+  my $power = $a->_similar(1); $power .= 2;
+  my $sumsq = ($c->slice("$slice_prefix @{[$adims[$di]-$bdims[$di+1]]}:@{[$adims[$di+1]-1]}") ** $power)->sumover;
+  wantarray ? ($x, $sumsq) : $x;
 }
 
 =head2 meigen
@@ -2548,16 +2548,16 @@ Works on transposed arrays.
 
 *meigen = \&PDL::meigen;
 sub PDL::meigen {
-	&_square;
-	my ($m,$jobvl,$jobvr) = @_;
-	$_ = null for my ($info, $sdim);
-	my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
-	$_ = $m->_similar_null for my ($vl, $vr);
-	$m->t->_call_method('geev', $jobvl, $jobvr, @w, $vl, $vr, $info);
-	_error($info, "meigen: The QR algorithm failed to converge for PDL(s) %s");
-	(my $w, $vl, $vr) = _eigen_extract($jobvl, $jobvr, $vl, $vr, @w);
-	return $w if !wantarray;
-	($w, ($jobvl?$vl->t->sever:()), ($jobvr?$vr->t->sever:()), $info);
+  &_square;
+  my ($m,$jobvl,$jobvr) = @_;
+  $_ = null for my ($info, $sdim);
+  my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
+  $_ = $m->_similar_null for my ($vl, $vr);
+  $m->t->_call_method('geev', $jobvl, $jobvr, @w, $vl, $vr, $info);
+  _error($info, "meigen: The QR algorithm failed to converge for PDL(s) %s");
+  (my $w, $vl, $vr) = _eigen_extract($jobvl, $jobvr, $vl, $vr, @w);
+  return $w if !wantarray;
+  ($w, ($jobvl?$vl->t->sever:()), ($jobvr?$vr->t->sever:()), $info);
 }
 
 =head2 meigenx
@@ -2577,40 +2577,40 @@ Works on transposed arrays.
  (PDL(value), (PDL(lv),  (PDL(rv)), HASH(result)), HASH(result)) = meigenx(PDL, HASH(options))
  where options are:
  vector:     eigenvectors to compute
-		'left':  computes left eigenvectors
-		'right': computes right eigenvectors
-		'all':   computes left and right eigenvectors
-		 0:     doesn't compute (default)
+    'left':  computes left eigenvectors
+    'right': computes right eigenvectors
+    'all':   computes left and right eigenvectors
+     0:     doesn't compute (default)
  rcondition: reciprocal condition numbers to compute (returned in HASH{'rconde'} for eigenvalues and HASH{'rcondv'} for eigenvectors)
-		'value':  computes reciprocal condition numbers for eigenvalues
-		'vector': computes reciprocal condition numbers for eigenvectors
-		'all':    computes reciprocal condition numbers for eigenvalues and eigenvectors
-		 0:      doesn't compute (default)
+    'value':  computes reciprocal condition numbers for eigenvalues
+    'vector': computes reciprocal condition numbers for eigenvectors
+    'all':    computes reciprocal condition numbers for eigenvalues and eigenvectors
+     0:      doesn't compute (default)
  error:      specifies whether or not it computes the error bounds (returned in HASH{'eerror'} and HASH{'verror'})
-	     error bound = EPS * One-norm / rcond(e|v)
-	     (reciprocal condition numbers for eigenvalues or eigenvectors must be computed).
-		1: returns error bounds
-		0: not computed
+       error bound = EPS * One-norm / rcond(e|v)
+       (reciprocal condition numbers for eigenvalues or eigenvectors must be computed).
+    1: returns error bounds
+    0: not computed
  scale:      specifies whether or not it diagonaly scales the entry matrix
-	     (scale details returned in HASH : 'scale')
-		1: scales
-		0: Doesn't scale (default)
+       (scale details returned in HASH : 'scale')
+    1: scales
+    0: Doesn't scale (default)
  permute:    specifies whether or not it permutes row and columns
-	     (permute details returned in HASH{'balance'})
-		1: permutes
-		0: Doesn't permute (default)
+       (permute details returned in HASH{'balance'})
+    1: permutes
+    0: Doesn't permute (default)
  schur:      specifies whether or not it returns the Schur form (returned in HASH{'schur'})
-		1: returns Schur form
-		0: not returned
+    1: returns Schur form
+    0: not returned
  Returned values:
-	    eigenvalues (SCALAR CONTEXT),
-	    left eigenvectors if requested,
-	    right eigenvectors if requested,
-	    HASH{'norm'}:
-		One-norm of the matrix
-	    HASH{'info'}:
-		Info: if > 0, the QR algorithm failed to compute all the eigenvalues
-		(see syevx for further details)
+      eigenvalues (SCALAR CONTEXT),
+      left eigenvectors if requested,
+      right eigenvectors if requested,
+      HASH{'norm'}:
+    One-norm of the matrix
+      HASH{'info'}:
+    Info: if > 0, the QR algorithm failed to compute all the eigenvalues
+    (see syevx for further details)
 
 =for example
 
@@ -2632,36 +2632,36 @@ my %vector2jobvl = (left => 1, all => 1);
 my %vector2jobvr = (right => 1, all => 1);
 *meigenx = \&PDL::meigenx;
 sub PDL::meigenx {
-	&_square;
-	my($m, %opt) = @_;
-	my (%result);
-	$m = $m->copy;
-	$_ = null for my ($info, $ilo, $ihi, $abnrm, $scale, $rconde, $rcondv);
-	$_ = $m->_similar_null for my ($vl, $vr);
-	my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
-	my $balanc = ($opt{'scale'}?2:0) | ($opt{permute}?1:0);
-	my $jobvl = $vector2jobvl{$opt{vector}} || $opt{rcondition} ? 1 : 0;
-	my $jobvr = $vector2jobvr{$opt{vector}} || $opt{rcondition} ? 1 : 0;
-	my $sense = $rcondition2sense{$opt{rcondition}} || 0;
-	$m->t->_call_method('geevx', $jobvl, $jobvr, $balanc, $sense, @w, $vl, $vr, $ilo, $ihi, $scale, $abnrm, $rconde, $rcondv, $info);
-	(my $w, $vl, $vr) = _eigen_extract($jobvl, $jobvr, $vl, $vr, @w);
-	if ($info){
-		laerror("meigenx: The QR algorithm failed to converge");
-		print "Returning converged eigenvalues\n" if $_laerror;
-	}
-	$result{'schur'} = $m if $opt{'schur'};
-	$result{'balance'} = cat $ilo, $ihi if $opt{'permute'};
-	@result{qw(info norm)} = ($info, $abnrm);
-	$result{'scale'} =  $scale if $opt{'scale'};
-	if ($sense & 2) {
-		$result{'rcondv'} =  $rcondv;
-		$result{'verror'} = (lamch(0)* $abnrm /$rcondv  ) if $opt{'error'};
-	}
-	if ($sense & 1) {
-		$result{'rconde'} =  $rconde;
-		$result{'eerror'} = (lamch(0)* $abnrm /$rconde  ) if $opt{'error'};
-	}
-	($w, ($vector2jobvl{$opt{vector}}?$vl->t->sever:()), ($vector2jobvr{$opt{vector}}?$vr->t->sever:()), %result);
+  &_square;
+  my($m, %opt) = @_;
+  my (%result);
+  $m = $m->copy;
+  $_ = null for my ($info, $ilo, $ihi, $abnrm, $scale, $rconde, $rcondv);
+  $_ = $m->_similar_null for my ($vl, $vr);
+  my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
+  my $balanc = ($opt{'scale'}?2:0) | ($opt{permute}?1:0);
+  my $jobvl = $vector2jobvl{$opt{vector}} || $opt{rcondition} ? 1 : 0;
+  my $jobvr = $vector2jobvr{$opt{vector}} || $opt{rcondition} ? 1 : 0;
+  my $sense = $rcondition2sense{$opt{rcondition}} || 0;
+  $m->t->_call_method('geevx', $jobvl, $jobvr, $balanc, $sense, @w, $vl, $vr, $ilo, $ihi, $scale, $abnrm, $rconde, $rcondv, $info);
+  (my $w, $vl, $vr) = _eigen_extract($jobvl, $jobvr, $vl, $vr, @w);
+  if ($info){
+    laerror("meigenx: The QR algorithm failed to converge");
+    print "Returning converged eigenvalues\n" if $_laerror;
+  }
+  $result{'schur'} = $m if $opt{'schur'};
+  $result{'balance'} = cat $ilo, $ihi if $opt{'permute'};
+  @result{qw(info norm)} = ($info, $abnrm);
+  $result{'scale'} =  $scale if $opt{'scale'};
+  if ($sense & 2) {
+    $result{'rcondv'} =  $rcondv;
+    $result{'verror'} = (lamch(0)* $abnrm /$rcondv  ) if $opt{'error'};
+  }
+  if ($sense & 1) {
+    $result{'rconde'} =  $rconde;
+    $result{'eerror'} = (lamch(0)* $abnrm /$rconde  ) if $opt{'error'};
+  }
+  ($w, ($vector2jobvl{$opt{vector}}?$vl->t->sever:()), ($vector2jobvr{$opt{vector}}?$vr->t->sever:()), %result);
 }
 
 =head2 mgeigen
@@ -2691,17 +2691,17 @@ Works on transposed arrays.
 
 *mgeigen = \&PDL::mgeigen;
 sub PDL::mgeigen {
-	&_square_same;
-	&_same_dims;
-	my ($a,$b,$jobvl,$jobvr) = @_;
-	$_ = $_->new_or_inplace->t for $a, $b;
-	$_ = null for my ($info, $sdim);
-	my @w = map $a->_similar_null, $a->_is_complex ? 1 : 1..2;
-	$_ = $a->_similar_null for my ($vl, $vr, $beta);
-	$a->_call_method('ggev', $jobvl, $jobvr, $b, @w, $beta, $vl, $vr, $info);
-	_error($info, "mgeigen: Can't compute eigenvalues/vectors for PDL(s) %s");
-	(my $w, $vl, $vr) = _eigen_extract($jobvl, $jobvr, $vl, $vr, @w);
-	($w, $beta, ($jobvl?$vl->t->sever:()), ($jobvr?$vr->t->sever:()), $info);
+  &_square_same;
+  &_same_dims;
+  my ($a,$b,$jobvl,$jobvr) = @_;
+  $_ = $_->new_or_inplace->t for $a, $b;
+  $_ = null for my ($info, $sdim);
+  my @w = map $a->_similar_null, $a->_is_complex ? 1 : 1..2;
+  $_ = $a->_similar_null for my ($vl, $vr, $beta);
+  $a->_call_method('ggev', $jobvl, $jobvr, $b, @w, $beta, $vl, $vr, $info);
+  _error($info, "mgeigen: Can't compute eigenvalues/vectors for PDL(s) %s");
+  (my $w, $vl, $vr) = _eigen_extract($jobvl, $jobvr, $vl, $vr, @w);
+  ($w, $beta, ($jobvl?$vl->t->sever:()), ($jobvr?$vr->t->sever:()), $info);
 }
 
 =head2 mgeigenx
@@ -2720,42 +2720,42 @@ Works on transposed arrays.
  (PDL(alpha), PDL(beta), PDL(lv),  PDL(rv), HASH(result) ) = mgeigenx(PDL(a), PDL(b), HASH(options))
  where options are:
  vector:     eigenvectors to compute
-		'left':  computes left eigenvectors
-		'right': computes right eigenvectors
-		'all':   computes left and right eigenvectors
-		 0:     doesn't compute (default)
+    'left':  computes left eigenvectors
+    'right': computes right eigenvectors
+    'all':   computes left and right eigenvectors
+     0:     doesn't compute (default)
  rcondition: reciprocal condition numbers to compute (returned in HASH{'rconde'} for eigenvalues and HASH{'rcondv'} for eigenvectors)
-		'value':  computes reciprocal condition numbers for eigenvalues
-		'vector': computes reciprocal condition numbers for eigenvectors
-		'all':    computes reciprocal condition numbers for eigenvalues and eigenvectors
-		 0:      doesn't compute (default)
+    'value':  computes reciprocal condition numbers for eigenvalues
+    'vector': computes reciprocal condition numbers for eigenvectors
+    'all':    computes reciprocal condition numbers for eigenvalues and eigenvectors
+     0:      doesn't compute (default)
  error:      specifies whether or not it computes the error bounds (returned in HASH{'eerror'} and HASH{'verror'})
-	     error bound = EPS * sqrt(one-norm(a)**2 + one-norm(b)**2) / rcond(e|v)
-	     (reciprocal condition numbers for eigenvalues or eigenvectors must be computed).
-		1: returns error bounds
-		0: not computed
+       error bound = EPS * sqrt(one-norm(a)**2 + one-norm(b)**2) / rcond(e|v)
+       (reciprocal condition numbers for eigenvalues or eigenvectors must be computed).
+    1: returns error bounds
+    0: not computed
  scale:      specifies whether or not it diagonaly scales the entry matrix
-	     (scale details returned in HASH : 'lscale' and 'rscale')
-		1: scales
-		0: doesn't scale (default)
+       (scale details returned in HASH : 'lscale' and 'rscale')
+    1: scales
+    0: doesn't scale (default)
  permute:    specifies whether or not it permutes row and columns
-	     (permute details returned in HASH{'balance'})
-		1: permutes
-		0: Doesn't permute (default)
+       (permute details returned in HASH{'balance'})
+    1: permutes
+    0: Doesn't permute (default)
  schur:      specifies whether or not it returns the Schur forms (returned in HASH{'aschur'} and HASH{'bschur'})
-	     (right or left eigenvectors must be computed).
-		1: returns Schur forms
-		0: not returned
+       (right or left eigenvectors must be computed).
+    1: returns Schur forms
+    0: not returned
  Returned values:
-	    alpha,
-	    beta,
-	    left eigenvectors if requested,
-	    right eigenvectors if requested,
-	    HASH{'anorm'}, HASH{'bnorm'}:
-		One-norm of the matrix A and B
-	    HASH{'info'}:
-		Info: if > 0, the QR algorithm failed to compute all the eigenvalues
-		(see syevx for further details)
+      alpha,
+      beta,
+      left eigenvectors if requested,
+      right eigenvectors if requested,
+      HASH{'anorm'}, HASH{'bnorm'}:
+    One-norm of the matrix A and B
+      HASH{'info'}:
+    Info: if > 0, the QR algorithm failed to compute all the eigenvalues
+    (see syevx for further details)
 
 =for example
 
@@ -2775,43 +2775,43 @@ Works on transposed arrays.
 
 *mgeigenx = \&PDL::mgeigenx;
 sub PDL::mgeigenx {
-	&_square_same;
-	my $di = $_[0]->dims_internal;
-	my ($a, $b, %opt) = @_;
-	my @adims = $a->dims;
-	$_ = $_->new_or_inplace->t for $a, $b;
-	my (%result);
-	$_ = $a->_similar_null for my ($vl, $vr, $beta);
-	my @w = map $a->_similar_null, $a->_is_complex ? 1 : 1..2;
-	$_ = null for my ($rconde, $rcondv, $info, $ilo, $ihi, $rscale, $lscale, $abnrm, $bbnrm);
-	my $jobvl = $vector2jobvl{$opt{vector}} || $opt{rcondition} ? 1 : 0;
-	my $jobvr = $vector2jobvr{$opt{vector}} || $opt{rcondition} ? 1 : 0;
-	my $sense = $rcondition2sense{$opt{rcondition}} || 0;
-	my $balanc = ($opt{scale}?2:0) | ($opt{permute}?1:0);
-	$a->_call_method('ggevx', $balanc, $jobvl, $jobvr, $sense, $b, @w,
-	  $beta, $vl, $vr, $ilo, $ihi, $lscale, $rscale,
-	  $abnrm, $bbnrm, $rconde, $rcondv, $info);
-	(my $w, $vl, $vr) = _eigen_extract($jobvl, $jobvr, $vl, $vr, @w);
-	if ($info > 0 && $info < $adims[$di+1]) {
-		laerror("mgeigenx: The QZ algorithm failed to converge");
-		print "Returning converged eigenvalues\n" if $_laerror;
-	} elsif ($info) {
-		laerror("mgeigenx: Error from hgeqz or tgevc");
-	}
-	@result{qw(aschur bschur)} = map $_->t, $a, $b if $opt{schur};
-	$result{balance} = cat $ilo, $ihi if $opt{permute};
-	@result{qw(info anorm bnorm)} = ($info, $abnrm, $bbnrm);
-	@result{qw(lscale rscale)} =  ($lscale, $rscale) if $opt{scale};
-	# Doesn't use lacpy2 =(sqrt **2 , **2) without unnecessary overflow
-	if ($sense & 2) {
-		$result{rcondv} =  $rcondv;
-		$result{verror} = lamch(0) * sqrt($abnrm->pow(2) + $bbnrm->pow(2)) /$rcondv if $opt{error};
-	}
-	if ($sense & 1) {
-		$result{rconde} =  $rconde;
-		$result{eerror} = lamch(0) * sqrt($abnrm->pow(2) + $bbnrm->pow(2)) /$rconde if $opt{error};
-	}
-	($w, $beta, ($vector2jobvl{$opt{vector}}?$vl->t:()), ($vector2jobvr{$opt{vector}}?$vr->t:()), %result);
+  &_square_same;
+  my $di = $_[0]->dims_internal;
+  my ($a, $b, %opt) = @_;
+  my @adims = $a->dims;
+  $_ = $_->new_or_inplace->t for $a, $b;
+  my (%result);
+  $_ = $a->_similar_null for my ($vl, $vr, $beta);
+  my @w = map $a->_similar_null, $a->_is_complex ? 1 : 1..2;
+  $_ = null for my ($rconde, $rcondv, $info, $ilo, $ihi, $rscale, $lscale, $abnrm, $bbnrm);
+  my $jobvl = $vector2jobvl{$opt{vector}} || $opt{rcondition} ? 1 : 0;
+  my $jobvr = $vector2jobvr{$opt{vector}} || $opt{rcondition} ? 1 : 0;
+  my $sense = $rcondition2sense{$opt{rcondition}} || 0;
+  my $balanc = ($opt{scale}?2:0) | ($opt{permute}?1:0);
+  $a->_call_method('ggevx', $balanc, $jobvl, $jobvr, $sense, $b, @w,
+    $beta, $vl, $vr, $ilo, $ihi, $lscale, $rscale,
+    $abnrm, $bbnrm, $rconde, $rcondv, $info);
+  (my $w, $vl, $vr) = _eigen_extract($jobvl, $jobvr, $vl, $vr, @w);
+  if ($info > 0 && $info < $adims[$di+1]) {
+    laerror("mgeigenx: The QZ algorithm failed to converge");
+    print "Returning converged eigenvalues\n" if $_laerror;
+  } elsif ($info) {
+    laerror("mgeigenx: Error from hgeqz or tgevc");
+  }
+  @result{qw(aschur bschur)} = map $_->t, $a, $b if $opt{schur};
+  $result{balance} = cat $ilo, $ihi if $opt{permute};
+  @result{qw(info anorm bnorm)} = ($info, $abnrm, $bbnrm);
+  @result{qw(lscale rscale)} =  ($lscale, $rscale) if $opt{scale};
+  # Doesn't use lacpy2 =(sqrt **2 , **2) without unnecessary overflow
+  if ($sense & 2) {
+    $result{rcondv} =  $rcondv;
+    $result{verror} = lamch(0) * sqrt($abnrm->pow(2) + $bbnrm->pow(2)) /$rcondv if $opt{error};
+  }
+  if ($sense & 1) {
+    $result{rconde} =  $rconde;
+    $result{eerror} = lamch(0) * sqrt($abnrm->pow(2) + $bbnrm->pow(2)) /$rconde if $opt{error};
+  }
+  ($w, $beta, ($vector2jobvl{$opt{vector}}?$vl->t:()), ($vector2jobvr{$opt{vector}}?$vr->t:()), %result);
 }
 
 =head2 msymeigen
@@ -2844,14 +2844,14 @@ Works on transposed array(s).
 
 *msymeigen = \&PDL::msymeigen;
 sub PDL::msymeigen {
-	&_square;
-	my($m, $upper, $jobv, $method) = @_;
-	my ($w, $info) = (null, null);
-	$method //= [ 'syevd', 'cheevd' ];
-	$m = $m->copy unless ($m->is_inplace(0) and $jobv);
-	$m->t->_call_method($method, $jobv, $upper, $w, $info);
-	_error($info, "msymeigen: The algorithm failed to converge for PDL(s) %s");
-	!wantarray ? $w : ($w, ($jobv?$m:()), $info);
+  &_square;
+  my($m, $upper, $jobv, $method) = @_;
+  my ($w, $info) = (null, null);
+  $method //= [ 'syevd', 'cheevd' ];
+  $m = $m->copy unless ($m->is_inplace(0) and $jobv);
+  $m->t->_call_method($method, $jobv, $upper, $w, $info);
+  _error($info, "msymeigen: The algorithm failed to converge for PDL(s) %s");
+  !wantarray ? $w : ($w, ($jobv?$m:()), $info);
 }
 
 =head2 msymeigenx
@@ -2871,24 +2871,24 @@ or L<cheevr|PDL::LinearAlgebra::Complex/cheevr> for complex. Works on transposed
  vector : FALSE = 0 | TRUE = 1, default = 0
  where options are:
  range_type:    method for selecting eigenvalues
-		indice:  range of indices
-		interval: range of values
-		0: find all eigenvalues and optionally all vectors
- range:		PDL(2), lower and upper bounds interval or smallest and largest indices
-		1<=range<=N for indice
+    indice:  range of indices
+    interval: range of values
+    0: find all eigenvalues and optionally all vectors
+ range:    PDL(2), lower and upper bounds interval or smallest and largest indices
+    1<=range<=N for indice
  abstol:        specifies error tolerance for eigenvalues
  method:        specifies which method to use (see Lapack for further details)
-		'syevx' (default)
-		'syevr'
-		'cheevx' (default)
-		'cheevr'
+    'syevx' (default)
+    'syevr'
+    'cheevx' (default)
+    'cheevr'
  Returned values:
-		eigenvalues (SCALAR CONTEXT),
-		eigenvectors if requested,
-		total number of eigenvalues found (n),
-		info
-		issupz or ifail (support) according to method used and returned info,
-		for (sy|che)evx returns support only if info != 0
+    eigenvalues (SCALAR CONTEXT),
+    eigenvectors if requested,
+    total number of eigenvalues found (n),
+    info
+    issupz or ifail (support) according to method used and returned info,
+    for (sy|che)evx returns support only if info != 0
 
 
 =for example
@@ -2899,9 +2899,9 @@ or L<cheevr|PDL::LinearAlgebra::Complex/cheevr> for complex. Works on transposed
  my $range = cat pdl(0),$overflow;
  my $abstol = pdl(1.e-5);
  my %options = (range_type=>'interval',
-		range => $range,
-		abstol => $abstol,
-		method=>'syevd');
+    range => $range,
+    abstol => $abstol,
+    method=>'syevd');
  my ( $eigenvalues, $eigenvectors, $n, $isuppz )  = msymeigenx($a,0,1, %options);
 
 =cut
@@ -2910,54 +2910,54 @@ or L<cheevr|PDL::LinearAlgebra::Complex/cheevr> for complex. Works on transposed
 
 my %range_type2range = (interval => 1, indice => 2);
 sub PDL::msymeigenx {
-	&_square;
-	my $di = $_[0]->dims_internal;
-	my $slice_prefix = ',' x $di;
-	my($m, $upper, $jobz, %opt) = @_;
-	my(@dims) = $m->dims;
-	my $range = $range_type2range{$opt{range_type}} || 0;
-	if ((ref $opt{range}) ne 'PDL'){
-		$opt{range} = pdl([0,0]);
-		$range = 0;
-	}
-	elsif ($range == 2){
-		barf "msymeigenx: Indices must be > 0" unless $opt{range}->(0) > 0;
-		barf "msymeigenx: Indices must be <= $dims[$di+1]" unless $opt{range}->(1) <= $dims[$di+1];
-	}
-	elsif ($range == 1){
-		barf "msymeigenx: Interval limits must be different" unless ($opt{range}->(0) !=  $opt{range}->(1));
-	}
-	$_ = null for my ($w, $n, $support, $info);
-	my $z = $m->_similar_null;
-	if (!defined $opt{'abstol'})
-	{
-		my $unfl = lamch(1);
-		$unfl->labad(lamch(9));
-		$opt{'abstol'} = $unfl + $unfl;
-	}
-	my $method = $opt{'method'} || ['syevx','cheevx'];
-	$upper = $upper ? 0 : 1;
-	$m = $m->copy;
-	$m->_call_method($method, $jobz, $range, $upper, $opt{range}->(0), $opt{range}->(1),$opt{range}->(0),$opt{range}->(1),
-		 $opt{'abstol'}, $n, $w, $z , $support, $info);
-	if ($info){
-		laerror("msymeigenx: The algorithm failed to converge.");
-		print ("See support for details.\n") if $_laerror;
-	}
-	if ($jobz){
-		return ($w, $z->t->sever, $n, $info, $support) if $info;
-		return (undef,undef,$n,$info,$method =~ qr/evr/?$support:()) if $n == 0;
-		return ($w(:$n-1)->sever, $z->t->slice("$slice_prefix:@{[$n->sclr-1]}")->sever, $n, $info, $method =~ qr/evr/?$support:());
-	}
-	else{
-		return $w if !wantarray;
-		if ($info){
-			($w, $n, $info, $support);
-		}
-		else{
-			($w(:$n-1)->sever, $n, $info, $method =~ qr/evr/?$support:());
-		}
-	}
+  &_square;
+  my $di = $_[0]->dims_internal;
+  my $slice_prefix = ',' x $di;
+  my($m, $upper, $jobz, %opt) = @_;
+  my(@dims) = $m->dims;
+  my $range = $range_type2range{$opt{range_type}} || 0;
+  if ((ref $opt{range}) ne 'PDL'){
+    $opt{range} = pdl([0,0]);
+    $range = 0;
+  }
+  elsif ($range == 2){
+    barf "msymeigenx: Indices must be > 0" unless $opt{range}->(0) > 0;
+    barf "msymeigenx: Indices must be <= $dims[$di+1]" unless $opt{range}->(1) <= $dims[$di+1];
+  }
+  elsif ($range == 1){
+    barf "msymeigenx: Interval limits must be different" unless ($opt{range}->(0) !=  $opt{range}->(1));
+  }
+  $_ = null for my ($w, $n, $support, $info);
+  my $z = $m->_similar_null;
+  if (!defined $opt{'abstol'})
+  {
+    my $unfl = lamch(1);
+    $unfl->labad(lamch(9));
+    $opt{'abstol'} = $unfl + $unfl;
+  }
+  my $method = $opt{'method'} || ['syevx','cheevx'];
+  $upper = $upper ? 0 : 1;
+  $m = $m->copy;
+  $m->_call_method($method, $jobz, $range, $upper, $opt{range}->(0), $opt{range}->(1),$opt{range}->(0),$opt{range}->(1),
+     $opt{'abstol'}, $n, $w, $z , $support, $info);
+  if ($info){
+    laerror("msymeigenx: The algorithm failed to converge.");
+    print ("See support for details.\n") if $_laerror;
+  }
+  if ($jobz){
+    return ($w, $z->t->sever, $n, $info, $support) if $info;
+    return (undef,undef,$n,$info,$method =~ qr/evr/?$support:()) if $n == 0;
+    return ($w(:$n-1)->sever, $z->t->slice("$slice_prefix:@{[$n->sclr-1]}")->sever, $n, $info, $method =~ qr/evr/?$support:());
+  }
+  else{
+    return $w if !wantarray;
+    if ($info){
+      ($w, $n, $info, $support);
+    }
+    else{
+      ($w(:$n-1)->sever, $n, $info, $method =~ qr/evr/?$support:());
+    }
+  }
 }
 
 =head2 msymgeigen
@@ -2978,10 +2978,10 @@ Works on transposed array(s).
  uplo : UPPER  = 0 | LOWER = 1, default = 0
  vector : FALSE = 0 | TRUE = 1, default = 0
  type :
-	1: A * x = (lambda) * B * x
-	2: A * B * x = (lambda) * x
-	3: B * A * x = (lambda) * x
-	default = 1
+  1: A * x = (lambda) * B * x
+  2: A * B * x = (lambda) * x
+  3: B * A * x = (lambda) * x
+  default = 1
  method : 'sygv' | 'sygvd' for real or  ,'chegv' | 'chegvd' for complex,  default = 'sygvd' | 'chegvd'
 
 =for example
@@ -2996,17 +2996,17 @@ Works on transposed array(s).
 
 *msymgeigen = \&PDL::msymgeigen;
 sub PDL::msymgeigen {
-	&_square_same;
-	&_same_dims;
-	my($a, $b, $upper, $jobv, $type, $method) = @_;
-	$type ||= 1;
-	$method //= [ 'sygvd', 'chegvd' ];
-	$upper = 1-$upper;
-	$a = $a->copy;
-	$b = $b->copy;
-	$a->_call_method($method, $type, $jobv, $upper, $b, my $w = null, my $info = null);
-	_error($info, "msymgeigen: Can't compute eigenvalues/vectors: matrix (PDL(s) %s) is/are not positive definite or the algorithm failed to converge");
-	!wantarray ? $w : ($w, $jobv?$a->t->sever:(), $info);
+  &_square_same;
+  &_same_dims;
+  my($a, $b, $upper, $jobv, $type, $method) = @_;
+  $type ||= 1;
+  $method //= [ 'sygvd', 'chegvd' ];
+  $upper = 1-$upper;
+  $a = $a->copy;
+  $b = $b->copy;
+  $a->_call_method($method, $type, $jobv, $upper, $b, my $w = null, my $info = null);
+  _error($info, "msymgeigen: Can't compute eigenvalues/vectors: matrix (PDL(s) %s) is/are not positive definite or the algorithm failed to converge");
+  !wantarray ? $w : ($w, $jobv?$a->t->sever:(), $info);
 }
 
 =head2 msymgeigenx
@@ -3026,23 +3026,23 @@ from Lapack. Works on transposed arrays.
  vector : FALSE = 0 | TRUE = 1, default = 0
  where options are:
  type :         Specifies the problem type to be solved
-		1: A * x = (lambda) * B * x
-		2: A * B * x = (lambda) * x
-		3: B * A * x = (lambda) * x
-		default = 1
+    1: A * x = (lambda) * B * x
+    2: A * B * x = (lambda) * x
+    3: B * A * x = (lambda) * x
+    default = 1
  range_type:    method for selecting eigenvalues
-		indice:  range of indices
-		interval: range of values
-		0: find all eigenvalues and optionally all vectors
- range:		PDL(2), lower and upper bounds interval or smallest and largest indices
-		1<=range<=N for indice
+    indice:  range of indices
+    interval: range of values
+    0: find all eigenvalues and optionally all vectors
+ range:    PDL(2), lower and upper bounds interval or smallest and largest indices
+    1<=range<=N for indice
  abstol:        specifies error tolerance for eigenvalues
  Returned values:
-		eigenvalues (SCALAR CONTEXT),
-		eigenvectors if requested,
-		total number of eigenvalues found (n),
-		info
-		ifail according to returned info (support).
+    eigenvalues (SCALAR CONTEXT),
+    eigenvectors if requested,
+    total number of eigenvalues found (n),
+    info
+    ifail according to returned info (support).
 
 =for example
 
@@ -3054,9 +3054,9 @@ from Lapack. Works on transposed arrays.
  my $range = cat pdl(0),$overflow;
  my $abstol = pdl(1.e-5);
  my %options = (range_type=>'interval',
-		range => $range,
-		abstol => $abstol,
-		type => 1);
+    range => $range,
+    abstol => $abstol,
+    type => 1);
  my ( $eigenvalues, $eigenvectors, $n, $isuppz )  = msymgeigenx($a, $b, 0,1, %options);
 
 =cut
@@ -3064,40 +3064,40 @@ from Lapack. Works on transposed arrays.
 *msymgeigenx = \&PDL::msymgeigenx;
 
 sub PDL::msymgeigenx {
-	&_square_same;
-	my $di = $_[0]->dims_internal;
-	my($a, $b, $upper, $jobv, %opt) = @_;
-	my(@adims) = $a->dims;
-	my $range = $range_type2range{$opt{range_type}} || 0;
-	if (!UNIVERSAL::isa($opt{range},'PDL')){
-		$opt{range} = pdl([0,0]);
-		$range = 0;
-	}
-	$opt{type} //= 1;
-	$_ = null for my ($w, $n, $support, $info);
-	if (!defined $opt{'abstol'}){
-		my $unfl = lamch(1);
-		my $ovfl = lamch(9);
-		$unfl->labad($ovfl);
-		$opt{'abstol'} = $unfl + $unfl;
-	}
-	my $z = $a->_similar_null;
-	$upper = $upper ? 0 : 1;
-	$a = $a->copy;
-	$b = $b->copy;
-	$a->_call_method(['sygvx','chegvx'], $opt{type}, $jobv, $range, $upper,
-	  $b, $opt{range}->(0), $opt{range}->(1),$opt{range}->(0),$opt{range}->(1),
-	  $opt{'abstol'}, $n, $w, $z ,$support, $info);
-	if ( ($info > 0) && ($info < $adims[$di+1])){
-		laerror("msymgeigenx: The algorithm failed to converge");
-		print("see support for details\n") if $_laerror;
-	}
-	elsif($info){
-		$info = $info - $adims[$di+1] - 1;
-		barf("msymgeigenx: The leading minor of order $info of B is not positive definite\n");
-	}
-	return $w if !wantarray;
-	($w, $jobv?$z->t->sever:(), $n, $info, $info?$support:());
+  &_square_same;
+  my $di = $_[0]->dims_internal;
+  my($a, $b, $upper, $jobv, %opt) = @_;
+  my(@adims) = $a->dims;
+  my $range = $range_type2range{$opt{range_type}} || 0;
+  if (!UNIVERSAL::isa($opt{range},'PDL')){
+    $opt{range} = pdl([0,0]);
+    $range = 0;
+  }
+  $opt{type} //= 1;
+  $_ = null for my ($w, $n, $support, $info);
+  if (!defined $opt{'abstol'}){
+    my $unfl = lamch(1);
+    my $ovfl = lamch(9);
+    $unfl->labad($ovfl);
+    $opt{'abstol'} = $unfl + $unfl;
+  }
+  my $z = $a->_similar_null;
+  $upper = $upper ? 0 : 1;
+  $a = $a->copy;
+  $b = $b->copy;
+  $a->_call_method(['sygvx','chegvx'], $opt{type}, $jobv, $range, $upper,
+    $b, $opt{range}->(0), $opt{range}->(1),$opt{range}->(0),$opt{range}->(1),
+    $opt{'abstol'}, $n, $w, $z ,$support, $info);
+  if ( ($info > 0) && ($info < $adims[$di+1])){
+    laerror("msymgeigenx: The algorithm failed to converge");
+    print("see support for details\n") if $_laerror;
+  }
+  elsif($info){
+    $info = $info - $adims[$di+1] - 1;
+    barf("msymgeigenx: The leading minor of order $info of B is not positive definite\n");
+  }
+  return $w if !wantarray;
+  ($w, $jobv?$z->t->sever:(), $n, $info, $info?$support:());
 }
 
 
@@ -3116,9 +3116,9 @@ Uses L<gesdd|PDL::LinearAlgebra::Real/gesdd> or L<cgesdd|PDL::LinearAlgebra::Com
 
  (PDL(U), (PDL(s), PDL(V)), PDL(info)) = mdsvd(PDL, SCALAR(job))
  job :  0 = computes only singular values
-	1 = computes full SVD (square U and V)
-	2 = computes SVD (singular values, right and left singular vectors)
-	default = 1
+  1 = computes full SVD (square U and V)
+  2 = computes SVD (singular values, right and left singular vectors)
+  default = 1
 
 =for example
 
@@ -3129,16 +3129,16 @@ Uses L<gesdd|PDL::LinearAlgebra::Real/gesdd> or L<cgesdd|PDL::LinearAlgebra::Com
 
 *mdsvd = \&PDL::mdsvd;
 sub PDL::mdsvd {
-	my $di = $_[0]->dims_internal;
-	my($m, $jobz) = @_;
-	my(@dims) = $m->dims;
-	$jobz = !wantarray ? 0 : $jobz // 1;
-	$m = $m->copy;
-	$_ = $m->_similar_null for my ($u, $v);
-	$m->_call_method('gesdd', $jobz, my $s = null, $u, $v, my $info = null);
-	_error($info, "mdsvd: Matrix (PDL(s) %s) is/are singular");
-	return ($u, $s, $v, $info) if $jobz;
-	wantarray ? ($s, $info) : $s;
+  my $di = $_[0]->dims_internal;
+  my($m, $jobz) = @_;
+  my(@dims) = $m->dims;
+  $jobz = !wantarray ? 0 : $jobz // 1;
+  $m = $m->copy;
+  $_ = $m->_similar_null for my ($u, $v);
+  $m->_call_method('gesdd', $jobz, my $s = null, $u, $v, my $info = null);
+  _error($info, "mdsvd: Matrix (PDL(s) %s) is/are singular");
+  return ($u, $s, $v, $info) if $jobz;
+  wantarray ? ($s, $info) : $s;
 }
 
 =head2 msvd
@@ -3157,13 +3157,13 @@ Uses L<gesvd|PDL::LinearAlgebra::Real/gesvd> or L<cgesvd|PDL::LinearAlgebra::Com
 
  ( (PDL(U)), PDL(s), (PDL(V), PDL(info)) = msvd(PDL, SCALAR(jobu), SCALAR(jobv))
  jobu : 0 = Doesn't compute U
-	1 = computes full SVD (square U)
-	2 = computes right singular vectors
-	default = 1
+  1 = computes full SVD (square U)
+  2 = computes right singular vectors
+  default = 1
  jobv : 0 = Doesn't compute V
-	1 = computes full SVD (square V)
-	2 = computes left singular vectors
-	default = 1
+  1 = computes full SVD (square V)
+  2 = computes left singular vectors
+  default = 1
 
 =for example
 
@@ -3174,14 +3174,14 @@ Uses L<gesvd|PDL::LinearAlgebra::Real/gesvd> or L<cgesvd|PDL::LinearAlgebra::Com
 
 *msvd = \&PDL::msvd;
 sub PDL::msvd {
-	my ($m, $jobu, $jobv) = @_;
-	$jobu = !wantarray ? 0 : $jobu // 1;
-	$jobv = !wantarray ? 0 : $jobv // 1;
-	$m = $m->copy;
-	$_ = $m->_similar_null for my ($u, $v);
-	$m->_call_method('gesvd', $jobv, $jobu,my $s = null, $u, $v, my $info = null);
-	_error($info, "msvd: Matrix (PDL(s) %s) is/are singular");
-	wantarray ? ($jobu?$u:(), $s, $jobv?$v:(), $info) : $s;
+  my ($m, $jobu, $jobv) = @_;
+  $jobu = !wantarray ? 0 : $jobu // 1;
+  $jobv = !wantarray ? 0 : $jobv // 1;
+  $m = $m->copy;
+  $_ = $m->_similar_null for my ($u, $v);
+  $m->_call_method('gesvd', $jobv, $jobu,my $s = null, $u, $v, my $info = null);
+  _error($info, "msvd: Matrix (PDL(s) %s) is/are singular");
+  wantarray ? ($jobu?$u:(), $s, $jobv?$v:(), $info) : $s;
 }
 
 =head2 mgsvd
@@ -3208,9 +3208,9 @@ L<cggsvd|PDL::LinearAlgebra::Complex/cggsvd> from Lapack. Works on transposed ar
  X:    whether or not computes X (boolean, returned in HASH{'X'})
  all:  whether or not computes all the above.
  Returned value:
-	 sa,sb		: singular value pairs of A and B (generalized singular values = sa/sb)
-	 $ret{'rank'}   : effective numerical rank of (A',B')'
-	 $ret{'info'}   : info from (c)ggsvd
+   sa,sb    : singular value pairs of A and B (generalized singular values = sa/sb)
+   $ret{'rank'}   : effective numerical rank of (A',B')'
+   $ret{'info'}   : info from (c)ggsvd
 
 =for example
 
@@ -3223,94 +3223,94 @@ L<cggsvd|PDL::LinearAlgebra::Complex/cggsvd> from Lapack. Works on transposed ar
 my @gsvd_opts = qw(V U Q D1 D2 0R R X);
 *mgsvd = \&PDL::mgsvd;
 sub PDL::mgsvd {
-	&_matrices_matchcolumns;
-	my $di = $_[0]->dims_internal;
-	my $slice_prefix = ',' x $di;
-	my @diag_args = ($di, $di+1);
-	my($a, $b, %opt) = @_;
-	my(@adims) = $a->dims;
-	my(@bdims) = $b->dims;
-	@opt{@gsvd_opts} = (1) x @gsvd_opts if $opt{all};
-	my $type = $a->type;
-	my $jobqx = ($opt{Q} || $opt{X}) ? 1 : 0;
-	$a = $a->copy;
-	$b = $b->t->copy;
-	$_ = null for my ($k, $l, $alpha, $beta, $iwork, $info);
-	$_ = $a->_similar_null for my ($U, $V, $Q);
-	$a->t->_call_method('ggsvd', $opt{U}, $opt{V}, $jobqx, $b, $k, $l, $alpha, $beta, $U, $V, $Q, $iwork, $info);
-	laerror("mgsvd: The Jacobi procedure fails to converge") if $info;
-	my %ret = (rank=>$k + $l, info=>$info);
-	warn "mgsvd: Effective rank of 0 in mgsvd" if (!$ret{rank} and $_laerror);
-	if (%opt) {
-		$Q = $Q->t->sever if $jobqx;
-		if (($adims[$di+1] - $k - $l)  < 0  && $ret{rank}){
-			if ( $opt{'0R'} || $opt{R} || $opt{X}){
-				$a->reshape((map $a->dim($_-1), 1..$di), $adims[$di], ($k + $l));
-				# Slice $a ???  => always square ??
-				$a->slice("$slice_prefix@{[$adims[$di] - ($k+$l-$adims[$di+1])]} : , $adims[$di+1]:") .=
-						$b->slice("$slice_prefix@{[$adims[$di+1]-$k]}:@{[$l-1]},@[[$adims[$di]+$adims[$di+1]-$k - $l]}:@{[$adims[$di]-1]}")->t;
-				$ret{'0R'} = $a if $opt{'0R'};
-			}
-			if ($opt{'D1'}){
-				my $D1 = zeroes($type, $adims[$di+1], $adims[$di+1]);
-				$D1->diagonal(0,1) .= $alpha(:($adims[$di+1]-1));
-				$D1 = $D1->t->reshape($adims[$di+1] , ($k+$l))->t->sever;
-				$ret{'D1'} = $D1;
-			}
-		}
-		elsif ($ret{rank}){
-			if ( $opt{'0R'} || $opt{R} || $opt{X}){
-				$a->reshape((map $a->dim($_-1), 1..$di), $adims[$di], ($k + $l));
-				$ret{'0R'} = $a if $opt{'0R'};
-			}
-			if ($opt{'D1'}){
-				my $D1 = zeroes($type, ($k + $l), ($k + $l));
-				$D1->diagonal(0,1) .=  $alpha(:($k+$l-1));
-				$D1->reshape(($k + $l), $adims[$di+1]);
-				$ret{'D1'} = $D1;
-			}
-		}
-		if ($opt{'D2'} && $ret{rank}){
-			my $work = zeroes($b->type, $l, $l);
-			$work->diagonal(0,1) .=  $beta($k:($k+$l-1));
-			my $D2 = zeroes($b->type, ($k + $l), $bdims[$di+1]);
-			$D2( $k:, :($l-1)  ) .= $work;
-			$ret{'D2'} = $D2;
-		}
-		if ( $ret{rank} && ($opt{X} || $opt{R}) ){
-			my $work = $a->slice("$slice_prefix@{[-($k + $l)]}:");
-			$ret{R} = $work if $opt{R};
-			if ($opt{X}){
-				my $X = $a->_similar(@adims[$di,$di]);
-				$X->diagonal(@diag_args) .= 1 if ($adims[$di] > ($k + $l));
-				$X->slice("$slice_prefix@{[-($k + $l)]}:, @{[-($k + $l)]}:") .= mtriinv($work);
-				$ret{X} = $Q x $X;
-			}
-		}
-		$ret{U} = $U->t->sever if $opt{U};
-		$ret{V} = $V->t->sever if $opt{V};
-		$ret{Q} = $Q if $opt{Q};
-	}
-	$ret{rank} ? return ($alpha($k:($k+$l-1))->sever, $beta($k:($k+$l-1))->sever, %ret ) : (undef, undef, %ret);
+  &_matrices_matchcolumns;
+  my $di = $_[0]->dims_internal;
+  my $slice_prefix = ',' x $di;
+  my @diag_args = ($di, $di+1);
+  my($a, $b, %opt) = @_;
+  my(@adims) = $a->dims;
+  my(@bdims) = $b->dims;
+  @opt{@gsvd_opts} = (1) x @gsvd_opts if $opt{all};
+  my $type = $a->type;
+  my $jobqx = ($opt{Q} || $opt{X}) ? 1 : 0;
+  $a = $a->copy;
+  $b = $b->t->copy;
+  $_ = null for my ($k, $l, $alpha, $beta, $iwork, $info);
+  $_ = $a->_similar_null for my ($U, $V, $Q);
+  $a->t->_call_method('ggsvd', $opt{U}, $opt{V}, $jobqx, $b, $k, $l, $alpha, $beta, $U, $V, $Q, $iwork, $info);
+  laerror("mgsvd: The Jacobi procedure fails to converge") if $info;
+  my %ret = (rank=>$k + $l, info=>$info);
+  warn "mgsvd: Effective rank of 0 in mgsvd" if (!$ret{rank} and $_laerror);
+  if (%opt) {
+    $Q = $Q->t->sever if $jobqx;
+    if (($adims[$di+1] - $k - $l)  < 0  && $ret{rank}){
+      if ( $opt{'0R'} || $opt{R} || $opt{X}){
+        $a->reshape((map $a->dim($_-1), 1..$di), $adims[$di], ($k + $l));
+        # Slice $a ???  => always square ??
+        $a->slice("$slice_prefix@{[$adims[$di] - ($k+$l-$adims[$di+1])]} : , $adims[$di+1]:") .=
+            $b->slice("$slice_prefix@{[$adims[$di+1]-$k]}:@{[$l-1]},@[[$adims[$di]+$adims[$di+1]-$k - $l]}:@{[$adims[$di]-1]}")->t;
+        $ret{'0R'} = $a if $opt{'0R'};
+      }
+      if ($opt{'D1'}){
+        my $D1 = zeroes($type, $adims[$di+1], $adims[$di+1]);
+        $D1->diagonal(0,1) .= $alpha(:($adims[$di+1]-1));
+        $D1 = $D1->t->reshape($adims[$di+1] , ($k+$l))->t->sever;
+        $ret{'D1'} = $D1;
+      }
+    }
+    elsif ($ret{rank}){
+      if ( $opt{'0R'} || $opt{R} || $opt{X}){
+        $a->reshape((map $a->dim($_-1), 1..$di), $adims[$di], ($k + $l));
+        $ret{'0R'} = $a if $opt{'0R'};
+      }
+      if ($opt{'D1'}){
+        my $D1 = zeroes($type, ($k + $l), ($k + $l));
+        $D1->diagonal(0,1) .=  $alpha(:($k+$l-1));
+        $D1->reshape(($k + $l), $adims[$di+1]);
+        $ret{'D1'} = $D1;
+      }
+    }
+    if ($opt{'D2'} && $ret{rank}){
+      my $work = zeroes($b->type, $l, $l);
+      $work->diagonal(0,1) .=  $beta($k:($k+$l-1));
+      my $D2 = zeroes($b->type, ($k + $l), $bdims[$di+1]);
+      $D2( $k:, :($l-1)  ) .= $work;
+      $ret{'D2'} = $D2;
+    }
+    if ( $ret{rank} && ($opt{X} || $opt{R}) ){
+      my $work = $a->slice("$slice_prefix@{[-($k + $l)]}:");
+      $ret{R} = $work if $opt{R};
+      if ($opt{X}){
+        my $X = $a->_similar(@adims[$di,$di]);
+        $X->diagonal(@diag_args) .= 1 if ($adims[$di] > ($k + $l));
+        $X->slice("$slice_prefix@{[-($k + $l)]}:, @{[-($k + $l)]}:") .= mtriinv($work);
+        $ret{X} = $Q x $X;
+      }
+    }
+    $ret{U} = $U->t->sever if $opt{U};
+    $ret{V} = $V->t->sever if $opt{V};
+    $ret{Q} = $Q if $opt{Q};
+  }
+  $ret{rank} ? return ($alpha($k:($k+$l-1))->sever, $beta($k:($k+$l-1))->sever, %ret ) : (undef, undef, %ret);
 }
 
 #TODO
 
 # Others things
 
-#	rectangular diag
-#	usage
-#	is_inplace and function which modify entry matrix
-#	broadcasting support
-#	automatically create PDL
-#	inplace operation and memory
-#	PDL type, verify float/double
-#	eig_det qr_det
-#	(g)schur(x):
-#		if conjugate pair
-#			non generalized pb: $seldim ?? (cf: generalized)
-#			return conjugate pair if only selected?
-#	port to PDL::Matrix
+#  rectangular diag
+#  usage
+#  is_inplace and function which modify entry matrix
+#  broadcasting support
+#  automatically create PDL
+#  inplace operation and memory
+#  PDL type, verify float/double
+#  eig_det qr_det
+#  (g)schur(x):
+#    if conjugate pair
+#      non generalized pb: $seldim ?? (cf: generalized)
+#      return conjugate pair if only selected?
+#  port to PDL::Matrix
 
 =head1 AUTHOR
 
