@@ -61,18 +61,10 @@ extern integer FORTRAN(ilaenv)(integer *ispec, char *name__, char *opts, integer
     integer *n2, integer *n3, integer *n4, ftnlen name_len, ftnlen
     opts_len);
 
-#define PDL_MAYBE_SIZE(flagpdltype, flagpdl, flagcond, outpdl, outdim, indim) \
-if (outpdl->state & PDL_MYDIMS_TRANS) { \
-  PDL_Indx i; \
-  char gobig = 0; \
-  flagpdltype *datap = PDL_REPRP(flagpdl); \
-  for (i=0; i<flagpdl->nvals; i++) { \
-    flagpdltype tmp = datap[i]; /* [phys] means ignore incs and offs */ \
-    if (!(flagcond)) continue; \
-    gobig = 1; \
-    break; \
-  } \
-  outdim = gobig ? indim : 1; \
+#define PDL_MAYBE_SIZE(flagpdltype, flagval, flagcond, outpdl, outdim, indim) \
+{ \
+  flagpdltype tmp = flagval; \
+  outdim = (flagcond) ? indim : 1; \
 }
 ');
 
@@ -201,11 +193,13 @@ its second element.
 ');
 
 pp_def("gesvd",
-       HandleBad => 0,
-  Pars => '[io]A(m,n); int jobu(); int jobvt(); [o]s(minmn=CALC(PDLMIN($SIZE(m),$SIZE(n)))); [o]U(p,p); [o]VT(s,s); int [o]info()',
+  HandleBad => 0,
+  Pars => '[io]A(m,n); [o]s(minmn=CALC(PDLMIN($SIZE(m),$SIZE(n)))); [o]U(p,p); [o]VT(s,s); int [o]info()',
+  OtherPars => 'int jobu; int jobvt',
+  ArgOrder => [qw(A jobu jobvt s U VT info)],
   RedoDimsCode => '
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(jobu), tmp==1 || tmp==2, $PDL(U), $SIZE(p), $SIZE(m))
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvt), tmp==1 || tmp==2, $PDL(VT), $SIZE(s), $SIZE(n))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(jobu), tmp==1 || tmp==2, $PDL(U), $SIZE(p), $SIZE(m))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(jobvt), tmp==1 || tmp==2, $PDL(VT), $SIZE(s), $SIZE(n))
   ',
   GenericTypes => [F,D],
   Code => generate_code '
@@ -218,7 +212,7 @@ pp_def("gesvd",
     integer lwork = -1;
     char trau, travt;
 
-    switch ($jobu())
+    switch ($COMP(jobu))
     {
       case 1: trau = \'A\';
         break;
@@ -228,7 +222,7 @@ pp_def("gesvd",
         break;
       default: trau = \'N\';
     }
-    switch ($jobvt())
+    switch ($COMP(jobvt))
     {
       case 1: travt = \'A\';
         break;
@@ -363,11 +357,13 @@ Note that the routine returns VT = V\', not V.
 ');
 
 pp_def("gesdd",
-       HandleBad => 0,
-  Pars => '[io]A(m,n); int jobz(); [o]s(minmn=CALC(PDLMIN($SIZE(m),$SIZE(n)))); [o]U(p,p); [o]VT(s,s); int [o]info(); int [t]iwork(iworkn);',
+  HandleBad => 0,
+  Pars => '[io]A(m,n); [o]s(minmn=CALC(PDLMIN($SIZE(m),$SIZE(n)))); [o]U(p,p); [o]VT(s,s); int [o]info(); int [t]iwork(iworkn);',
+  OtherPars => 'int jobz',
+  ArgOrder => [qw(A jobz s U VT info)],
   RedoDimsCode => '
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(jobz), tmp==1 || (tmp==2) || (tmp==3 && $SIZE(m)<$SIZE(n)), $PDL(U), $SIZE(p), $SIZE(minmn))
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(jobz), tmp==1 || (tmp==2) || (tmp==3 && $SIZE(m)>=$SIZE(n)), $PDL(VT), $SIZE(s), $SIZE(minmn))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(jobz), tmp==1 || (tmp==2) || (tmp==3 && $SIZE(m)<$SIZE(n)), $PDL(U), $SIZE(p), $SIZE(minmn))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(jobz), tmp==1 || (tmp==2) || (tmp==3 && $SIZE(m)>=$SIZE(n)), $PDL(VT), $SIZE(s), $SIZE(minmn))
     $SIZE(iworkn) = 8*$SIZE(minmn);
   ',
   GenericTypes => [F,D],
@@ -384,7 +380,7 @@ pp_def("gesdd",
 
     lwork = -1;
 
-    switch ($jobz()) {
+    switch ($COMP(jobz)) {
       case 1: tra = 'A';
         break;
       case 2: tra = 'S';
@@ -507,12 +503,14 @@ EOF
 );
 
 pp_def("ggsvd",
-       HandleBad => 0,
-  Pars => '[io]A(m,n); int jobu(); int jobv(); int jobq(); [io]B(p,n); int [o]k(); int [o]l();[o]alpha(n);[o]beta(n); [o]U(q,q); [o]V(r,r); [o]Q(s,s); int [o]iwork(n); int [o]info()',
+  HandleBad => 0,
+  Pars => '[io]A(m,n); [io]B(p,n); int [o]k(); int [o]l();[o]alpha(n);[o]beta(n); [o]U(q,q); [o]V(r,r); [o]Q(s,s); int [o]iwork(n); int [o]info()',
+  OtherPars => 'int jobu; int jobv; int jobq',
+  ArgOrder => [qw(A jobu jobv jobq B k l alpha beta U V Q iwork info)],
   RedoDimsCode => '
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(jobu), tmp, $PDL(U), $SIZE(q), $SIZE(m))
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(jobv), tmp, $PDL(V), $SIZE(r), $SIZE(p))
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(jobq), tmp, $PDL(Q), $SIZE(s), $SIZE(n))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(jobu), tmp, $PDL(U), $SIZE(q), $SIZE(m))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(jobv), tmp, $PDL(V), $SIZE(r), $SIZE(p))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(jobq), tmp, $PDL(Q), $SIZE(s), $SIZE(n))
   ',
   GenericTypes => [F,D],
   Code => generate_code '
@@ -533,11 +531,11 @@ pp_def("ggsvd",
     //if ($SIZE (p) > lwork)
     //  lwork = $SIZE (p);
 
-    if ($jobu())
+    if ($COMP(jobu))
       pjobu = \'U\';
-    if ($jobv())
+    if ($COMP(jobv))
       pjobv = \'V\';
-    if ($jobq())
+    if ($COMP(jobq))
       pjobq = \'Q\';
 
     FORTRAN($TFD(s,d)ggsvd3)(
@@ -768,11 +766,13 @@ form by taking the nonsingular matrix X as
 ');
 
 pp_def("geev",
-       HandleBad => 0,
-  Pars => '[io]A(n,n); int jobvl(); int jobvr(); [o]wr(n); [o]wi(n); [o]vl(m,m); [o]vr(p,p); int [o]info()',
+  HandleBad => 0,
+  Pars => '[io]A(n,n); [o]wr(n); [o]wi(n); [o]vl(m,m); [o]vr(p,p); int [o]info()',
+  OtherPars => 'int jobvl; int jobvr',
+  ArgOrder => [qw(A jobvl jobvr wr wi vl vr info)],
   RedoDimsCode => '
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvl), tmp, $PDL(vl), $SIZE(m), $SIZE(n))
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvr), tmp, $PDL(vr), $SIZE(p), $SIZE(n))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(jobvl), tmp, $PDL(vl), $SIZE(m), $SIZE(n))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(jobvr), tmp, $PDL(vr), $SIZE(p), $SIZE(n))
   ',
   GenericTypes => [F,D],
   Code => generate_code '
@@ -785,9 +785,9 @@ pp_def("geev",
     $GENERIC() tmp_work;
     integer lwork = -1;
 
-    if ($jobvl())
+    if ($COMP(jobvl))
       jvl = \'V\';
-    if ($jobvr())
+    if ($COMP(jobvr))
       jvr = \'V\';
 
     FORTRAN($TFD(s,d)geev)(
@@ -905,13 +905,15 @@ equal to 1 and largest component real.
 
 pp_def("geevx",
        HandleBad => 0,
-  Pars => '[io]A(n,n);  int jobvl(); int jobvr(); int balance(); int sense(); [o]wr(n); [o]wi(n); [o]vl(m,m); [o]vr(p,p); int [o]ilo(); int [o]ihi(); [o]scale(n); [o]abnrm(); [o]rconde(q); [o]rcondv(r); int [o]info(); int [t]iwork(iworkn);',
+  Pars => '[io]A(n,n); [o]wr(n); [o]wi(n); [o]vl(m,m); [o]vr(p,p); int [o]ilo(); int [o]ihi(); [o]scale(n); [o]abnrm(); [o]rconde(q); [o]rcondv(r); int [o]info(); int [t]iwork(iworkn);',
+  OtherPars => 'int jobvl; int jobvr; int balance; int sense',
+  ArgOrder => [qw(A jobvl jobvr balance sense wr wi vl vr ilo ihi scale abnrm rconde rcondv info)],
   RedoDimsCode => '
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvl), tmp, $PDL(vl), $SIZE(m), $SIZE(n))
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvr), tmp, $PDL(vr), $SIZE(p), $SIZE(n))
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(sense), tmp == 1 || tmp == 3, $PDL(rconde), $SIZE(q), $SIZE(n))
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(sense), tmp == 2 || tmp == 3, $PDL(rcondv), $SIZE(r), $SIZE(n))
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(sense), tmp == 2 || tmp == 3, $PDL(iwork), $SIZE(iworkn), 2*$SIZE(n)-2)
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(jobvl), tmp, $PDL(vl), $SIZE(m), $SIZE(n))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(jobvr), tmp, $PDL(vr), $SIZE(p), $SIZE(n))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(sense), tmp == 1 || tmp == 3, $PDL(rconde), $SIZE(q), $SIZE(n))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(sense), tmp == 2 || tmp == 3, $PDL(rcondv), $SIZE(r), $SIZE(n))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(sense), tmp == 2 || tmp == 3, $PDL(iwork), $SIZE(iworkn), 2*$SIZE(n)-2)
   ',
   GenericTypes => [F,D],
   Code => generate_code '
@@ -928,12 +930,12 @@ pp_def("geevx",
 
     $GENERIC() tmp_work;
 
-    if ($jobvl())
+    if ($COMP(jobvl))
       jvl = \'V\';
-    if ($jobvr())
+    if ($COMP(jobvr))
       jvr = \'V\';
 
-    switch ($balance())
+    switch ($COMP(balance))
     {
       case 1: balanc = \'P\';
         break;
@@ -943,7 +945,7 @@ pp_def("geevx",
         break;
       default: balanc = \'N\';
     }
-    switch ($sense())
+    switch ($COMP(sense))
     {
       case 1: sens = \'E\';
         break;
@@ -1165,12 +1167,14 @@ Users\' Guide.
 
 
 pp_def("ggev",
-       HandleBad => 0,
-  Pars => '[io]A(n,n); int jobvl();int jobvr();[io]B(n,n);[o]alphar(n);[o]alphai(n);[o]beta(n);[o]VL(m,m);[o]VR(p,p);int [o]info()',
+  HandleBad => 0,
+  Pars => '[io]A(n,n);[io]B(n,n);[o]alphar(n);[o]alphai(n);[o]beta(n);[o]VL(m,m);[o]VR(p,p);int [o]info()',
+  OtherPars => 'int jobvl; int jobvr',
+  ArgOrder => [qw{A jobvl jobvr B alphar alphai beta VL VR info}],
   GenericTypes => [F,D],
   RedoDimsCode => '
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvl), tmp, $PDL(VL), $SIZE(m), $SIZE(n))
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvr), tmp, $PDL(VR), $SIZE(p), $SIZE(n))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(jobvl), tmp, $PDL(VL), $SIZE(m), $SIZE(n))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(jobvr), tmp, $PDL(VR), $SIZE(p), $SIZE(n))
   ',
   Code => generate_code '
     integer lwork = -1;
@@ -1182,9 +1186,9 @@ pp_def("ggev",
     $GENERIC() *vr, integer *ldvr, $GENERIC() *work, integer *lwork,
     integer *info);
     $GENERIC() tmp_work;
-    if ($jobvl())
+    if ($COMP(jobvl))
       pjobvl = \'V\';
-    if ($jobvr())
+    if ($COMP(jobvr))
       pjobvr = \'V\';
 
     FORTRAN($TFD(s,d)ggev)(
@@ -1332,14 +1336,16 @@ of (A,B) satisfies
 
 pp_def("ggevx",
        HandleBad => 0,
-  Pars => '[io]A(n,n);int balanc();int jobvl();int jobvr();int sense();[io]B(n,n);[o]alphar(n);[o]alphai(n);[o]beta(n);[o]VL(m,m);[o]VR(p,p);int [o]ilo();int [o]ihi();[o]lscale(n);[o]rscale(n);[o]abnrm();[o]bbnrm();[o]rconde(r);[o]rcondv(s);int [o]info(); int [t]bwork(bworkn); int [t]iwork(iworkn);',
+  Pars => '[io]A(n,n);[io]B(n,n);[o]alphar(n);[o]alphai(n);[o]beta(n);[o]VL(m,m);[o]VR(p,p);int [o]ilo();int [o]ihi();[o]lscale(n);[o]rscale(n);[o]abnrm();[o]bbnrm();[o]rconde(r);[o]rcondv(s);int [o]info(); int [t]bwork(bworkn); int [t]iwork(iworkn);',
+  OtherPars => 'int balanc; int jobvl; int jobvr; int sense',
+  ArgOrder => [qw{A balanc jobvl jobvr sense B alphar alphai beta VL VR ilo ihi lscale rscale abnrm bbnrm rconde rcondv info}],
   RedoDimsCode => '
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvl), tmp, $PDL(VL), $SIZE(m), $SIZE(n))
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvr), tmp, $PDL(VR), $SIZE(p), $SIZE(n))
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(sense), tmp != 2, $PDL(rconde), $SIZE(r), $SIZE(n))
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(sense), tmp != 1, $PDL(rcondv), $SIZE(s), $SIZE(n))
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(sense), tmp != 1, $PDL(iwork), $SIZE(iworkn), $SIZE(n) + 6)
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(sense), tmp == 1 || tmp == 2 || tmp == 3, $PDL(bwork), $SIZE(bworkn), $SIZE(n))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(jobvl), tmp, $PDL(VL), $SIZE(m), $SIZE(n))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(jobvr), tmp, $PDL(VR), $SIZE(p), $SIZE(n))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(sense), tmp != 2, $PDL(rconde), $SIZE(r), $SIZE(n))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(sense), tmp != 1, $PDL(rcondv), $SIZE(s), $SIZE(n))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(sense), tmp != 1, $PDL(iwork), $SIZE(iworkn), $SIZE(n) + 6)
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(sense), tmp == 1 || tmp == 2 || tmp == 3, $PDL(bwork), $SIZE(bworkn), $SIZE(n))
   ',
   GenericTypes => [F,D],
   Code => generate_code '
@@ -1356,12 +1362,12 @@ pp_def("ggevx",
     rcondv, $GENERIC() *work, integer *lwork, integer *iwork, logical *
     bwork, integer *info);
     $GENERIC() tmp_work;
-    if ($jobvl())
+    if ($COMP(jobvl))
       pjobvl = \'V\';
-    if ($jobvr())
+    if ($COMP(jobvr))
       pjobvr = \'V\';
 
-    switch ($balanc())
+    switch ($COMP(balanc))
     {
       case 1: pbalanc = \'P\';
         break;
@@ -1371,7 +1377,7 @@ pp_def("ggevx",
         break;
       default: pbalanc = \'N\';
     }
-    switch ($sense())
+    switch ($COMP(sense))
     {
       case 1: psens = \'E\';
         break;
@@ -1658,12 +1664,13 @@ and rcondv, see section 4.11 of LAPACK User\'s Guide.
 
 pp_def("gees",
        HandleBad => 0,
-  Pars => '[io]A(n,n);  int jobvs(); int sort(); [o]wr(n); [o]wi(n); [o]vs(p,p); int [o]sdim(); int [o]info(); int [t]bwork(bworkn);',
+  Pars => '[io]A(n,n); [o]wr(n); [o]wi(n); [o]vs(p,p); int [o]sdim(); int [o]info(); int [t]bwork(bworkn);',
+  OtherPars => 'int jobvs; int sort; SV* select_func',
+  ArgOrder => [qw{A jobvs sort select_func wr wi vs sdim info}],
   RedoDimsCode => '
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvs), tmp, $PDL(vs), $SIZE(p), $SIZE(n))
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(sort), tmp, $PDL(bwork), $SIZE(bworkn), $SIZE(n))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(jobvs), tmp, $PDL(vs), $SIZE(p), $SIZE(n))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(sort), tmp, $PDL(bwork), $SIZE(bworkn), $SIZE(n))
   ',
-  OtherPars => "SV* select_func",
   GenericTypes => [F,D],
   Code => generate_code '
     char jvs = \'N\';
@@ -1677,9 +1684,9 @@ pp_def("gees",
     $GENERIC() tmp_work;
     $TFD(f,d)select_func_set($COMP(select_func));
 
-    if ($jobvs())
+    if ($COMP(jobvs))
       jvs = \'V\';
-    if ($sort()){
+    if ($COMP(sort)){
       psort = \'S\';
     }
 
@@ -1824,12 +1831,13 @@ The eigenvalues of such a block are a +- sqrt(bc).
 
 pp_def("geesx",
        HandleBad => 0,
-  Pars => '[io]A(n,n);  int jobvs(); int sort(); int sense(); [o]wr(n); [o]wi(n); [o]vs(p,p); int [o]sdim(); [o]rconde();[o]rcondv(); int [o]info(); int [t]bwork(bworkn);',
+  Pars => '[io]A(n,n); [o]wr(n); [o]wi(n); [o]vs(p,p); int [o]sdim(); [o]rconde();[o]rcondv(); int [o]info(); int [t]bwork(bworkn);',
+  OtherPars => 'int jobvs; int sort; int sense; SV* select_func',
+  ArgOrder => [qw{A jobvs sort sense select_func wr wi vs sdim rconde rcondv info}],
   RedoDimsCode => '
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvs), tmp, $PDL(vs), $SIZE(p), $SIZE(n))
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(sort), tmp, $PDL(bwork), $SIZE(bworkn), $SIZE(n))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(jobvs), tmp, $PDL(vs), $SIZE(p), $SIZE(n))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(sort), tmp, $PDL(bwork), $SIZE(bworkn), $SIZE(n))
   ',
-  OtherPars => "SV* select_func" ,
   GenericTypes => [F,D],
   Code => generate_code '
     char jvs = \'N\';
@@ -1845,12 +1853,12 @@ pp_def("geesx",
     logical *bwork, integer *info);
     $GENERIC() *work;
     $TFD(f,d)select_func_set($COMP(select_func));
-    if ($jobvs())
+    if ($COMP(jobvs))
       jvs = \'V\';
-    if ($sort())
+    if ($COMP(sort))
       psort = \'S\';
 
-    switch ($sense())
+    switch ($COMP(sense))
     {
       case 1: sens = \'E\';
         lwork  = (integer ) ($SIZE(n) + $SIZE(n) * ($SIZE(n)/2+1));
@@ -1858,7 +1866,7 @@ pp_def("geesx",
         break;
       case 2: sens = \'V\';
         lwork  = (integer ) ($SIZE(n) + $SIZE(n) * ($SIZE(n)/2+1));
-        if ($sort()){
+        if ($COMP(sort)){
           liwork = (integer )(pow((($SIZE(n)/2)+1), 2));
           iwork = (integer *) malloc (liwork * sizeof (integer));
         }
@@ -1866,7 +1874,7 @@ pp_def("geesx",
         break;
       case 3: sens = \'B\';
         lwork  = (integer ) ($SIZE(n) + $SIZE(n) * ($SIZE(n)/2+1));
-        if ($sort()){
+        if ($COMP(sort)){
           liwork = (integer )(pow((($SIZE(n)/2)+1), 2));
           iwork = (integer *) malloc (liwork * sizeof (integer));
         }
@@ -2025,13 +2033,14 @@ the form
 
 pp_def("gges",
        HandleBad => 0,
-  Pars => '[io]A(n,n); int jobvsl();int jobvsr();int sort();[io]B(n,n);[o]alphar(n);[o]alphai(n);[o]beta(n);[o]VSL(m,m);[o]VSR(p,p);int [o]sdim();int [o]info(); int [t]bwork(bworkn);',
+  Pars => '[io]A(n,n);[io]B(n,n);[o]alphar(n);[o]alphai(n);[o]beta(n);[o]VSL(m,m);[o]VSR(p,p);int [o]sdim();int [o]info(); int [t]bwork(bworkn);',
+  OtherPars => 'int jobvsl;int jobvsr;int sort; SV* select_func',
+  ArgOrder => [qw{A jobvsl jobvsr sort B select_func alphar alphai beta VSL VSR sdim info}],
   RedoDimsCode => '
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvsl), tmp, $PDL(VSL), $SIZE(m), $SIZE(n))
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvsr), tmp, $PDL(VSR), $SIZE(p), $SIZE(n))
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(sort), tmp, $PDL(bwork), $SIZE(bworkn), $SIZE(n))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(jobvsl), tmp, $PDL(VSL), $SIZE(m), $SIZE(n))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(jobvsr), tmp, $PDL(VSR), $SIZE(p), $SIZE(n))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(sort), tmp, $PDL(bwork), $SIZE(bworkn), $SIZE(n))
   ',
-  OtherPars => "SV* select_func" ,
   GenericTypes => [F,D],
   Code => generate_code '
     integer lwork = -1;
@@ -2044,11 +2053,11 @@ pp_def("gges",
     integer *info);
     $GENERIC() tmp_work;
     $TFD(f,d)gselect_func_set($COMP(select_func));
-    if ($jobvsl())
+    if ($COMP(jobvsl))
       pjobvsl = \'V\';
-    if ($jobvsr())
+    if ($COMP(jobvsr))
       pjobvsr = \'V\';
-    if ($sort()){
+    if ($COMP(sort)){
       psort = \'S\';
     }
     FORTRAN($TFD(s,d)gges)(
@@ -2244,14 +2253,15 @@ complex conjugate pair of generalized eigenvalues.
 
 pp_def("ggesx",
        HandleBad => 0,
-  Pars => '[io]A(n,n); int jobvsl();int jobvsr();int sort();int sense();[io]B(n,n);[o]alphar(n);[o]alphai(n);[o]beta(n);[o]VSL(m,m);[o]VSR(p,p);int [o]sdim();[o]rconde(q=2);[o]rcondv(q=2);int [o]info(); int [t]bwork(bworkn); int [t]iwork(iworkn);',
+  Pars => '[io]A(n,n);[io]B(n,n);[o]alphar(n);[o]alphai(n);[o]beta(n);[o]VSL(m,m);[o]VSR(p,p);int [o]sdim();[o]rconde(q=2);[o]rcondv(q=2);int [o]info(); int [t]bwork(bworkn); int [t]iwork(iworkn);',
+  OtherPars => 'int jobvsl; int jobvsr; int sort; int sense; SV* select_func',
+  ArgOrder => [qw{A jobvsl jobvsr sort sense B select_func alphar alphai beta VSL VSR sdim rconde rcondv info}],
   RedoDimsCode => '
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvsl), tmp, $PDL(VSL), $SIZE(m), $SIZE(n))
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(jobvsr), tmp, $PDL(VSR), $SIZE(p), $SIZE(n))
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(sort), tmp, $PDL(bwork), $SIZE(bworkn), $SIZE(n))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(jobvsl), tmp, $PDL(VSL), $SIZE(m), $SIZE(n))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(jobvsr), tmp, $PDL(VSR), $SIZE(p), $SIZE(n))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(sort), tmp, $PDL(bwork), $SIZE(bworkn), $SIZE(n))
     $SIZE(iworkn) = $SIZE(n) + 6; // Bug in Lapack ?????
   ',
-  OtherPars => "SV* select_func" ,
   GenericTypes => [F,D],
   Code => generate_code '
     integer maxwrk, lwork;
@@ -2272,14 +2282,14 @@ pp_def("ggesx",
     integer *lwork, integer *iwork, integer *liwork, logical *bwork,
     integer *info);
     $TFD(f,d)gselect_func_set($COMP(select_func));
-    if ($jobvsr())
+    if ($COMP(jobvsr))
       pjobvsr = \'V\';
 
-    if ($sort()){
+    if ($COMP(sort)){
       psort = \'S\';
     }
 
-    switch ($sense())
+    switch ($COMP(sense))
     {
       case 1: psens = \'E\';
         break;
@@ -2300,7 +2310,7 @@ pp_def("ggesx",
     maxwrk = ($SIZE(n) + 1) * 7 + $SIZE(n) * (integer)FORTRAN(ilaenv)(&c__1, "DGEQRF", " ", &(integer){$SIZE(n)}, &c__1,
     &(integer){$SIZE(n)}, &c__0, (ftnlen)6, (ftnlen)1) + 16;
 
-    if ($jobvsl())
+    if ($COMP(jobvsl))
     {
       integer i__1 = maxwrk;
       integer i__2 = minwrk + $SIZE(n) * (integer)FORTRAN(ilaenv)(&c__1, "DORGQR"
@@ -2725,9 +2735,11 @@ workspace than syevx.
 
 pp_def("syevx",
        HandleBad => 0,
-  Pars => '[io]A(n,n);  int jobz(); int range(); int uplo(); vl(); vu(); int il(); int iu(); abstol(); int [o]m(); [o]w(n); [o]z(p,p);int [o]ifail(n); int [o]info(); int [t]iwork(iworkn=CALC(5*$SIZE(n)));',
+  Pars => '[io]A(n,n); vl(); vu(); int il(); int iu(); abstol(); int [o]m(); [o]w(n); [o]z(p,p);int [o]ifail(n); int [o]info(); int [t]iwork(iworkn=CALC(5*$SIZE(n)));',
+  OtherPars => 'int jobz; int range; int uplo',
+  ArgOrder => [qw{A jobz range uplo vl vu il iu abstol m w z ifail info}],
   RedoDimsCode => '
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(jobz), tmp, $PDL(z), $SIZE(p), $SIZE(n))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(jobz), tmp, $PDL(z), $SIZE(p), $SIZE(n))
   ',
   GenericTypes => [F,D],
   Code => generate_code '
@@ -2744,12 +2756,12 @@ pp_def("syevx",
 
     $GENERIC() tmp_work;
 
-    if ($jobz())
+    if ($COMP(jobz))
       jz = \'V\';
-    if ($uplo())
+    if ($COMP(uplo))
       puplo = \'L\';
 
-    switch ($range())
+    switch ($COMP(range))
     {
       case 1: prange = \'V\';
         break;
@@ -3435,13 +3447,15 @@ without guard digits, but we know of none.
 
 pp_def("sygvx",
        HandleBad => 0,
-  Pars => '[io]A(n,n); int itype(); int jobz(); int range();
-    int uplo(); [io]B(n,n); vl(); vu(); int il(); int iu(); abstol();
+  Pars => '[io]A(n,n); int itype();
+    [io]B(n,n); vl(); vu(); int il(); int iu(); abstol();
     int [o]m(); [o]w(n); [o]Z(p,p); int [o]ifail(n); int [o]info();
     int [t]iwork(iworkn=CALC(5*$SIZE(n)));
   ',
+  OtherPars => 'int jobz; int range; int uplo',
+  ArgOrder => [qw{A itype jobz range uplo B vl vu il iu abstol m w Z ifail info }],
   RedoDimsCode => '
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(jobz), tmp, $PDL(Z), $SIZE(p), $SIZE(n))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(jobz), tmp, $PDL(Z), $SIZE(p), $SIZE(n))
   ',
   GenericTypes => [F,D],
   Code => generate_code '
@@ -3458,12 +3472,12 @@ pp_def("sygvx",
 
     $GENERIC() tmp_work;
 
-    if ($jobz())
+    if ($COMP(jobz))
       jz = \'V\';
-    if ($uplo())
+    if ($COMP(uplo))
       puplo = \'L\';
 
-    switch ($range())
+    switch ($COMP(range))
     {
       case 1: prange = \'V\';
         break;
@@ -8743,10 +8757,12 @@ matrix Q:  A = Q*H*Q**T = (QZ)*T*(QZ)**T.
 
 pp_def("trevc",
        HandleBad => 0,
-  Pars => 'T(n,n); int side();int howmny();int select(q);[o]VL(m,m); [o]VR(p,p);int [o]m(); int [o]info(); [t]work(workn=CALC(3*$SIZE(n)));',
+  Pars => 'T(n,n);int select(q);[o]VL(m,m); [o]VR(p,p);int [o]m(); int [o]info(); [t]work(workn=CALC(3*$SIZE(n)));',
+  OtherPars => 'int side; int howmny',
+  ArgOrder => [qw{T side howmny select VL VR m info}],
   RedoDimsCode => '
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(side), tmp != 1, $PDL(VL), $SIZE(m), $SIZE(n))
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(side), tmp != 2, $PDL(VR), $SIZE(p), $SIZE(n))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(side), tmp != 1, $PDL(VL), $SIZE(m), $SIZE(n))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(side), tmp != 2, $PDL(VR), $SIZE(p), $SIZE(n))
   ',
   GenericTypes => [F,D],
   Code => generate_code '
@@ -8757,7 +8773,7 @@ pp_def("trevc",
     integer *n, $GENERIC() *t, integer *ldt, $GENERIC() *vl, integer *
     ldvl, $GENERIC() *vr, integer *ldvr, integer *mm, integer *m,
     $GENERIC() *work, integer *info);
-    switch ($howmny())
+    switch ($COMP(howmny))
     {
       case 1: phowmny = \'B\';
         break;
@@ -8766,7 +8782,7 @@ pp_def("trevc",
       default: phowmny = \'A\';
     }
 
-    switch ($side())
+    switch ($COMP(side))
     {
       case 1: pside = \'R\';
         break;
@@ -8931,10 +8947,12 @@ magnitude has magnitude 1; here the magnitude of a complex number
 
 pp_def("tgevc",
        HandleBad => 0,
-  Pars => 'A(n,n); int side();int howmny();B(n,n);int select(q);[o]VL(m,m); [o]VR(p,p);int [o]m(); int [o]info(); [t]work(workn=CALC(6*$SIZE(n)));',
+  Pars => 'A(n,n);B(n,n);int select(q);[o]VL(m,m); [o]VR(p,p);int [o]m(); int [o]info(); [t]work(workn=CALC(6*$SIZE(n)));',
+  OtherPars => 'int side; int howmny',
+  ArgOrder => [qw{A side howmny B select VL VR m info}],
   RedoDimsCode => '
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(side), tmp != 1, $PDL(VL), $SIZE(m), $SIZE(n))
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(side), tmp != 2, $PDL(VR), $SIZE(p), $SIZE(n))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(side), tmp != 1, $PDL(VL), $SIZE(m), $SIZE(n))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(side), tmp != 2, $PDL(VR), $SIZE(p), $SIZE(n))
   ',
   GenericTypes => [F,D],
   Code => generate_code '
@@ -8945,7 +8963,7 @@ pp_def("tgevc",
     integer *n, $GENERIC() *a, integer *lda, $GENERIC() *b,integer *ldb,
     $GENERIC() *vl, integer *ldvl, $GENERIC() *vr, integer *ldvr, integer *mm, integer *m,
     $GENERIC() *work, integer *info);
-    switch ($howmny())
+    switch ($COMP(howmny))
     {
       case 1: phowmny = \'B\';
         break;
@@ -8954,7 +8972,7 @@ pp_def("tgevc",
       default: phowmny = \'A\';
     }
 
-    switch ($side())
+    switch ($COMP(side))
     {
       case 1: pside = \'R\';
         break;
@@ -9312,16 +9330,18 @@ balanced matrix output by gebal.
 
 pp_def("lange",
        HandleBad => 0,
-  Pars => 'A(n,m); int norm(); [o]b(); [t]work(workn);',
+  Pars => 'A(n,m); [o]b(); [t]work(workn);',
+  OtherPars => 'int norm',
+  ArgOrder => [qw{A norm b}],
   RedoDimsCode => '
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(norm), tmp == 2, $PDL(work), $SIZE(workn), $SIZE(n))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(norm), tmp == 2, $PDL(work), $SIZE(workn), $SIZE(n))
   ',
   GenericTypes => [F,D],
   Code => '
              char pnorm;
     extern $GENERIC() FORTRAN($TFD(s,d)lange)(char *norm, integer *m, integer *n, $GENERIC() *a, integer
     *lda, $GENERIC() *work);
-    switch ($norm())
+    switch ($COMP(norm))
     {
       case 1: pnorm = \'O\';
         break;
@@ -9380,16 +9400,18 @@ real matrix A.
 
 pp_def("lansy",
        HandleBad => 0,
-  Pars => 'A(n,n); int uplo(); int norm(); [o]b(); [t]work(workn);',
+  Pars => 'A(n,n); [o]b(); [t]work(workn);',
+  OtherPars => 'int uplo; int norm',
+  ArgOrder => [qw{A uplo norm b}],
   RedoDimsCode => '
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(norm), tmp == 1 || tmp == 2, $PDL(work), $SIZE(workn), $SIZE(n))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(norm), tmp == 1 || tmp == 2, $PDL(work), $SIZE(workn), $SIZE(n))
   ',
   GenericTypes => [F,D],
   Code => '
              char pnorm, puplo = \'U\';
     extern $GENERIC() FORTRAN($TFD(s,d)lansy)(char *norm, char *uplo, integer *n, $GENERIC() *a, integer
     *lda, $GENERIC() *work);
-    switch ($norm())
+    switch ($COMP(norm))
     {
       case 1: pnorm = \'O\';
         break;
@@ -9399,7 +9421,7 @@ pp_def("lansy",
         break;
       default: pnorm = \'M\';
     }
-    if($uplo())
+    if($COMP(uplo))
       puplo = \'L\';
 
     $b() = FORTRAN($TFD(s,d)lansy)(
@@ -9460,9 +9482,11 @@ real symmetric matrix A.
 
 pp_def("lantr",
        HandleBad => 0,
-  Pars => 'A(m,n);int uplo();int norm();int diag();[o]b(); [t]work(workn);',
+  Pars => 'A(m,n); [o]b(); [t]work(workn);',
+  OtherPars => 'int uplo; int norm; int diag',
+  ArgOrder => [qw{A uplo norm diag b}],
   RedoDimsCode => '
-    PDL_MAYBE_SIZE(PDL_Long, $PDL(norm), tmp == 2, $PDL(work), $SIZE(workn), $SIZE(m))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(norm), tmp == 2, $PDL(work), $SIZE(workn), $SIZE(m))
   ',
   GenericTypes => [F,D],
   Code => '
@@ -9470,7 +9494,7 @@ pp_def("lantr",
              char pdiag = \'N\';
     extern $GENERIC() FORTRAN($TFD(s,d)lantr)(char *norm, char *uplo, char *diag, integer *m, integer *n, $GENERIC() *a, integer
     *lda, $GENERIC() *work);
-    switch ($norm())
+    switch ($COMP(norm))
     {
       case 1: pnorm = \'O\';
         break;
@@ -9480,9 +9504,9 @@ pp_def("lantr",
         break;
       default: pnorm = \'M\';
     }
-    if($uplo())
+    if($COMP(uplo))
       puplo = \'L\';
-    if($diag())
+    if($COMP(diag))
       pdiag = \'U\';
     $b() = FORTRAN($TFD(s,d)lantr)(
     &pnorm,

@@ -1135,8 +1135,8 @@ sub PDL::mschur {
   my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
   my $select_f = $m->_wrap_select_func($select_func);
   $mm->_call_method('gees',
-    $jobv, $select_func ? 1 : 0, @w,
-    $v, my $sdim = null, my $info = null, $select_f
+    $jobv, $select_func ? 1 : 0, $select_f, @w,
+    $v, my $sdim = null, my $info = null
   );
   _error_schur($info, $select_func, $dims[$di], 'mschur', 'QR');
   my @ret = !$select_func || $sdim ? () : map _complex_null(), grep $_ == 2, $jobvl, $jobvr;
@@ -1238,7 +1238,7 @@ sub PDL::mschurx {
   my $v = $m->_similar_null;
   my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
   my $select_f = $m->_wrap_select_func($select_func);
-  $mm->_call_method('geesx', $jobv, $select, $sense, @w, $v, $sdim, $rconde, $rcondv,$info, $select_f);
+  $mm->_call_method('geesx', $jobv, $select, $sense, $select_f, @w, $v, $sdim, $rconde, $rcondv,$info);
   _error_schur($info, $select_func, $dims[$di], 'mschurx', 'QR');
   my @vl = ('VL', $jobvl);
   my @vr = ('VR', $jobvr);
@@ -1392,7 +1392,7 @@ sub PDL::mgschur {
   my $select_f = $m->_wrap_select_func($select_func);
   my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
   $_ = $m->_similar_null for my ($beta, $vsl, $vsr);
-  $m->_call_method('gges', $jobvsl, $jobvsr, $select, $p, @w, $beta, $vsl, $vsr, $sdim, $info, $select_f);
+  $m->_call_method('gges', $jobvsl, $jobvsr, $select, $p, $select_f, @w, $beta, $vsl, $vsr, $sdim, $info);
   _error_schur($info, $select_func, $mdims[$di], 'mgschur', 'QZ');
   my @vl = ('VL', $jobvl);
   my @vr = ('VR', $jobvr);
@@ -1507,7 +1507,7 @@ sub PDL::mgschurx {
   $_ = $m->_similar_null for my ($beta, $vsl, $vsr);
   my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
   my $select_f = $m->_wrap_select_func($select_func);
-  $m->_call_method('ggesx', $jobvsl, $jobvsr, $select, $sense, $p, @w, $beta, $vsl, $vsr, $sdim, $rconde, $rcondv,$info, $select_f);
+  $m->_call_method('ggesx', $jobvsl, $jobvsr, $select, $sense, $p, $select_f, @w, $beta, $vsl, $vsr, $sdim, $rconde, $rcondv,$info);
   _error_schur($info, $select_func, $mdims[$di], 'mgschurx', 'QZ');
   my @vl = ('VL', $jobvl);
   my @vr = ('VR', $jobvr);
