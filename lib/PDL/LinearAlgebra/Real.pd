@@ -2034,7 +2034,7 @@ the form
 pp_def("gges",
        HandleBad => 0,
   Pars => '[io]A(n,n);[io]B(n,n);[o]alphar(n);[o]alphai(n);[o]beta(n);[o]VSL(m,m);[o]VSR(p,p);int [o]sdim();int [o]info(); int [t]bwork(bworkn);',
-  OtherPars => 'int jobvsl;int jobvsr;int sort; SV* select_func',
+  OtherPars => 'int jobvsl; int jobvsr; int sort; SV* select_func',
   ArgOrder => [qw{A jobvsl jobvsr sort B select_func alphar alphai beta VSL VSR sdim info}],
   RedoDimsCode => '
     PDL_MAYBE_SIZE(PDL_Long, $COMP(jobvsl), tmp, $PDL(VSL), $SIZE(m), $SIZE(n))

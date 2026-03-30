@@ -83,4 +83,23 @@ is_pdl scalar $d->minv, my $exp = pdl('0.70710678 0; 0 0.70710678'), 'simple min
 my $ld = (identity(2)->ldouble * 2)->sqrt;
 is_pdl scalar $ld->minv, $exp->ldouble, 'simple minv of ldouble';
 
+$A=pdl <<'EOF';
+[
+ [ 3  1]
+ [-1  3]
+ [-2  3]
+]
+EOF
+my ($u, $s, $vt) = msvd($A);
+is_pdl $u x gurney($s, $A->dims) x $vt, $A, "svd 2,3";
+
+$A=pdl <<'EOF';
+[
+ [ 3  1  2]
+ [-1  3  0]
+]
+EOF
+($u, $s, $vt) = msvd($A);
+is_pdl $u x gurney($s, $A->dims) x $vt, $A, "svd 3,2";
+
 done_testing;

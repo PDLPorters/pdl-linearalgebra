@@ -3171,7 +3171,8 @@ Uses L<gesvd|PDL::LinearAlgebra::Real/gesvd> or L<cgesvd|PDL::LinearAlgebra::Com
 =for example
 
  my $a = random(10,10);
- my ($u, $s, $v) = msvd($a);
+ my ($u, $s, $vt) = msvd($a);
+ print $u x gurney($s, $a->dims) x $vt;
 
 =cut
 
@@ -3180,11 +3181,11 @@ sub PDL::msvd {
   my ($m, $jobu, $jobv) = @_;
   $jobu = !wantarray ? 0 : $jobu // 1;
   $jobv = !wantarray ? 0 : $jobv // 1;
-  $m = $m->copy;
+  $m = $m->t->copy;
   $_ = $m->_similar_null for my ($u, $vt);
   $m->_call_method('gesvd', $jobv, $jobu,my $s = null, $u, $vt, my $info = null);
   _error($info, "msvd: Matrix (PDL(s) %s) is/are singular");
-  wantarray ? ($jobu?$u:(), $s, $jobv?$vt:(), $info) : $s;
+  wantarray ? ($jobu?$u->t:(), $s, $jobv?$vt->t:(), $info) : $s;
 }
 
 =head2 gurney
