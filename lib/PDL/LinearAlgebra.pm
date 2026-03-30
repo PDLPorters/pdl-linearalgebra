@@ -3116,16 +3116,17 @@ Uses L<gesdd|PDL::LinearAlgebra::Real/gesdd> or L<cgesdd|PDL::LinearAlgebra::Com
 
 =for usage
 
- (PDL(U), (PDL(s), PDL(V)), PDL(info)) = mdsvd(PDL, SCALAR(job))
+ (PDL(U), (PDL(s), PDL(Vt)), PDL(info)) = mdsvd(PDL, SCALAR(job))
  job :  0 = computes only singular values
-  1 = computes full SVD (square U and V)
+  1 = computes full SVD (square U and Vt)
   2 = computes SVD (singular values, right and left singular vectors)
   default = 1
 
 =for example
 
  my $a = random(5,10);
- my ($u, $s, $v) = mdsvd($a);
+ my ($u, $s, $vt) = mdsvd($a);
+ print $u x gurney($s, $a->dims) x $vt;
 
 =cut
 
@@ -3135,11 +3136,11 @@ sub PDL::mdsvd {
   my($m, $jobz) = @_;
   my(@dims) = $m->dims;
   $jobz = !wantarray ? 0 : $jobz // 1;
-  $m = $m->copy;
-  $_ = $m->_similar_null for my ($u, $v);
-  $m->_call_method('gesdd', $jobz, my $s = null, $u, $v, my $info = null);
+  $m = $m->t->copy;
+  $_ = $m->_similar_null for my ($u, $vt);
+  $m->_call_method('gesdd', $jobz, my $s = null, $u, $vt, my $info = null);
   _error($info, "mdsvd: Matrix (PDL(s) %s) is/are singular");
-  return ($u, $s, $v, $info) if $jobz;
+  return ($u->t, $s, $vt->t, $info) if $jobz;
   wantarray ? ($s, $info) : $s;
 }
 
@@ -3149,7 +3150,7 @@ sub PDL::mdsvd {
 
 Computes SVD.
 
-Can compute singular values, either U or V or neither.
+Can compute singular values, either U or Vt or neither.
 Return singular values in scalar context else left (U),
 singular values, right (V' (hermitian for complex) singular vector and info.
 Supports broadcasting.
@@ -3158,13 +3159,13 @@ Uses L<gesvd|PDL::LinearAlgebra::Real/gesvd> or L<cgesvd|PDL::LinearAlgebra::Com
 
 =for usage
 
- ( (PDL(U)), PDL(s), (PDL(V), PDL(info)) = msvd(PDL, SCALAR(jobu), SCALAR(jobv))
+ ( (PDL(U)), PDL(s), (PDL(Vt), PDL(info)) = msvd(PDL, SCALAR(jobu), SCALAR(jobv))
  jobu : 0 = Doesn't compute U
   1 = computes full SVD (square U)
   2 = computes right singular vectors
   default = 1
- jobv : 0 = Doesn't compute V
-  1 = computes full SVD (square V)
+ jobv : 0 = Doesn't compute Vt
+  1 = computes full SVD (square Vt)
   2 = computes left singular vectors
   default = 1
 

@@ -91,7 +91,9 @@ $A=pdl <<'EOF';
 ]
 EOF
 my ($u, $s, $vt) = msvd($A);
-is_pdl $u x gurney($s, $A->dims) x $vt, $A, "svd 2,3";
+is_pdl $u x gurney($s, $A->dims) x $vt, $A, "msvd 2,3";
+($u, $s, $vt) = mdsvd($A);
+is_pdl $u x gurney($s, $A->dims) x $vt, $A, "mdsvd 2,3";
 
 $A=pdl <<'EOF';
 [
@@ -100,6 +102,8 @@ $A=pdl <<'EOF';
 ]
 EOF
 ($u, $s, $vt) = msvd($A);
-is_pdl $u x gurney($s, $A->dims) x $vt, $A, "svd 3,2";
+is_pdl $u x gurney($s, $A->dims) x $vt, $A, "msvd 3,2";
+($u, $s, $vt) = mdsvd($A);
+is_pdl $u x gurney($s, $A->dims) x $vt, $A, "mdsvd 3,2";
 
 done_testing;

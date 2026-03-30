@@ -362,13 +362,12 @@ pp_def("gesdd",
   OtherPars => 'int jobz',
   ArgOrder => [qw(A jobz s U VT info)],
   RedoDimsCode => '
-    PDL_MAYBE_SIZE(PDL_Long, $COMP(jobz), tmp==1 || (tmp==2) || (tmp==3 && $SIZE(m)<$SIZE(n)), $PDL(U), $SIZE(p), $SIZE(minmn))
-    PDL_MAYBE_SIZE(PDL_Long, $COMP(jobz), tmp==1 || (tmp==2) || (tmp==3 && $SIZE(m)>=$SIZE(n)), $PDL(VT), $SIZE(s), $SIZE(minmn))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(jobz), tmp==1 || (tmp==2) || (tmp==3 && $SIZE(m)<$SIZE(n)), $PDL(U), $SIZE(p), $SIZE(m))
+    PDL_MAYBE_SIZE(PDL_Long, $COMP(jobz), tmp==1 || (tmp==2) || (tmp==3 && $SIZE(m)>=$SIZE(n)), $PDL(VT), $SIZE(s), $SIZE(n))
     $SIZE(iworkn) = 8*$SIZE(minmn);
   ',
   GenericTypes => [F,D],
   Code => generate_code <<'EOF',
-                integer lwork;
     integer smlsiz;
     char tra;
     extern int FORTRAN($TFD(s,d)gesdd)(char *jobz, integer *m, integer *n, $GENERIC() *
@@ -378,7 +377,7 @@ pp_def("gesdd",
 
     $GENERIC() tmp_work;
 
-    lwork = -1;
+    integer lwork = -1;
 
     switch ($COMP(jobz)) {
       case 1: tra = 'A';
