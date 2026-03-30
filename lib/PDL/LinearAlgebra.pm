@@ -5,6 +5,7 @@ use PDL::Basic qw/sequence/;
 use PDL::Primitive qw/which which_both/;
 use PDL::Ufunc qw/sumover/;
 use PDL::NiceSlice;
+use PDL::MatrixOps qw(stretcher);
 use PDL::Slices;
 use PDL::LinearAlgebra::Real;
 use PDL::LinearAlgebra::Complex;
@@ -23,13 +24,14 @@ our $VERSION = '0.434';
 $VERSION =~ tr/_//d;
 
 our @ISA = qw/PDL::Exporter/;
-our @EXPORT_OK = qw/diag issym minv mtriinv msyminv mposinv mdet mposdet mrcond positivise
-        mdsvd msvd mgsvd mpinv mlu mhessen mchol mqr mql mlq mrq meigen meigenx
-        mgeigen  mgeigenx msymeigen msymeigenx msymgeigen msymgeigenx
-        msolve mtrisolve msymsolve mpossolve msolvex msymsolvex mpossolvex
-        mrank mlls mllsy mllss mglm mlse tritosym mnorm mgschur mgschurx
-        mcrossprod mcond morth mschur mschurx
-        NO WARN BARF setlaerror getlaerorr laerror/;
+our @EXPORT_OK = qw/diag issym minv mtriinv msyminv mposinv mdet mposdet mrcond
+  positivise gurney
+  mdsvd msvd mgsvd mpinv mlu mhessen mchol mqr mql mlq mrq meigen meigenx
+  mgeigen  mgeigenx msymeigen msymeigenx msymgeigen msymgeigenx
+  msolve mtrisolve msymsolve mpossolve msolvex msymsolvex mpossolvex
+  mrank mlls mllsy mllss mglm mlse tritosym mnorm mgschur mgschurx
+  mcrossprod mcond morth mschur mschurx
+  NO WARN BARF setlaerror getlaerorr laerror/;
 our %EXPORT_TAGS = (Func=>\@EXPORT_OK);
 
 my $_laerror = BARF;
@@ -3146,6 +3148,7 @@ sub PDL::mdsvd {
 =for ref
 
 Computes SVD.
+
 Can compute singular values, either U or V or neither.
 Return singular values in scalar context else left (U),
 singular values, right (V' (hermitian for complex) singular vector and info.
@@ -3178,10 +3181,35 @@ sub PDL::msvd {
   $jobu = !wantarray ? 0 : $jobu // 1;
   $jobv = !wantarray ? 0 : $jobv // 1;
   $m = $m->copy;
-  $_ = $m->_similar_null for my ($u, $v);
-  $m->_call_method('gesvd', $jobv, $jobu,my $s = null, $u, $v, my $info = null);
+  $_ = $m->_similar_null for my ($u, $vt);
+  $m->_call_method('gesvd', $jobv, $jobu,my $s = null, $u, $vt, my $info = null);
   _error($info, "msvd: Matrix (PDL(s) %s) is/are singular");
-  wantarray ? ($jobu?$u:(), $s, $jobv?$v:(), $info) : $s;
+  wantarray ? ($jobu?$u:(), $s, $jobv?$vt:(), $info) : $s;
+}
+
+=head2 gurney
+
+=for ref
+
+Turns a vector into non-square matrix.
+
+=for example
+
+  pdl> gurney(pdl(1,2), 2, 3)->info
+  PDL: Double D [2,3]
+
+=cut
+
+*gurney = \&PDL::gurney;
+sub PDL::gurney {
+  my ($diag, $d0, $d1) = @_;
+  Carp::confess "gurney: given undef \$d0 or \$d1" if grep !defined $d0, $d1;
+  my $diag_len = $diag->dim(0);
+  Carp::confess "diagonal length $diag_len does not match either given dim $d0 or $d1" if !grep $diag_len == $_, $d0, $d1;
+  my $diff = abs($d0 - $d1);
+  my $mat = stretcher($diag);
+  $mat = $mat->glue($d0 < $d1 ? 1 : 0, zeroes($diag->type, $diff)) if $diff;
+  $mat;
 }
 
 =head2 mgsvd
