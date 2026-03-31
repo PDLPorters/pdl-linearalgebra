@@ -305,7 +305,7 @@ Supports broadcasting.
 *diag = \&PDL::diag;
 sub PDL::diag {
   my $di = $_[0]->dims_internal;
-  my @diag_args = ($di, $di+1);
+  my @diag_args = (0,1);
   my ($a,$i, $vec) = @_;
   my $z;
   my @dims = $a->dims;
@@ -1007,7 +1007,7 @@ Works on transposed array.
 sub PDL::mhessen {
   &_square;
   my $di = $_[0]->dims_internal;
-  my @diag_args = ($di, $di+1);
+  my @diag_args = (0,1);
   my $slice_arg = (',' x $di) . ":-2, 1:";
   my $m = shift;
   my(@dims) = $m->dims;
@@ -1608,7 +1608,7 @@ from Lapack and returns C<Q> in scalar context. Works on transposed array.
 sub PDL::mrq {
   &_2d_array;
   my $di = $_[0]->dims_internal;
-  my @diag_args = ($di, $di+1);
+  my @diag_args = (0,1);
   my($m, $full) = @_;
   my(@dims) = $m->dims;
   my ($q, $r);
@@ -1677,7 +1677,7 @@ from Lapack and returns C<Q> in scalar context. Works on transposed array.
 sub PDL::mql {
   &_2d_array;
   my $di = $_[0]->dims_internal;
-  my @diag_args = ($di, $di+1);
+  my @diag_args = (0,1);
   my($m, $full) = @_;
   my(@dims) = $m->dims;
   my ($q, $l);
@@ -3234,7 +3234,7 @@ my @gsvd_opts = qw(V U Q D1 D2 0R R X);
 sub PDL::mgsvd {
   &_matrices_matchcolumns;
   my $di = $_[0]->dims_internal;
-  my @diag_args = ($di, $di+1);
+  my @diag_args = (0,1);
   my($a, $b, %opt) = @_;
   my(@adims) = $a->dims;
   my(@bdims) = $b->dims;
