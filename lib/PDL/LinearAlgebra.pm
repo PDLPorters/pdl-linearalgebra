@@ -2430,16 +2430,15 @@ from Lapack. Works on transposed arrays.
 *mglm = \&PDL::mglm;
 sub PDL::mglm{
   my($a, $b, $d) = @_;
-  my $di = $_[0]->dims_internal;
   my(@adims) = $a->dims;
   my(@bdims) = $b->dims;
   my(@ddims) = $d->dims;
   barf("mglm: Require arrays with equal number of rows")
-    unless( @adims >= 2+$di && @bdims >= 2+$di && $adims[1+$di] == $bdims[1+$di]);
+    unless( @adims >= 2 && @bdims >= 2 && $adims[1] == $bdims[1]);
   barf "mglm: Require that column(A) <= row(A) <= column(A) + column(B)" unless
-    ( ($adims[0+$di] <= $adims[1+$di] ) && ($adims[1+$di] <= ($adims[0+$di] + $bdims[0+$di])) );
+    ( ($adims[0] <= $adims[1] ) && ($adims[1] <= ($adims[0] + $bdims[0])) );
   barf("mglm: Require vector(s) with size equal to number of rows of A")
-    unless( @ddims >= 1+$di  && $adims[1+$di] == $ddims[0+$di]);
+    unless( @ddims >= 1  && $adims[1] == $ddims[0]);
   $a = $a->t->copy;
   $b = $b->t->copy;
   $d = $d->copy;
@@ -2481,7 +2480,6 @@ from Lapack. Works on transposed arrays.
 *mlse = \&PDL::mlse;
 
 sub PDL::mlse {
-  my $di = $_[0]->dims_internal;
   my($a, $b, $c, $d) = @_;
   my(@adims) = $a->dims;
   my(@bdims) = $b->dims;
@@ -2489,18 +2487,18 @@ sub PDL::mlse {
   my(@ddims) = $d->dims;
   &_matrices_matchcolumns;
   barf("mlse: Require 1D vector C with size equal to number of A rows")
-    unless( (@cdims == $di+1)&& $adims[$di+2] == $cdims[$di+2]);
+    unless( (@cdims == 1)&& $adims[1] == $cdims[0]);
   barf("mlse: Require 1D vector D with size equal to number of B rows")
-    unless( (@ddims == $di+1)&& $bdims[$di+2] == $ddims[$di+2]);
+    unless( (@ddims == 1)&& $bdims[1] == $ddims[0]);
   barf "mlse: Require that row(B) <= column(A) <= row(A) + row(B)" unless
-    ( ($bdims[$di+1] <= $adims[$di] ) && ($adims[$di] <= ($adims[$di+1]+ $bdims[$di+1])) );
+    ( ($bdims[1] <= $adims[0] ) && ($adims[0] <= ($adims[1]+ $bdims[1])) );
   $a = $a->t->copy;
   $b = $b->t->copy;
   $c = $c->copy;
   $d = $d->copy;
   my ($x, $info) = $a->_call_method('gglse', $b, $c, $d);
   my $power = $a->_similar(1); $power .= 2;
-  my $sumsq = ($c->slice("@{[$adims[$di]-$bdims[$di+1]]}:@{[$adims[$di+1]-1]}") ** $power)->sumover;
+  my $sumsq = ($c->slice("@{[$adims[0]-$bdims[1]]}:@{[$adims[1]-1]}") ** $power)->sumover;
   wantarray ? ($x, $sumsq) : $x;
 }
 
