@@ -306,7 +306,6 @@ Supports broadcasting.
 sub PDL::diag {
   my $di = $_[0]->dims_internal;
   my @diag_args = ($di, $di+1);
-  my $slice_prefix = ',' x $di;
   my ($a,$i, $vec) = @_;
   my $z;
   my @dims = $a->dims;
@@ -315,14 +314,14 @@ sub PDL::diag {
     my $dim = $dims[0];
     my $zz = $dim + $diag;
     my $v = $z = $a->_similar($zz,$zz,@dims[$di+1..$#dims]);
-    $v = ($i < 0) ? $v->slice("$slice_prefix:@{[$dim-1]},$diag:") : $v->slice("$slice_prefix$diag:,:@{[$dim-1]}") if $i;
+    $v = ($i < 0) ? $v->slice(":@{[$dim-1]},$diag:") : $v->slice("$diag:,:@{[$dim-1]}") if $i;
     $v->diagonal(@diag_args) .= $a;
   }
   elsif($i < 0){
-    $z = $a->slice("$slice_prefix:-@{[$diag+1]} , $diag:")->diagonal(@diag_args);
+    $z = $a->slice(":-@{[$diag+1]} , $diag:")->diagonal(@diag_args);
   }
   elsif($i){
-    $z = $a->slice("$slice_prefix$diag:, :-@{[$diag+1]}")->diagonal(@diag_args);
+    $z = $a->slice("$diag:, :-@{[$diag+1]}")->diagonal(@diag_args);
   }
   else{$z = $a->diagonal(@diag_args);}
   $z;
@@ -670,13 +669,12 @@ Returns an orthonormal basis of the range space of matrix A.
 sub PDL::morth {
   &_2d_array;
   my $di = $_[0]->dims_internal;
-  my $slice_prefix = ',' x $di;
   my ($m, $tol) = @_;
   $tol =  (defined $tol) ? $tol  : ($m->type == double) ? 1e-8 : 1e-5;
   (my $u, my $s, undef, my $info) = $m->mdsvd;
   barf("morth: SVD algorithm did not converge\n") if $info;
   my $rank = (which($s > $tol))->dim(0) - 1;
-  $rank < 0 ? $m->_similar_null : $u->slice("$slice_prefix:$rank,")->sever;
+  $rank < 0 ? $m->_similar_null : $u->slice(":$rank,")->sever;
 }
 
 =head2 mnull
@@ -703,7 +701,6 @@ Works on transposed array.
 sub PDL::mnull {
   &_2d_array;
   my $di = $_[0]->dims_internal;
-  my $slice_prefix = ',' x $di;
   my ($m, $tol) = @_;
   my @dims = $m->dims;
   $tol //= ($m->type == double) ? 1e-8 : 1e-5;
@@ -711,7 +708,7 @@ sub PDL::mnull {
   barf("mnull: SVD algorithm did not converge\n") if $info;
   #TODO: USE TRANSPOSED A
   my $rank = (which($s > $tol))->dim(0);
-  $rank < $dims[$di] ? $v->t->slice("$slice_prefix$rank:")->sever : $m->_similar_null;
+  $rank < $dims[$di] ? $v->t->slice("$rank:")->sever : $m->_similar_null;
 }
 
 =head2 minv
@@ -927,13 +924,12 @@ sub PDL::mlu {
   }
   my $u = $m->mtri;
   my $l = $m->mtri(1);
-  my $slice_prefix = ',' x $di;
   my $smallerm1 = ($dims[$di] < $dims[$di+1] ? $dims[$di] : $dims[$di+1]) - 1;
   if ($dims[$di+1] > $dims[$di]) {
-    $u = $u->slice("$slice_prefix,:$smallerm1")->sever;
-    $l->slice("$slice_prefix :$smallerm1, :$smallerm1")->diagonal($di,$di+1) .= 1;
+    $u = $u->slice(",:$smallerm1")->sever;
+    $l->slice(":$smallerm1, :$smallerm1")->diagonal($di,$di+1) .= 1;
   } else {
-    $l = $l->slice("$slice_prefix:$smallerm1")->sever if $dims[$di+1] < $dims[$di];
+    $l = $l->slice(":$smallerm1")->sever if $dims[$di+1] < $dims[$di];
     $l->diagonal($di,$di+1) .= 1;
   }
   $l, $u, $ipiv, $info;
@@ -1109,8 +1105,7 @@ sub _eigen_one {
     }
     unshift(@ret, $norm ? $val->_norm(1,1) : $val), next if !$is_mult or !$select_func;
     my $di = $val->dims_internal;
-    my $slice_prefix = ',' x $di;
-    $val = $val->slice("$slice_prefix,:@{[$sdim-1]}")->sever if $_->[0] == 2;
+    $val = $val->slice(",:@{[$sdim-1]}")->sever if $_->[0] == 2;
     $val = $val->_norm(1,1) if $norm;
     unshift @ret, $val;
   }
@@ -1121,7 +1116,6 @@ sub _eigen_one {
 sub PDL::mschur {
   &_square;
   my $di = $_[0]->dims_internal;
-  my $slice_prefix = ',' x $di;
   my ($m, $jobv, $jobvl, $jobvr, $select_func, $mult, $norm) = @_;
   my @dims = $m->dims;
   barf("mschur: broadcasting not supported for selected vectors")
@@ -1150,7 +1144,7 @@ sub PDL::mschur {
     );
   }
   if ($jobv == 2 && $select_func) {
-    unshift @ret, $sdim > 0 ? $v->t->slice("$slice_prefix:@{[$sdim-1]}")->sever : $m->_similar_null;
+    unshift @ret, $sdim > 0 ? $v->t->slice(":@{[$sdim-1]}")->sever : $m->_similar_null;
   }
   elsif($jobv){
     unshift @ret, $v->t->sever;
@@ -1225,7 +1219,6 @@ Works on transposed array.
 sub PDL::mschurx {
   &_square;
   my $di = $_[0]->dims_internal;
-  my $slice_prefix = ',' x $di;
   my($m, $jobv, $jobvl, $jobvr, $select_func, $sense, $mult,$norm) = @_;
   my(@dims) = $m->dims;
   $mult //= 1;
@@ -1254,7 +1247,7 @@ sub PDL::mschurx {
   }
   my $w = _ecplx(@w);
   if ($jobv == 2 && $select_func) {
-    $v = $sdim > 0 ? $v->t->slice("$slice_prefix:@{[$sdim-1]},")->sever : $m->_similar_null;
+    $v = $sdim > 0 ? $v->t->slice(":@{[$sdim-1]},")->sever : $m->_similar_null;
   }
   elsif($jobv){
     $v =  $v->t->sever;
@@ -1377,7 +1370,6 @@ sub _eigen_pair {
 *mgschur = \&PDL::mgschur;
 sub PDL::mgschur {
   my $di = $_[0]->dims_internal;
-  my $slice_prefix = ',' x $di;
   &_square_same;
   my($m, $p, $jobvsl, $jobvsr, $jobvl, $jobvr, $select_func, $mult, $norm) = @_;
   my @mdims  = $m->dims;
@@ -1408,13 +1400,13 @@ sub PDL::mgschur {
   }
   my $w = @w == 2 ? _ecplx(@w) : @w[0];
   if ($jobvsl == 2 && $select_func) {
-    $ret{SL} = $sdim ? $vsl->t->slice("$slice_prefix:@{[$sdim-1]},")->sever : $m->_similar_null;
+    $ret{SL} = $sdim ? $vsl->t->slice(":@{[$sdim-1]},")->sever : $m->_similar_null;
   }
   elsif($jobvsl){
     $ret{SL} = $vsl->t->sever;
   }
   if ($jobvsr == 2 && $select_func) {
-    $ret{SR} = $sdim ? $vsr->t->slice("$slice_prefix:@{[$sdim-1]},")->sever : $m->_similar_null;
+    $ret{SR} = $sdim ? $vsr->t->slice(":@{[$sdim-1]},")->sever : $m->_similar_null;
   }
   elsif($jobvsr){
     $ret{SR} = $vsr->t->sever;
@@ -1494,7 +1486,6 @@ from Lapack. Works on transposed array.
 *mgschurx = \&PDL::mgschurx;
 sub PDL::mgschurx {
   my $di = $_[0]->dims_internal;
-  my $slice_prefix = ',' x $di;
   &_square_same;
   my($m, $p, $jobvsl, $jobvsr, $jobvl, $jobvr, $select_func, $sense, $mult, $norm) = @_;
   my (@mdims) = $m->dims;
@@ -1522,13 +1513,13 @@ sub PDL::mgschurx {
     $ret{$_->[0]} = $_->[1] for grep defined $_->[1], ['VL',$vl], ['VR',$vr];
   }
   if ($jobvsl == 2 && $select_func) {
-    $ret{SL} = $sdim ? $vsl->t->slice("$slice_prefix:@{[$sdim-1]},")->sever : $m->_similar_null;
+    $ret{SL} = $sdim ? $vsl->t->slice(":@{[$sdim-1]},")->sever : $m->_similar_null;
   }
   elsif($jobvsl){
     $ret{SL} = $vsl->t->sever;
   }
   if ($jobvsr == 2 && $select_func) {
-    $ret{SR} = $sdim ? $vsr->t->slice("$slice_prefix:@{[$sdim-1]},")->sever : $m->_similar_null;
+    $ret{SR} = $sdim ? $vsr->t->slice(":@{[$sdim-1]},")->sever : $m->_similar_null;
   }
   elsif($jobvsr){
     $ret{SR} = $vsr->t->sever;
@@ -1617,7 +1608,6 @@ from Lapack and returns C<Q> in scalar context. Works on transposed array.
 sub PDL::mrq {
   &_2d_array;
   my $di = $_[0]->dims_internal;
-  my $slice_prefix = ',' x $di;
   my @diag_args = ($di, $di+1);
   my($m, $full) = @_;
   my(@dims) = $m->dims;
@@ -1632,10 +1622,10 @@ sub PDL::mrq {
   }
   if ($dims[$di] > $dims[$di+1] && $full){
     $q = $m->_similar(@dims[$di,$di]);
-    $q->slice("$slice_prefix@{[$dims[$di] - $dims[$di+1]]}:") .= $m;
+    $q->slice("@{[$dims[$di] - $dims[$di+1]]}:") .= $m;
   }
   elsif ($dims[$di] < $dims[$di+1]){
-    $q = $m->slice("$slice_prefix@{[$dims[$di+1] - $dims[$di]]}:")->copy;
+    $q = $m->slice("@{[$dims[$di+1] - $dims[$di]]}:")->copy;
   }
   else{
     $q = $m->copy;
@@ -1644,16 +1634,16 @@ sub PDL::mrq {
   return $q->t->sever unless wantarray;
   if ($dims[$di] > $dims[$di+1] && $full){
     $r = $m->t->tricpy(0);
-    $r->slice("$slice_prefix:@{[$min-1]},:@{[$min-1]}")->diagonal(@diag_args) .= 0;
+    $r->slice(":@{[$min-1]},:@{[$min-1]}")->diagonal(@diag_args) .= 0;
   }
   elsif ($dims[$di] < $dims[$di+1]){
     my $temp = $m->_similar(@dims[$di+1,$di+1]);
-    $temp->slice("$slice_prefix-$min:") .= $m->t;
+    $temp->slice("-$min:") .= $m->t;
     $r = $temp->tricpy(0);
-    $r = $r->slice("$slice_prefix-$min:")->sever;
+    $r = $r->slice("-$min:")->sever;
   }
   else{
-    $r = $m->t->slice("$slice_prefix@{[$dims[$di] - $dims[$di+1]]}:")->tricpy(0);
+    $r = $m->t->slice("@{[$dims[$di] - $dims[$di+1]]}:")->tricpy(0);
   }
   return ($r, $q->t->sever, $info);
 }
@@ -1687,7 +1677,6 @@ from Lapack and returns C<Q> in scalar context. Works on transposed array.
 sub PDL::mql {
   &_2d_array;
   my $di = $_[0]->dims_internal;
-  my $slice_prefix = ',' x $di;
   my @diag_args = ($di, $di+1);
   my($m, $full) = @_;
   my(@dims) = $m->dims;
@@ -1702,10 +1691,10 @@ sub PDL::mql {
   }
   if ($dims[$di] < $dims[$di+1] && $full){
     $q = $m->_similar(@dims[$di+1,$di+1]);
-    $q->slice("$slice_prefix:,-$dims[$di]:") .= $m;
+    $q->slice(":,-$dims[$di]:") .= $m;
   }
   elsif ($dims[$di] > $dims[$di+1]){
-    $q = $m->slice("$slice_prefix:,-$min:")->copy;
+    $q = $m->slice(":,-$min:")->copy;
   }
   else{
     $q = $m->copy;
@@ -1714,16 +1703,16 @@ sub PDL::mql {
   return $q->t->sever unless wantarray;
   if ($dims[$di] < $dims[$di+1] && $full){
     $l = $m->t->tricpy(1);
-    $l->slice("$slice_prefix:@{[$min-1]},:@{[$min-1]}")->diagonal(@diag_args) .= 0;
+    $l->slice(":@{[$min-1]},:@{[$min-1]}")->diagonal(@diag_args) .= 0;
   }
   elsif ($dims[$di] > $dims[$di+1]){
     my $temp = $m->_similar(@dims[$di,$di]);
-    $temp->slice("$slice_prefix:,-$dims[$di+1]:") .= $m->t;
+    $temp->slice(":,-$dims[$di+1]:") .= $m->t;
     $l = $temp->tricpy(0);
-    $l = $l->slice("$slice_prefix:,-$dims[$di+1]:");
+    $l = $l->slice(":,-$dims[$di+1]:");
   }
   else{
-    $l = $m->t->slice("$slice_prefix:,@{[$dims[$di+1] - $min]}:")->tricpy(1);
+    $l = $m->t->slice(":,@{[$dims[$di+1] - $min]}:")->tricpy(1);
   }
   return ($q->t->sever, $l, $info);
 }
@@ -2263,7 +2252,6 @@ Works on transposed arrays.
 
 sub PDL::mlls {
   my $di = $_[0]->dims_internal;
-  my $slice_prefix = ',' x $di;
   &_matrices_matchrows;
   my($a, $b, $trans) = @_;
   my(@adims) = $a->dims;
@@ -2272,17 +2260,17 @@ sub PDL::mlls {
   $a = $a->copy;
   if ( $adims[$di+1] < $adims[$di]) {
     $x = $a->_similar($adims[$di], $bdims[$di]);
-    $x->slice("$slice_prefix:@{[$bdims[$di+1]-1]}, :@{[$bdims[$di]-1]}") .= $b->t;
+    $x->slice(":@{[$bdims[$di+1]-1]}, :@{[$bdims[$di]-1]}") .= $b->t;
   } else {
     $x = $b->t->copy;
   }
   $a->_call_method('gels', $trans ? 0 : 1, $x, my $info = null);
   $x = $x->t;
   return $x->sever if $adims[$di+1] <= $adims[$di];
-  my $sliced = $x->slice("$slice_prefix, :@{[$adims[$di]-1]}")->sever;
+  my $sliced = $x->slice(", :@{[$adims[$di]-1]}")->sever;
   return $sliced if !wantarray;
   my $power = $a->_similar(1); $power .= 2;
-  ($sliced, ($x->slice("$slice_prefix, $adims[$di]:")->t ** $power)->sumover);
+  ($sliced, ($x->slice(", $adims[$di]:")->t ** $power)->sumover);
 }
 
 =head2 mllsy
@@ -2318,7 +2306,6 @@ from Lapack. Works on transposed arrays.
 *mllsy = \&PDL::mllsy;
 sub PDL::mllsy {
   my $di = $_[0]->dims_internal;
-  my $slice_prefix = ',' x $di;
   &_matrices_matchrows;
   my($a, $b) = @_;
   my(@adims) = $a->dims;
@@ -2329,7 +2316,7 @@ sub PDL::mllsy {
   my ($x);
   if ( $adims[1+$di] < $adims[0+$di]){
     $x = $a->_similar($adims[$di], $bdims[$di]);
-    $x->slice("$slice_prefix:@{[$bdims[$di+1]-1]}, :@{[$bdims[$di]-1]}") .= $b->t;
+    $x->slice(":@{[$bdims[$di+1]-1]}, :@{[$bdims[$di]-1]}") .= $b->t;
   }
   else{
     $x = $b->t->copy;
@@ -2340,7 +2327,7 @@ sub PDL::mllsy {
   $a->_call_method('gelsy', $x,  $rcond, $jpvt, $rank, $info);
   my %ret = !wantarray ? () : ('A'=> $a->t->sever, 'rank' => $rank, 'jpvt'=>$jpvt);
   return wantarray ? ($x->t->sever, %ret) : $x->t->sever if $adims[$di+1] <= $adims[$di];
-  $x = $x->t->slice("$slice_prefix, :@{[$adims[$di]-1]}")->sever;
+  $x = $x->t->slice(", :@{[$adims[$di]-1]}")->sever;
   wantarray ? ($x, %ret) : $x;
 }
 
@@ -2384,7 +2371,6 @@ Works on transposed arrays.
 
 sub PDL::mllss {
   my $di = $_[0]->dims_internal;
-  my $slice_prefix = ',' x $di;
   &_matrices_matchrows;
   my($a, $b, $method) = @_;
   my @adims = $a->dims;
@@ -2396,7 +2382,7 @@ sub PDL::mllss {
   my $x;
   if ($adims[1+$di] < $adims[0+$di]){
     $x = $a->_similar($adims[$di], $bdims[$di]);
-    $x->slice("$slice_prefix:@{[$bdims[$di+1]-1]}, :@{[$bdims[$di]-1]}") .= $b->t;
+    $x->slice(":@{[$bdims[$di+1]-1]}, :@{[$bdims[$di]-1]}") .= $b->t;
   }
   else{
     $x = $b->t->copy;
@@ -2412,9 +2398,9 @@ sub PDL::mllss {
   return wantarray ? ($x->sever, %ret) : $x->sever if $adims[1+$di] <= $adims[0+$di];
   if (wantarray and $rank == $min) {
     my $power = $a->_similar(1); $power .= 2;
-    $ret{res} = ($x->slice("$slice_prefix, $adims[$di]:")->t ** $power)->sumover;
+    $ret{res} = ($x->slice(", $adims[$di]:")->t ** $power)->sumover;
   }
-  $x = $x->slice("$slice_prefix, :@{[$adims[$di]-1]}")->sever;
+  $x = $x->slice(", :@{[$adims[$di]-1]}")->sever;
   wantarray ? ($x->sever, %ret) : $x->sever;
 }
 
@@ -2496,7 +2482,6 @@ from Lapack. Works on transposed arrays.
 
 sub PDL::mlse {
   my $di = $_[0]->dims_internal;
-  my $slice_prefix = ',' x $di;
   my($a, $b, $c, $d) = @_;
   my(@adims) = $a->dims;
   my(@bdims) = $b->dims;
@@ -2515,7 +2500,7 @@ sub PDL::mlse {
   $d = $d->copy;
   my ($x, $info) = $a->_call_method('gglse', $b, $c, $d);
   my $power = $a->_similar(1); $power .= 2;
-  my $sumsq = ($c->slice("$slice_prefix @{[$adims[$di]-$bdims[$di+1]]}:@{[$adims[$di+1]-1]}") ** $power)->sumover;
+  my $sumsq = ($c->slice("@{[$adims[$di]-$bdims[$di+1]]}:@{[$adims[$di+1]-1]}") ** $power)->sumover;
   wantarray ? ($x, $sumsq) : $x;
 }
 
@@ -2911,7 +2896,6 @@ my %range_type2range = (interval => 1, indice => 2);
 sub PDL::msymeigenx {
   &_square;
   my $di = $_[0]->dims_internal;
-  my $slice_prefix = ',' x $di;
   my($m, $upper, $jobz, %opt) = @_;
   my(@dims) = $m->dims;
   my $range = $range_type2range{$opt{range_type}} || 0;
@@ -2946,7 +2930,7 @@ sub PDL::msymeigenx {
   if ($jobz){
     return ($w, $z->t->sever, $n, $info, $support) if $info;
     return (undef,undef,$n,$info,$method =~ qr/evr/?$support:()) if $n == 0;
-    return ($w(:$n-1)->sever, $z->t->slice("$slice_prefix:@{[$n->sclr-1]}")->sever, $n, $info, $method =~ qr/evr/?$support:());
+    return ($w(:$n-1)->sever, $z->t->slice(":@{[$n->sclr-1]}")->sever, $n, $info, $method =~ qr/evr/?$support:());
   }
   else{
     return $w if !wantarray;
@@ -3252,7 +3236,6 @@ my @gsvd_opts = qw(V U Q D1 D2 0R R X);
 sub PDL::mgsvd {
   &_matrices_matchcolumns;
   my $di = $_[0]->dims_internal;
-  my $slice_prefix = ',' x $di;
   my @diag_args = ($di, $di+1);
   my($a, $b, %opt) = @_;
   my(@adims) = $a->dims;
@@ -3274,8 +3257,8 @@ sub PDL::mgsvd {
       if ( $opt{'0R'} || $opt{R} || $opt{X}){
         $a->reshape((map $a->dim($_-1), 1..$di), $adims[$di], ($k + $l));
         # Slice $a ???  => always square ??
-        $a->slice("$slice_prefix@{[$adims[$di] - ($k+$l-$adims[$di+1])]} : , $adims[$di+1]:") .=
-            $b->slice("$slice_prefix@{[$adims[$di+1]-$k]}:@{[$l-1]},@[[$adims[$di]+$adims[$di+1]-$k - $l]}:@{[$adims[$di]-1]}")->t;
+        $a->slice("@{[$adims[$di] - ($k+$l-$adims[$di+1])]} : , $adims[$di+1]:") .=
+            $b->slice("@{[$adims[$di+1]-$k]}:@{[$l-1]},@[[$adims[$di]+$adims[$di+1]-$k - $l]}:@{[$adims[$di]-1]}")->t;
         $ret{'0R'} = $a if $opt{'0R'};
       }
       if ($opt{'D1'}){
@@ -3305,12 +3288,12 @@ sub PDL::mgsvd {
       $ret{'D2'} = $D2;
     }
     if ( $ret{rank} && ($opt{X} || $opt{R}) ){
-      my $work = $a->slice("$slice_prefix@{[-($k + $l)]}:");
+      my $work = $a->slice("@{[-($k + $l)]}:");
       $ret{R} = $work if $opt{R};
       if ($opt{X}){
         my $X = $a->_similar(@adims[$di,$di]);
         $X->diagonal(@diag_args) .= 1 if ($adims[$di] > ($k + $l));
-        $X->slice("$slice_prefix@{[-($k + $l)]}:, @{[-($k + $l)]}:") .= mtriinv($work);
+        $X->slice("@{[-($k + $l)]}:, @{[-($k + $l)]}:") .= mtriinv($work);
         $ret{X} = $Q x $X;
       }
     }
