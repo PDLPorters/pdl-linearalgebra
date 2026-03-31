@@ -175,12 +175,11 @@ If c is a scalar number, its determinant can be computed by:
 *mhankel = \&PDL::mhankel;
 
 sub PDL::mhankel {
-  my $di = $_[0]->dims_internal;
   my ($m, $n) = @_;
   $m = xvals($m) + 1 unless ref($m);
   my @dims = $m->dims;
   $n = PDL::zeroes($m) unless defined $n;
-  my $index = xvals($dims[$di]);
+  my $index = xvals($dims[0]);
   $index = $index->dummy(0) + $index;
   if (@dims == 2){
     $m = mstack($m,$n(,1:));
@@ -211,8 +210,6 @@ Handles complex data.
 
 *mtoeplitz = \&PDL::mtoeplitz;
 sub PDL::mtoeplitz {
-  my $di = $_[0]->dims_internal;
-  my $slice_prefix = ',' x $di;
   my ($m, $n) = @_;
   $n = $m->copy unless defined $n;
   my $mdim= $m->dim(-1);
@@ -221,12 +218,12 @@ sub PDL::mtoeplitz {
   $ndim--;
   my $min = $mdim <= $ndim ? $mdim : $ndim;
   for(1..$min) {
-    $res->slice("$slice_prefix$_:,(@{[$_-1]})") .= $n->slice("${slice_prefix}1:@{[$ndim-$_+1]}");
+    $res->slice("$_:,(@{[$_-1]})") .= $n->slice("1:@{[$ndim-$_+1]}");
   }
   $mdim--;
   $min = $mdim < $ndim ? $mdim : $ndim;
   for(0..$min){
-    $res->slice("${slice_prefix}($_),$_:") .= $m->slice("${slice_prefix}:@{[$mdim-$_]}");
+    $res->slice("($_),$_:") .= $m->slice(":@{[$mdim-$_]}");
   }
   return $res;
 }
@@ -293,8 +290,6 @@ coefficient of largest degree in p (here p is in descending order).
 
 *mcompanion = \&PDL::mcompanion;
 sub PDL::mcompanion{
-  my $di = $_[0]->dims_internal;
-  my $slice_prefix = ',' x $di;
   my ($m, $char) = @_;
   my( @dims, $dim, $ret);
   $m = $m->{PDL} if (UNIVERSAL::isa($m, 'HASH') && exists $m->{PDL});
@@ -302,10 +297,10 @@ sub PDL::mcompanion{
   $dim = $dims[-1] - 1;
   my $id = identity($dim-1); $id = $id->r2C if $m->_is_complex;
   if($char){
-    $ret = (-$m->slice("${slice_prefix}1:$dim")->dummy($di+1)/$m->slice("${slice_prefix}0"))->_call_method('mstack', $id->mstack(zeroes($m->dims_internal_values,$dim-1)->dummy($di)));
+    $ret = (-$m->slice("1:$dim")->dummy(1)/$m->slice("0"))->_call_method('mstack', $id->mstack(zeroes($dim-1)->dummy(0)));
   }
   else{
-    $ret = $m->_similar($dim-1)->dummy($di+1)->_call_method('mstack', $id)->mstack(-$m->slice("${slice_prefix}$dim:1")->dummy($di)/$m->slice("${slice_prefix}(0)"));
+    $ret = $m->_similar($dim-1)->dummy(1)->_call_method('mstack', $id)->mstack(-$m->slice("$dim:1")->dummy(0)/$m->slice("(0)"));
   }
   $ret->sever;
 }

@@ -133,7 +133,6 @@ Supports broadcasting.
 
 =cut
 
-sub PDL::dims_internal {0}
 sub PDL::_similar {
   my ($m, @vdims) = @_;
   ref($m)->new_from_specification($m->type, @vdims);
@@ -182,48 +181,41 @@ Supports broadcasting.
 
 sub _2d_array {
   my @dims = $_[0]->dims;
-  my $d = $_[0]->dims_internal;
-  barf("Require 2D array(s)") unless @dims >= 2+$d;
+  barf("Require 2D array(s)") unless @dims >= 2;
 }
 sub _square {
   &_2d_array;
   my @dims = $_[0]->dims;
-  my $d = $_[0]->dims_internal;
-  barf("Require square array(s)") unless $dims[$d] == $dims[$d+1];
+  barf("Require square array(s)") unless $dims[0] == $dims[1];
 }
 sub _square_same {
-  my $d = $_[0]->dims_internal;
   my @adims = $_[0]->dims;
   my @bdims = $_[1]->dims;
   barf("Require square matrices of same order")
-    unless( $adims[$d] == $adims[$d+1] && $bdims[$d] == $bdims[$d+1] && $adims[$d] == $bdims[$d]);
+    unless( $adims[0] == $adims[1] && $bdims[0] == $bdims[1] && $adims[0] == $bdims[0]);
 }
 sub _matrices_match {
-  my $d = $_[0]->dims_internal;
   my @adims = $_[0]->dims;
   my @bdims = $_[1]->dims;
   barf("Require right hand side array(s) B with number".
     " of row equal to number of columns of A")
-    unless @adims >= 2+$d && @bdims >= 2+$d && $bdims[1+$d] == $adims[$d];
+    unless @adims >= 2 && @bdims >= 2 && $bdims[1] == $adims[0];
 }
 sub _matrices_matchcolumns {
-  my $di = $_[0]->dims_internal;
   my @adims = $_[0]->dims;
   my @bdims = $_[1]->dims;
   barf("Require 2 matrices with equal number of columns")
-    unless( ((@adims >= 2+$di && @bdims >= 2+$di)) &&
-    $adims[$di] == $bdims[$di]);
+    unless( ((@adims >= 2 && @bdims >= 2)) &&
+    $adims[0] == $bdims[0]);
 }
 sub _matrices_matchrows {
-  my $d = $_[0]->dims_internal;
   my @adims = $_[0]->dims;
   my @bdims = $_[1]->dims;
   barf("Require a 2D right hand side matrix B with number".
     " of rows equal to number of rows of A")
-    unless @adims >= 2+$d && @bdims >= 2+$d && $bdims[1+$d] == $adims[1+$d];
+    unless @adims >= 2 && @bdims >= 2 && $bdims[1] == $adims[1];
 }
 sub _same_dims {
-  my $d = $_[0]->dims_internal;
   my @adims = $_[0]->dims;
   my @bdims = $_[1]->dims;
   barf("Require arrays with equal number of dimensions") if @adims != @bdims;
@@ -304,16 +296,15 @@ Supports broadcasting.
 
 *diag = \&PDL::diag;
 sub PDL::diag {
-  my $di = $_[0]->dims_internal;
   my @diag_args = (0,1);
   my ($a,$i, $vec) = @_;
   my $z;
   my @dims = $a->dims;
   my $diag = ($i < 0) ? -$i : $i ;
-  if (@dims == $di+1 || $vec){
+  if (@dims == 1 || $vec){
     my $dim = $dims[0];
     my $zz = $dim + $diag;
-    my $v = $z = $a->_similar($zz,$zz,@dims[$di+1..$#dims]);
+    my $v = $z = $a->_similar($zz,$zz,@dims[1..$#dims]);
     $v = ($i < 0) ? $v->slice(":@{[$dim-1]},$diag:") : $v->slice("$diag:,:@{[$dim-1]}") if $i;
     $v->diagonal(@diag_args) .= $a;
   }
@@ -444,7 +435,6 @@ from Lapack.
 
 sub PDL::mrank {
   &_2d_array;
-  my $di = $_[0]->dims_internal;
   my($m, $tol) = @_;
   my(@dims) = $m->dims;
   my $err = setlaerror(NO);
@@ -454,7 +444,7 @@ sub PDL::mrank {
   setlaerror($err);
   barf("mrank: SVD algorithm did not converge\n") if $info;
   unless (defined $tol){
-    $tol =  ($dims[$di+1] > $dims[$di] ? $dims[$di+1] : $dims[$di]) * $sv((0)) * lamch(3);
+    $tol =  ($dims[1] > $dims[0] ? $dims[1] : $dims[0]) * $sv((0)) * lamch(3);
   }
   (which($sv > $tol))->dim(0);
 }
@@ -520,10 +510,9 @@ from Lapack.
 *mdet = \&PDL::mdet;
 sub PDL::mdet {
   &_square;
-  my $di = $_[0]->dims_internal;
   my $m_orig = my $m = shift->copy;
   $m->_call_method('getrf', my $ipiv = null, my $info = null);
-  $m = $m->diagonal($di,$di+1);
+  $m = $m->diagonal(0,1);
   $m = $m->prodover;
   $m = $m * ((PDL::Ufunc::sumover(sequence($ipiv->dim(0))->plus(1,0) != $ipiv)%2)*(-2)+1);
   $info = which($info != 0);
@@ -668,7 +657,6 @@ Returns an orthonormal basis of the range space of matrix A.
 
 sub PDL::morth {
   &_2d_array;
-  my $di = $_[0]->dims_internal;
   my ($m, $tol) = @_;
   $tol =  (defined $tol) ? $tol  : ($m->type == double) ? 1e-8 : 1e-5;
   (my $u, my $s, undef, my $info) = $m->mdsvd;
@@ -700,7 +688,6 @@ Works on transposed array.
 
 sub PDL::mnull {
   &_2d_array;
-  my $di = $_[0]->dims_internal;
   my ($m, $tol) = @_;
   my @dims = $m->dims;
   $tol //= ($m->type == double) ? 1e-8 : 1e-5;
@@ -708,7 +695,7 @@ sub PDL::mnull {
   barf("mnull: SVD algorithm did not converge\n") if $info;
   #TODO: USE TRANSPOSED A
   my $rank = (which($s > $tol))->dim(0);
-  $rank < $dims[$di] ? $v->t->slice("$rank:")->sever : $m->_similar_null;
+  $rank < $dims[0] ? $v->t->slice("$rank:")->sever : $m->_similar_null;
 }
 
 =head2 minv
@@ -802,7 +789,6 @@ from Lapack and returns C<inverse, info> in array context.
 *msyminv = \&PDL::msyminv;
 sub PDL::msyminv {
   &_square;
-  my $di = $_[0]->dims_internal;
   my $m = shift->new_or_inplace;
   my $upper = @_ ? (1 - shift)  : pdl (long,1);
   $m->_call_method('sytrf', $upper, my $ipiv=null, my $info=null);
@@ -839,7 +825,6 @@ from Lapack and returns C<inverse, info> in array context.
 *mposinv = \&PDL::mposinv;
 sub PDL::mposinv {
   &_square;
-  my $di = $_[0]->dims_internal;
   my $m = shift->new_or_inplace;
   my $upper = @_ ? (1 - shift)  : pdl (long,1);
   $m->_call_method('potrf', $upper, my $info=null);
@@ -870,7 +855,6 @@ Works on transposed array.
 *mpinv = \&PDL::mpinv;
 sub PDL::mpinv{
   &_2d_array;
-  my $di = $_[0]->dims_internal;
   my ($m, $tol) = @_;
   my @dims = $m->dims;
   my $err = setlaerror(NO);
@@ -879,7 +863,7 @@ sub PDL::mpinv{
   setlaerror($err);
   _error($info, "mpinv: SVD algorithm did not converge (PDL %s)");
   unless (defined $tol){
-    $tol =  ($dims[$di+1] > $dims[$di] ? $dims[$di+1] : $dims[$di]) * $s((0)) * lamch(3);
+    $tol =  ($dims[1] > $dims[0] ? $dims[1] : $dims[0]) * $s((0)) * lamch(3);
   }
   my ($ind, $cind) = which_both( $s > $tol );
   $s->index($cind) .= 0 if defined $cind;
@@ -911,7 +895,6 @@ Works on transposed array.
 *mlu = \&PDL::mlu;
 
 sub PDL::mlu {
-  my $di = $_[0]->dims_internal;
   &_2d_array;
   my $m = shift;
   my @dims = $m->dims;
@@ -924,13 +907,13 @@ sub PDL::mlu {
   }
   my $u = $m->mtri;
   my $l = $m->mtri(1);
-  my $smallerm1 = ($dims[$di] < $dims[$di+1] ? $dims[$di] : $dims[$di+1]) - 1;
-  if ($dims[$di+1] > $dims[$di]) {
+  my $smallerm1 = ($dims[0] < $dims[1] ? $dims[0] : $dims[1]) - 1;
+  if ($dims[1] > $dims[0]) {
     $u = $u->slice(",:$smallerm1")->sever;
-    $l->slice(":$smallerm1, :$smallerm1")->diagonal($di,$di+1) .= 1;
+    $l->slice(":$smallerm1, :$smallerm1")->diagonal(0,1) .= 1;
   } else {
-    $l = $l->slice(":$smallerm1")->sever if $dims[$di+1] < $dims[$di];
-    $l->diagonal($di,$di+1) .= 1;
+    $l = $l->slice(":$smallerm1")->sever if $dims[1] < $dims[0];
+    $l->diagonal(0,1) .= 1;
   }
   $l, $u, $ipiv, $info;
 }
@@ -961,11 +944,10 @@ Uses L<potrf|PDL::LinearAlgebra::Real/potrf> or L<cpotrf|PDL::LinearAlgebra::Com
 *mchol = \&PDL::mchol;
 sub PDL::mchol {
   &_square;
-  my $di = $_[0]->dims_internal;
   my($m, $upper) = @_;
   my(@dims) = $m->dims;
   $m = $m->mtri($upper) unless $m->is_inplace(0);
-  @dims = @dims[2+$di..$#dims];
+  @dims = @dims[2..$#dims];
   my $uplo =  1 - $upper;
   $m->_call_method('potrf',$uplo,my $info=null);
   _error($info, "mchol: matrix (PDL(s) %s) is/are not positive definite (after potrf factorization)");
@@ -1006,14 +988,13 @@ Works on transposed array.
 *mhessen = \&PDL::mhessen;
 sub PDL::mhessen {
   &_square;
-  my $di = $_[0]->dims_internal;
   my @diag_args = (0,1);
-  my $slice_arg = (',' x $di) . ":-2, 1:";
+  my $slice_arg = ":-2, 1:";
   my $m = shift;
   my(@dims) = $m->dims;
   $m = $m->t->copy;
-  $m->_call_method('gehrd',1,$dims[$di], my $tau = $m->_similar($dims[$di]-1),my $info = null);
-  (my $q = $m->copy)->_call_method(['orghr','cunghr'], 1, $dims[$di], $tau, $info) if wantarray;
+  $m->_call_method('gehrd',1,$dims[0], my $tau = $m->_similar($dims[0]-1),my $info = null);
+  (my $q = $m->copy)->_call_method(['orghr','cunghr'], 1, $dims[0], $tau, $info) if wantarray;
   my $h = ($m = $m->t)->mtri;
   $h->slice($slice_arg)->diagonal(@diag_args) .= $m->slice($slice_arg)->diagonal(@diag_args);
   wantarray ? return ($h, $q->t->sever) : $h;
@@ -1104,7 +1085,6 @@ sub _eigen_one {
       $val = $_->[1];
     }
     unshift(@ret, $norm ? $val->_norm(1,1) : $val), next if !$is_mult or !$select_func;
-    my $di = $val->dims_internal;
     $val = $val->slice(",:@{[$sdim-1]}")->sever if $_->[0] == 2;
     $val = $val->_norm(1,1) if $norm;
     unshift @ret, $val;
@@ -1115,11 +1095,10 @@ sub _eigen_one {
 *mschur = \&PDL::mschur;
 sub PDL::mschur {
   &_square;
-  my $di = $_[0]->dims_internal;
   my ($m, $jobv, $jobvl, $jobvr, $select_func, $mult, $norm) = @_;
   my @dims = $m->dims;
   barf("mschur: broadcasting not supported for selected vectors")
-    if $select_func && @dims > 2+$di
+    if $select_func && @dims > 2
       && (grep $_ == 2, $jobv, $jobvl, $jobvr);
   $mult //= 1;
   $norm //= 1;
@@ -1132,7 +1111,7 @@ sub PDL::mschur {
     $jobv, $select_func ? 1 : 0, $select_f, @w,
     $v, my $sdim = null, my $info = null
   );
-  _error_schur($info, $select_func, $dims[$di], 'mschur', 'QR');
+  _error_schur($info, $select_func, $dims[0], 'mschur', 'QR');
   my @ret = !$select_func || $sdim ? () : map _complex_null(), grep $_ == 2, $jobvl, $jobvr;
   push @ret, $sdim if $select_func;
   $_ = 0 for grep $select_func && $_ == 2 && !$sdim, $jobvl, $jobvr;
@@ -1140,7 +1119,7 @@ sub PDL::mschur {
   if ($jobvl || $jobvr){
     unshift @ret, grep defined, _eigen_one(
       $mm, $select_func, $jobv, $jobvl, $jobvr,
-      $mult, $norm, $dims[$di+1], $sdim, @w
+      $mult, $norm, $dims[1], $sdim, @w
     );
   }
   if ($jobv == 2 && $select_func) {
@@ -1218,7 +1197,6 @@ Works on transposed array.
 *mschurx = \&PDL::mschurx;
 sub PDL::mschurx {
   &_square;
-  my $di = $_[0]->dims_internal;
   my($m, $jobv, $jobvl, $jobvr, $select_func, $sense, $mult,$norm) = @_;
   my(@dims) = $m->dims;
   $mult //= 1;
@@ -1232,7 +1210,7 @@ sub PDL::mschurx {
   my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
   my $select_f = $m->_wrap_select_func($select_func);
   $mm->_call_method('geesx', $jobv, $select, $sense, $select_f, @w, $v, $sdim, $rconde, $rcondv,$info);
-  _error_schur($info, $select_func, $dims[$di], 'mschurx', 'QR');
+  _error_schur($info, $select_func, $dims[0], 'mschurx', 'QR');
   my @vl = ('VL', $jobvl);
   my @vr = ('VR', $jobvr);
   my %ret;
@@ -1241,7 +1219,7 @@ sub PDL::mschurx {
   if ($vl[1] || $vr[1]) {
     my ($vl, $vr) = _eigen_one(
       $mm, $select_func, $jobv, $vl[1], $vr[1],
-      $mult, $norm, $dims[$di+1], $sdim, @w
+      $mult, $norm, $dims[1], $sdim, @w
     );
     $ret{$_->[0]} = $_->[1] for grep defined $_->[1], ['VL',$vl], ['VR',$vr];
   }
@@ -1369,13 +1347,12 @@ sub _eigen_pair {
 
 *mgschur = \&PDL::mgschur;
 sub PDL::mgschur {
-  my $di = $_[0]->dims_internal;
   &_square_same;
   my($m, $p, $jobvsl, $jobvsr, $jobvl, $jobvr, $select_func, $mult, $norm) = @_;
   my @mdims  = $m->dims;
   $_ = $_->new_or_inplace->t for $m, $p;
   barf("mgschur: broadcasting isn't supported for selected vectors")
-    if ($select_func && ((@mdims > 2+$di) || ($p->ndims > 2+$di)) &&
+    if ($select_func && ((@mdims > 2) || ($p->ndims > 2)) &&
       ($jobvsl == 2 || $jobvsr == 2 || $jobvl == 2 || $jobvr == 2));
   $mult //= 1;
   $norm //= 1;
@@ -1385,7 +1362,7 @@ sub PDL::mgschur {
   my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
   $_ = $m->_similar_null for my ($beta, $vsl, $vsr);
   $m->_call_method('gges', $jobvsl, $jobvsr, $select, $p, $select_f, @w, $beta, $vsl, $vsr, $sdim, $info);
-  _error_schur($info, $select_func, $mdims[$di], 'mgschur', 'QZ');
+  _error_schur($info, $select_func, $mdims[0], 'mgschur', 'QZ');
   my @vl = ('VL', $jobvl);
   my @vr = ('VR', $jobvr);
   my %ret;
@@ -1394,7 +1371,7 @@ sub PDL::mgschur {
   if ($vl[1] || $vr[1]) {
     my ($vl, $vr) = _eigen_pair(
       $m, $p, $select_func, $vl[1], $vr[1], $jobvsl, $jobvsr, $vsl, $vsr,
-      $mult, $norm, $mdims[$di+1], $sdim, @w
+      $mult, $norm, $mdims[1], $sdim, @w
     );
     $ret{$_->[0]} = $_->[1] for grep defined $_->[1], ['VL',$vl], ['VR',$vr];
   }
@@ -1485,7 +1462,6 @@ from Lapack. Works on transposed array.
 
 *mgschurx = \&PDL::mgschurx;
 sub PDL::mgschurx {
-  my $di = $_[0]->dims_internal;
   &_square_same;
   my($m, $p, $jobvsl, $jobvsr, $jobvl, $jobvr, $select_func, $sense, $mult, $norm) = @_;
   my (@mdims) = $m->dims;
@@ -1499,7 +1475,7 @@ sub PDL::mgschurx {
   my @w = map $m->_similar_null, $m->_is_complex ? 1 : 1..2;
   my $select_f = $m->_wrap_select_func($select_func);
   $m->_call_method('ggesx', $jobvsl, $jobvsr, $select, $sense, $p, $select_f, @w, $beta, $vsl, $vsr, $sdim, $rconde, $rcondv,$info);
-  _error_schur($info, $select_func, $mdims[$di], 'mgschurx', 'QZ');
+  _error_schur($info, $select_func, $mdims[0], 'mgschurx', 'QZ');
   my @vl = ('VL', $jobvl);
   my @vr = ('VR', $jobvr);
   my %ret;
@@ -1508,7 +1484,7 @@ sub PDL::mgschurx {
   if ($vl[1] || $vr[1]) {
     my ($vl, $vr) = _eigen_pair(
       $m, $p, $select_func, $vl[1], $vr[1], $jobvsl, $jobvsr, $vsl, $vsr,
-      $mult, $norm, $mdims[$di+1], $sdim, @w
+      $mult, $norm, $mdims[1], $sdim, @w
     );
     $ret{$_->[0]} = $_->[1] for grep defined $_->[1], ['VL',$vl], ['VR',$vr];
   }
@@ -1559,23 +1535,22 @@ from Lapack and returns C<Q> in scalar context. Works on transposed array.
 *mqr = \&PDL::mqr;
 sub PDL::mqr {
   &_2d_array;
-  my $di = $_[0]->dims_internal;
   my($m, $full) = @_;
   my(@dims) = $m->dims;
   $m = $m->t->copy;
-  my $min = $dims[$di] < $dims[$di+1] ? $dims[$di] : $dims[$di+1];
-  my $slice_arg = (',' x $di) . ",:@{[$min-1]}";
+  my $min = $dims[0] < $dims[1] ? $dims[0] : $dims[1];
+  my $slice_arg = ",:@{[$min-1]}";
   my $tau = $m->_similar($min);
   $m->_call_method('geqrf', $tau, my $info = null);
   if ($info){
     laerror ("mqr: Error $info in geqrf\n");
     return ($m->t->sever, $m, $info);
   }
-  my $q = ($dims[$di] > $dims[$di+1] ? $m->slice($slice_arg) : $m)->copy;
-  $q->reshape(@dims[$di+1,$di+1]) if $full && $dims[$di] < $dims[$di+1];
+  my $q = ($dims[0] > $dims[1] ? $m->slice($slice_arg) : $m)->copy;
+  $q->reshape(@dims[1,1]) if $full && $dims[0] < $dims[1];
   $q->_call_method(['orgqr','cungqr'], $tau, $info);
   return $q->t->sever unless wantarray;
-  my $r = (($dims[$di] < $dims[$di+1] && !$full) ? $m->t->slice($slice_arg) : $m->t)->tricpy(0);
+  my $r = (($dims[0] < $dims[1] && !$full) ? $m->t->slice($slice_arg) : $m->t)->tricpy(0);
   return ($q->t->sever, $r, $info);
 }
 
@@ -1607,43 +1582,42 @@ from Lapack and returns C<Q> in scalar context. Works on transposed array.
 *mrq = \&PDL::mrq;
 sub PDL::mrq {
   &_2d_array;
-  my $di = $_[0]->dims_internal;
   my @diag_args = (0,1);
   my($m, $full) = @_;
   my(@dims) = $m->dims;
   my ($q, $r);
         $m = $m->t->copy;
-  my $min = $dims[$di] < $dims[$di+1] ? $dims[$di] : $dims[$di+1];
+  my $min = $dims[0] < $dims[1] ? $dims[0] : $dims[1];
   my $tau = $m->_similar($min);
   $m->_call_method('gerqf', $tau, my $info = null);
   if ($info){
     laerror ("mrq: Error $info in gerqf\n");
     return ($m, $m->t->sever, $info);
   }
-  if ($dims[$di] > $dims[$di+1] && $full){
-    $q = $m->_similar(@dims[$di,$di]);
-    $q->slice("@{[$dims[$di] - $dims[$di+1]]}:") .= $m;
+  if ($dims[0] > $dims[1] && $full){
+    $q = $m->_similar(@dims[0,0]);
+    $q->slice("@{[$dims[0] - $dims[1]]}:") .= $m;
   }
-  elsif ($dims[$di] < $dims[$di+1]){
-    $q = $m->slice("@{[$dims[$di+1] - $dims[$di]]}:")->copy;
+  elsif ($dims[0] < $dims[1]){
+    $q = $m->slice("@{[$dims[1] - $dims[0]]}:")->copy;
   }
   else{
     $q = $m->copy;
   }
   $q->_call_method(['orgrq','cungrq'], $tau, $info);
   return $q->t->sever unless wantarray;
-  if ($dims[$di] > $dims[$di+1] && $full){
+  if ($dims[0] > $dims[1] && $full){
     $r = $m->t->tricpy(0);
     $r->slice(":@{[$min-1]},:@{[$min-1]}")->diagonal(@diag_args) .= 0;
   }
-  elsif ($dims[$di] < $dims[$di+1]){
-    my $temp = $m->_similar(@dims[$di+1,$di+1]);
+  elsif ($dims[0] < $dims[1]){
+    my $temp = $m->_similar(@dims[1,1]);
     $temp->slice("-$min:") .= $m->t;
     $r = $temp->tricpy(0);
     $r = $r->slice("-$min:")->sever;
   }
   else{
-    $r = $m->t->slice("@{[$dims[$di] - $dims[$di+1]]}:")->tricpy(0);
+    $r = $m->t->slice("@{[$dims[0] - $dims[1]]}:")->tricpy(0);
   }
   return ($r, $q->t->sever, $info);
 }
@@ -1676,24 +1650,23 @@ from Lapack and returns C<Q> in scalar context. Works on transposed array.
 *mql = \&PDL::mql;
 sub PDL::mql {
   &_2d_array;
-  my $di = $_[0]->dims_internal;
   my @diag_args = (0,1);
   my($m, $full) = @_;
   my(@dims) = $m->dims;
   my ($q, $l);
         $m = $m->t->copy;
-  my $min = $dims[$di] < $dims[$di+1] ? $dims[$di] : $dims[$di+1];
+  my $min = $dims[0] < $dims[1] ? $dims[0] : $dims[1];
   my $tau = $m->_similar($min);
   $m->_call_method('geqlf', $tau, my $info = null);
   if ($info){
     laerror("mql: Error $info in geqlf\n");
     return ($m->t->sever, $m, $info);
   }
-  if ($dims[$di] < $dims[$di+1] && $full){
-    $q = $m->_similar(@dims[$di+1,$di+1]);
-    $q->slice(":,-$dims[$di]:") .= $m;
+  if ($dims[0] < $dims[1] && $full){
+    $q = $m->_similar(@dims[1,1]);
+    $q->slice(":,-$dims[0]:") .= $m;
   }
-  elsif ($dims[$di] > $dims[$di+1]){
+  elsif ($dims[0] > $dims[1]){
     $q = $m->slice(":,-$min:")->copy;
   }
   else{
@@ -1701,18 +1674,18 @@ sub PDL::mql {
   }
   $q->_call_method(['orgql','cungql'], $tau, $info);
   return $q->t->sever unless wantarray;
-  if ($dims[$di] < $dims[$di+1] && $full){
+  if ($dims[0] < $dims[1] && $full){
     $l = $m->t->tricpy(1);
     $l->slice(":@{[$min-1]},:@{[$min-1]}")->diagonal(@diag_args) .= 0;
   }
-  elsif ($dims[$di] > $dims[$di+1]){
-    my $temp = $m->_similar(@dims[$di,$di]);
-    $temp->slice(":,-$dims[$di+1]:") .= $m->t;
+  elsif ($dims[0] > $dims[1]){
+    my $temp = $m->_similar(@dims[0,0]);
+    $temp->slice(":,-$dims[1]:") .= $m->t;
     $l = $temp->tricpy(0);
-    $l = $l->slice(":,-$dims[$di+1]:");
+    $l = $l->slice(":,-$dims[1]:");
   }
   else{
-    $l = $m->t->slice(":,@{[$dims[$di+1] - $min]}:")->tricpy(1);
+    $l = $m->t->slice(":,@{[$dims[1] - $min]}:")->tricpy(1);
   }
   return ($q->t->sever, $l, $info);
 }
@@ -1745,24 +1718,23 @@ from Lapack and returns C<Q> in scalar context. Works on transposed array.
 *mlq = \&PDL::mlq;
 sub PDL::mlq {
   &_2d_array;
-  my $di = $_[0]->dims_internal;
   my($m, $full) = @_;
   my(@dims) = $m->dims;
   my ($q);
   $m = $m->t->copy;
-  my $min = $dims[$di] < $dims[$di+1] ? $dims[$di] : $dims[$di+1];
-  my $slice_arg = (',' x $di) . ":@{[$min-1]}";
+  my $min = $dims[0] < $dims[1] ? $dims[0] : $dims[1];
+  my $slice_arg = ":@{[$min-1]}";
   my $tau = $m->_similar($min);
   $m->_call_method('gelqf', $tau, my $info = null);
   if ($info){
     laerror("mlq: Error $info in gelqf\n");
     return ($m, $m->t->sever, $info);
   }
-  if ($dims[$di] > $dims[$di+1] && $full){
-    $q = $m->_similar(@dims[$di,$di]);
+  if ($dims[0] > $dims[1] && $full){
+    $q = $m->_similar(@dims[0,0]);
     $q->slice($slice_arg) .= $m;
   }
-  elsif ($dims[$di] < $dims[$di+1]){
+  elsif ($dims[0] < $dims[1]){
     $q = $m->slice($slice_arg)->copy;
   }
   else{
@@ -1770,7 +1742,7 @@ sub PDL::mlq {
   }
   $q->_call_method(['orglq','cunglq'], $tau, $info);
   return $q->t->sever unless wantarray;
-  my $l = (($dims[$di] > $dims[$di+1] && !$full) ? $m->t->slice($slice_arg) : $m->t)->tricpy(1);
+  my $l = (($dims[0] > $dims[1] && !$full) ? $m->t->slice($slice_arg) : $m->t)->tricpy(1);
   return ($l, $q->t->sever, $info);
 }
 
@@ -1884,7 +1856,6 @@ Works on transposed arrays.
 sub PDL::msolvex {
   &_square;
   &_matrices_match;
-  my $di = $_[0]->dims_internal;
   my($a, $b, %opt) = @_;
   my(@adims) = $a->dims;
   $a = $a->t->copy;
@@ -1893,9 +1864,9 @@ sub PDL::msolvex {
   my $af = PDL::zeroes $a;
   $_ = null for my ($info, $rcond, $rpvgrw, $ferr, $berr);
   my $equed = pdl(long, 0);
-  my $ipiv = zeroes(long, $adims[$di]);
+  my $ipiv = zeroes(long, $adims[0]);
   $a->_call_method('gesvx', $opt{transpose}, $opt{equilibrate} ? 2 : 1, $b, $af, $ipiv, $equed, my $r = null, my $c = null, $x, $rcond, $ferr, $berr, $rpvgrw,$info);
-  if( $info < $adims[$di] && $info > 0){
+  if( $info < $adims[0] && $info > 0){
     $info--;
     laerror("msolvex: Can't solve system of linear equations:\nfactor U($info,$info)".
     " of coefficient matrix is exactly 0");
@@ -2056,7 +2027,6 @@ sub PDL::msymsolvex {
   &_square;
   my $uplo = splice @_, 1, 1;
   &_matrices_match;
-  my $di = $_[0]->dims_internal;
   my($a, $b, $d) = @_;
   my(@adims) = $a->dims;
   $uplo = 1 - $uplo;
@@ -2064,9 +2034,9 @@ sub PDL::msymsolvex {
   my $x = $a->_similar_null;
   my $af =  PDL::zeroes $a;
   $_ = null for my ($info, $rcond, $ferr, $berr);
-  my $ipiv = zeroes(long, $adims[$di]);
+  my $ipiv = zeroes(long, $adims[0]);
   $a->_call_method('sysvx', $uplo, 0, $b, $af, $ipiv, $x, $rcond, $ferr, $berr, $info);
-  if( $info < $adims[$di] && $info > 0){
+  if( $info < $adims[0] && $info > 0){
     $info--;
     laerror("msymsolvex: Can't solve system of linear equations:\nfactor D($info,$info)".
     " of coefficient matrix is exactly 0");
@@ -2189,7 +2159,6 @@ sub PDL::mpossolvex {
   &_square;
   my $uplo = splice(@_, 1, 1) ? 0 : 1;
   &_matrices_match;
-  my $di = $_[0]->dims_internal;
   my($a, $b, %opt) = @_;
   my(@adims) = $a->dims;
   my(@bdims) = $b->dims;
@@ -2200,7 +2169,7 @@ sub PDL::mpossolvex {
   my $af = PDL::zeroes $a;
   my $equed = pdl(long, 0);
   $a->_call_method('posvx', $uplo, $equilibrate, $b, $af, $equed, my $s = null, $x, my $rcond=null, my $ferr=null, my $berr=null, my $info=null);
-  if( $info < $adims[$di] && $info > 0){
+  if( $info < $adims[0] && $info > 0){
     $info--;
     barf("mpossolvex: Can't solve system of linear equations:\n".
       "the leading minor of order $info of A is".
@@ -2251,26 +2220,25 @@ Works on transposed arrays.
 *mlls = \&PDL::mlls;
 
 sub PDL::mlls {
-  my $di = $_[0]->dims_internal;
   &_matrices_matchrows;
   my($a, $b, $trans) = @_;
   my(@adims) = $a->dims;
   my(@bdims) = $b->dims;
   my $x;
   $a = $a->copy;
-  if ( $adims[$di+1] < $adims[$di]) {
-    $x = $a->_similar($adims[$di], $bdims[$di]);
-    $x->slice(":@{[$bdims[$di+1]-1]}, :@{[$bdims[$di]-1]}") .= $b->t;
+  if ( $adims[1] < $adims[0]) {
+    $x = $a->_similar($adims[0], $bdims[0]);
+    $x->slice(":@{[$bdims[1]-1]}, :@{[$bdims[0]-1]}") .= $b->t;
   } else {
     $x = $b->t->copy;
   }
   $a->_call_method('gels', $trans ? 0 : 1, $x, my $info = null);
   $x = $x->t;
-  return $x->sever if $adims[$di+1] <= $adims[$di];
-  my $sliced = $x->slice(", :@{[$adims[$di]-1]}")->sever;
+  return $x->sever if $adims[1] <= $adims[0];
+  my $sliced = $x->slice(", :@{[$adims[0]-1]}")->sever;
   return $sliced if !wantarray;
   my $power = $a->_similar(1); $power .= 2;
-  ($sliced, ($x->slice(", $adims[$di]:")->t ** $power)->sumover);
+  ($sliced, ($x->slice(", $adims[0]:")->t ** $power)->sumover);
 }
 
 =head2 mllsy
@@ -2305,7 +2273,6 @@ from Lapack. Works on transposed arrays.
 
 *mllsy = \&PDL::mllsy;
 sub PDL::mllsy {
-  my $di = $_[0]->dims_internal;
   &_matrices_matchrows;
   my($a, $b) = @_;
   my(@adims) = $a->dims;
@@ -2314,20 +2281,20 @@ sub PDL::mllsy {
   $rcond = $rcond->sqrt - ($rcond->sqrt - $rcond) / 2;
   $a = $a->t->copy;
   my ($x);
-  if ( $adims[1+$di] < $adims[0+$di]){
-    $x = $a->_similar($adims[$di], $bdims[$di]);
-    $x->slice(":@{[$bdims[$di+1]-1]}, :@{[$bdims[$di]-1]}") .= $b->t;
+  if ( $adims[1] < $adims[0]){
+    $x = $a->_similar($adims[0], $bdims[0]);
+    $x->slice(":@{[$bdims[1]-1]}, :@{[$bdims[0]-1]}") .= $b->t;
   }
   else{
     $x = $b->t->copy;
   }
   my $info = null;
   my $rank = null;
-  my $jpvt = zeroes(long, $adims[$di]);
+  my $jpvt = zeroes(long, $adims[0]);
   $a->_call_method('gelsy', $x,  $rcond, $jpvt, $rank, $info);
   my %ret = !wantarray ? () : ('A'=> $a->t->sever, 'rank' => $rank, 'jpvt'=>$jpvt);
-  return wantarray ? ($x->t->sever, %ret) : $x->t->sever if $adims[$di+1] <= $adims[$di];
-  $x = $x->t->slice(", :@{[$adims[$di]-1]}")->sever;
+  return wantarray ? ($x->t->sever, %ret) : $x->t->sever if $adims[1] <= $adims[0];
+  $x = $x->t->slice(", :@{[$adims[0]-1]}")->sever;
   wantarray ? ($x, %ret) : $x;
 }
 
@@ -2370,7 +2337,6 @@ Works on transposed arrays.
 *mllss = \&PDL::mllss;
 
 sub PDL::mllss {
-  my $di = $_[0]->dims_internal;
   &_matrices_matchrows;
   my($a, $b, $method) = @_;
   my @adims = $a->dims;
@@ -2380,27 +2346,27 @@ sub PDL::mllss {
   $rcond = $rcond->sqrt - ($rcond->sqrt - $rcond) / 2;
   $a = $a->t->copy;
   my $x;
-  if ($adims[1+$di] < $adims[0+$di]){
-    $x = $a->_similar($adims[$di], $bdims[$di]);
-    $x->slice(":@{[$bdims[$di+1]-1]}, :@{[$bdims[$di]-1]}") .= $b->t;
+  if ($adims[1] < $adims[0]){
+    $x = $a->_similar($adims[0], $bdims[0]);
+    $x->slice(":@{[$bdims[1]-1]}, :@{[$bdims[0]-1]}") .= $b->t;
   }
   else{
     $x = $b->t->copy;
   }
   $_ = null for my ($info, $rank, $s);
-  my $min = ($adims[$di] > $adims[$di+1]) ? $adims[$di+1] : $adims[$di];
+  my $min = ($adims[0] > $adims[1]) ? $adims[1] : $adims[0];
   $method ||= 'gelsd';
   $a->_call_method($method, $x,  $rcond, $s, $rank, $info);
   laerror("mllss: The algorithm for computing the SVD failed to converge\n") if $info;
   $x = $x->t;
   my %ret = !wantarray ? () : (rank => $rank, s=>$s, info=>$info);
   $ret{V} = $a if wantarray and $method =~ /gelss/;
-  return wantarray ? ($x->sever, %ret) : $x->sever if $adims[1+$di] <= $adims[0+$di];
+  return wantarray ? ($x->sever, %ret) : $x->sever if $adims[1] <= $adims[0];
   if (wantarray and $rank == $min) {
     my $power = $a->_similar(1); $power .= 2;
-    $ret{res} = ($x->slice(", $adims[$di]:")->t ** $power)->sumover;
+    $ret{res} = ($x->slice(", $adims[0]:")->t ** $power)->sumover;
   }
-  $x = $x->slice(", :@{[$adims[$di]-1]}")->sever;
+  $x = $x->slice(", :@{[$adims[0]-1]}")->sever;
   wantarray ? ($x->sever, %ret) : $x->sever;
 }
 
@@ -2758,7 +2724,6 @@ Works on transposed arrays.
 *mgeigenx = \&PDL::mgeigenx;
 sub PDL::mgeigenx {
   &_square_same;
-  my $di = $_[0]->dims_internal;
   my ($a, $b, %opt) = @_;
   my @adims = $a->dims;
   $_ = $_->new_or_inplace->t for $a, $b;
@@ -2774,7 +2739,7 @@ sub PDL::mgeigenx {
     $beta, $vl, $vr, $ilo, $ihi, $lscale, $rscale,
     $abnrm, $bbnrm, $rconde, $rcondv, $info);
   (my $w, $vl, $vr) = _eigen_extract($jobvl, $jobvr, $vl, $vr, @w);
-  if ($info > 0 && $info < $adims[$di+1]) {
+  if ($info > 0 && $info < $adims[1]) {
     laerror("mgeigenx: The QZ algorithm failed to converge");
     print "Returning converged eigenvalues\n" if $_laerror;
   } elsif ($info) {
@@ -2893,7 +2858,6 @@ or L<cheevr|PDL::LinearAlgebra::Complex/cheevr> for complex. Works on transposed
 my %range_type2range = (interval => 1, indice => 2);
 sub PDL::msymeigenx {
   &_square;
-  my $di = $_[0]->dims_internal;
   my($m, $upper, $jobz, %opt) = @_;
   my(@dims) = $m->dims;
   my $range = $range_type2range{$opt{range_type}} || 0;
@@ -2903,7 +2867,7 @@ sub PDL::msymeigenx {
   }
   elsif ($range == 2){
     barf "msymeigenx: Indices must be > 0" unless $opt{range}->(0) > 0;
-    barf "msymeigenx: Indices must be <= $dims[$di+1]" unless $opt{range}->(1) <= $dims[$di+1];
+    barf "msymeigenx: Indices must be <= $dims[1]" unless $opt{range}->(1) <= $dims[1];
   }
   elsif ($range == 1){
     barf "msymeigenx: Interval limits must be different" unless ($opt{range}->(0) !=  $opt{range}->(1));
@@ -3046,7 +3010,6 @@ from Lapack. Works on transposed arrays.
 
 sub PDL::msymgeigenx {
   &_square_same;
-  my $di = $_[0]->dims_internal;
   my($a, $b, $upper, $jobv, %opt) = @_;
   my(@adims) = $a->dims;
   my $range = $range_type2range{$opt{range_type}} || 0;
@@ -3069,12 +3032,12 @@ sub PDL::msymgeigenx {
   $a->_call_method(['sygvx','chegvx'], $opt{type}, $jobv, $range, $upper,
     $b, $opt{range}->(0), $opt{range}->(1),$opt{range}->(0),$opt{range}->(1),
     $opt{'abstol'}, $n, $w, $z ,$support, $info);
-  if ( ($info > 0) && ($info < $adims[$di+1])){
+  if ( ($info > 0) && ($info < $adims[1])){
     laerror("msymgeigenx: The algorithm failed to converge");
     print("see support for details\n") if $_laerror;
   }
   elsif($info){
-    $info = $info - $adims[$di+1] - 1;
+    $info = $info - $adims[1] - 1;
     barf("msymgeigenx: The leading minor of order $info of B is not positive definite\n");
   }
   return $w if !wantarray;
@@ -3111,7 +3074,6 @@ Uses L<gesdd|PDL::LinearAlgebra::Real/gesdd> or L<cgesdd|PDL::LinearAlgebra::Com
 
 *mdsvd = \&PDL::mdsvd;
 sub PDL::mdsvd {
-  my $di = $_[0]->dims_internal;
   my($m, $jobz) = @_;
   my(@dims) = $m->dims;
   $jobz = !wantarray ? 0 : $jobz // 1;
