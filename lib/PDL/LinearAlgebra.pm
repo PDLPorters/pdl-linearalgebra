@@ -3233,7 +3233,6 @@ my @gsvd_opts = qw(V U Q D1 D2 0R R X);
 *mgsvd = \&PDL::mgsvd;
 sub PDL::mgsvd {
   &_matrices_matchcolumns;
-  my $di = $_[0]->dims_internal;
   my @diag_args = (0,1);
   my($a, $b, %opt) = @_;
   my(@adims) = $a->dims;
@@ -3251,46 +3250,45 @@ sub PDL::mgsvd {
   warn "mgsvd: Effective rank of 0 in mgsvd" if (!$ret{rank} and $_laerror);
   if (%opt) {
     $Q = $Q->t->sever if $jobqx;
-    if (($adims[$di+1] - $k - $l)  < 0  && $ret{rank}){
+    if (($adims[1] - $k - $l)  < 0  && $ret{rank}) {
       if ( $opt{'0R'} || $opt{R} || $opt{X}){
-        $a->reshape((map $a->dim($_-1), 1..$di), $adims[$di], ($k + $l));
+        $a->reshape($adims[0], ($k + $l));
         # Slice $a ???  => always square ??
-        $a->slice("@{[$adims[$di] - ($k+$l-$adims[$di+1])]} : , $adims[$di+1]:") .=
-            $b->slice("@{[$adims[$di+1]-$k]}:@{[$l-1]},@[[$adims[$di]+$adims[$di+1]-$k - $l]}:@{[$adims[$di]-1]}")->t;
+        $a->slice("@{[$adims[0] - ($k+$l-$adims[1])]} : , $adims[1]:") .=
+            $b->slice("@{[$adims[1]-$k]}:@{[$l-1]},@[[$adims[0]+$adims[1]-$k - $l]}:@{[$adims[0]-1]}")->t;
         $ret{'0R'} = $a if $opt{'0R'};
       }
-      if ($opt{'D1'}){
-        my $D1 = zeroes($type, $adims[$di+1], $adims[$di+1]);
-        $D1->diagonal(0,1) .= $alpha(:($adims[$di+1]-1));
-        $D1 = $D1->t->reshape($adims[$di+1] , ($k+$l))->t->sever;
+      if ($opt{'D1'}) {
+        my $D1 = zeroes($type, @adims[1,1]);
+        $D1->diagonal(0,1) .= $alpha(:($adims[1]-1));
+        $D1 = $D1->t->reshape($adims[1] , ($k+$l))->t->sever;
         $ret{'D1'} = $D1;
       }
-    }
-    elsif ($ret{rank}){
+    } elsif ($ret{rank}) {
       if ( $opt{'0R'} || $opt{R} || $opt{X}){
-        $a->reshape((map $a->dim($_-1), 1..$di), $adims[$di], ($k + $l));
+        $a->reshape($adims[0], ($k + $l));
         $ret{'0R'} = $a if $opt{'0R'};
       }
       if ($opt{'D1'}){
-        my $D1 = zeroes($type, ($k + $l), ($k + $l));
+        my $D1 = zeroes($type, ($k + $l) x 2);
         $D1->diagonal(0,1) .=  $alpha(:($k+$l-1));
-        $D1->reshape(($k + $l), $adims[$di+1]);
+        $D1->reshape(($k + $l), $adims[1]);
         $ret{'D1'} = $D1;
       }
     }
-    if ($opt{'D2'} && $ret{rank}){
+    if ($opt{'D2'} && $ret{rank}) {
       my $work = zeroes($b->type, $l, $l);
       $work->diagonal(0,1) .=  $beta($k:($k+$l-1));
-      my $D2 = zeroes($b->type, ($k + $l), $bdims[$di+1]);
+      my $D2 = zeroes($b->type, ($k + $l), $bdims[1]);
       $D2( $k:, :($l-1)  ) .= $work;
       $ret{'D2'} = $D2;
     }
-    if ( $ret{rank} && ($opt{X} || $opt{R}) ){
+    if ( $ret{rank} && ($opt{X} || $opt{R}) ) {
       my $work = $a->slice("@{[-($k + $l)]}:");
       $ret{R} = $work if $opt{R};
-      if ($opt{X}){
-        my $X = $a->_similar(@adims[$di,$di]);
-        $X->diagonal(@diag_args) .= 1 if ($adims[$di] > ($k + $l));
+      if ($opt{X}) {
+        my $X = $a->_similar(@adims[0,0]);
+        $X->diagonal(@diag_args) .= 1 if ($adims[0] > ($k + $l));
         $X->slice("@{[-($k + $l)]}:, @{[-($k + $l)]}:") .= mtriinv($work);
         $ret{X} = $Q x $X;
       }
