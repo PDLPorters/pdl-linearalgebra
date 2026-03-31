@@ -134,11 +134,9 @@ Supports broadcasting.
 =cut
 
 sub PDL::dims_internal {0}
-sub PDL::dims_internal_values {()}
 sub PDL::_similar {
-  my @di_vals = $_[0]->dims_internal_values;
   my ($m, @vdims) = @_;
-  ref($m)->new_from_specification($m->type, @di_vals, @vdims);
+  ref($m)->new_from_specification($m->type, @vdims);
 }
 sub PDL::_similar_null { ref($_[0])->null }
 sub _complex_null {
@@ -1571,7 +1569,6 @@ from Lapack and returns C<Q> in scalar context. Works on transposed array.
 sub PDL::mqr {
   &_2d_array;
   my $di = $_[0]->dims_internal;
-  my @di_vals = $_[0]->dims_internal_values;
   my($m, $full) = @_;
   my(@dims) = $m->dims;
   $m = $m->t->copy;
@@ -1584,7 +1581,7 @@ sub PDL::mqr {
     return ($m->t->sever, $m, $info);
   }
   my $q = ($dims[$di] > $dims[$di+1] ? $m->slice($slice_arg) : $m)->copy;
-  $q->reshape(@di_vals, @dims[$di+1,$di+1]) if $full && $dims[$di] < $dims[$di+1];
+  $q->reshape(@dims[$di+1,$di+1]) if $full && $dims[$di] < $dims[$di+1];
   $q->_call_method(['orgqr','cungqr'], $tau, $info);
   return $q->t->sever unless wantarray;
   my $r = (($dims[$di] < $dims[$di+1] && !$full) ? $m->t->slice($slice_arg) : $m->t)->tricpy(0);
