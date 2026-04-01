@@ -106,4 +106,11 @@ is_pdl $u x gurney($s, $A->dims) x $vt, $A, "msvd 3,2";
 ($u, $s, $vt) = mdsvd($A);
 is_pdl $u x gurney($s, $A->dims) x $vt, $A, "mdsvd 3,2";
 
+$A = pdl([0.43,0.03],[0.75,0.72]);
+$B = sequence(2,2);
+(my $c, $s, my %ret) = mgsvd($A, $B, U => 1, V => 1, X => 1);
+($u, my $v, $x) = @ret{qw(U V X)};
+is_pdl $u x stretcher($c) x $x->t, $A, 'mgsvd A';
+is_pdl $v x stretcher($s) x $x->t, $B, 'mgsvd B';
+
 done_testing;

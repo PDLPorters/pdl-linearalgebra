@@ -3203,10 +3203,10 @@ sub PDL::mgsvd {
   my $type = $a->type;
   my $jobqx = ($opt{Q} || $opt{X}) ? 1 : 0;
   $a = $a->copy;
-  $b = $b->t->copy;
+  $b = $b->copy;
   $_ = null for my ($k, $l, $alpha, $beta, $iwork, $info);
   $_ = $a->_similar_null for my ($U, $V, $Q);
-  $a->t->_call_method('ggsvd', $opt{U}, $opt{V}, $jobqx, $b, $k, $l, $alpha, $beta, $U, $V, $Q, $iwork, $info);
+  $a->t->_call_method('ggsvd', $opt{U}, $opt{V}, $jobqx, $b->t, $k, $l, $alpha, $beta, $U, $V, $Q, $iwork, $info);
   laerror("mgsvd: The Jacobi procedure fails to converge") if $info;
   my %ret = (rank=>$k + $l, info=>$info);
   warn "mgsvd: Effective rank of 0 in mgsvd" if (!$ret{rank} and $_laerror);
@@ -3251,7 +3251,7 @@ sub PDL::mgsvd {
       if ($opt{X}) {
         my $X = $a->_similar(@adims[0,0]);
         $X->diagonal(@diag_args) .= 1 if ($adims[0] > ($k + $l));
-        $X->slice("@{[-($k + $l)]}:, @{[-($k + $l)]}:") .= mtriinv($work);
+        $X->slice("@{[-($k + $l)]}:, @{[-($k + $l)]}:") .= $work->t;
         $ret{X} = $Q x $X;
       }
     }
