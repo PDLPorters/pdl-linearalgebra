@@ -113,4 +113,12 @@ $B = sequence(2,2);
 is_pdl $u x stretcher($c) x $x->t, $A, 'mgsvd A';
 is_pdl $v x stretcher($s) x $x->t, $B, 'mgsvd B';
 
+$A = pdl '1 2 3 4 21; 5 6 7 8 22; 9 10 11 12 20';
+($u, $s, $vt) = mdsvd($A);
+is_pdl $u x gurney($s, $A->dims) x $vt, $A, "mdsvd 5,3";
+is_pdl $u->t x $u, identity(3), 'U is orthonormal';
+is_pdl $vt->t x $vt, identity(5), 'Vt is orthonormal';
+my $v_null = $vt->slice(",-1");
+is_pdl $A x $v_null->t, zeroes(1,3), 'correct right null-space';
+
 done_testing;
