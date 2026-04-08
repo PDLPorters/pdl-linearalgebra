@@ -25,11 +25,11 @@ $VERSION =~ tr/_//d;
 
 our @ISA = qw/PDL::Exporter/;
 our @EXPORT_OK = qw/diag issym minv mtriinv msyminv mposinv mdet mposdet mrcond
-  positivise gurney
+  positivise
   mdsvd msvd mgsvd mpinv mlu mhessen mchol mqr mql mlq mrq meigen meigenx
   mgeigen  mgeigenx msymeigen msymeigenx msymgeigen msymgeigenx
   msolve mtrisolve msymsolve mpossolve msolvex msymsolvex mpossolvex
-  mrank mlls mllsy mllss mglm mlse tritosym mnorm mgschur mgschurx
+  mrank mlls mllsy mllss mglm mlse mnorm mgschur mgschurx
   mcrossprod mcond morth mschur mschurx
   NO WARN BARF setlaerror getlaerorr laerror/;
 our %EXPORT_TAGS = (Func=>\@EXPORT_OK);
@@ -318,38 +318,6 @@ sub PDL::diag {
   $z;
 }
 use attributes 'PDL', \&PDL::diag, 'lvalue';
-
-=head2 tritosym
-
-=for ref
-
-Returns symmetric or Hermitian matrix from lower or upper triangular matrix.
-Supports inplace and broadcasting.
-
-=for usage
-
- PDL = tritosym(PDL, SCALAR(uplo), SCALAR(conj))
- uplo : UPPER = 0 | LOWER = 1, default = 0
- conj : Hermitian = 1 | Symmetric = 0, default = 0;
-
-=for example
-
- # Assume $a is symmetric triangular
- my $a = random(10,10);
- my $b = tritosym($a);
-
-=cut
-
-*tritosym = \&PDL::tritosym;
-sub PDL::tritosym {
-  &_square;
-  my ($m, $upper, $conj) = @_;
-  my $b = $m->is_inplace ? $m->t : $m->_similar_null;
-  ($conj ? $m->conj : $m)->tricpy($upper, $b);
-  $m->tricpy($upper, $b->t) unless (!$conj && $m->is_inplace(0));
-  $b->im->diagonal(0,1) .= 0 if $conj;
-  $b;
-}
 
 =head2 positivise
 
@@ -3128,31 +3096,6 @@ sub PDL::msvd {
   $m->_call_method('gesvd', $jobv, $jobu,my $s = null, $u, $vt, my $info = null);
   _error($info, "msvd: Matrix (PDL(s) %s) is/are singular");
   wantarray ? ($jobu?$u->t:(), $s, $jobv?$vt->t:(), $info) : $s;
-}
-
-=head2 gurney
-
-=for ref
-
-Turns a vector into non-square matrix.
-
-=for example
-
-  pdl> gurney(pdl(1,2), 2, 3)->info
-  PDL: Double D [2,3]
-
-=cut
-
-*gurney = \&PDL::gurney;
-sub PDL::gurney {
-  my ($diag, $d0, $d1) = @_;
-  Carp::confess "gurney: given undef \$d0 or \$d1" if grep !defined $d0, $d1;
-  my $diag_len = $diag->dim(0);
-  Carp::confess "diagonal length $diag_len does not match either given dim $d0 or $d1" if !grep $diag_len == $_, $d0, $d1;
-  my $diff = abs($d0 - $d1);
-  my $mat = stretcher($diag);
-  $mat = $mat->glue($d0 < $d1 ? 1 : 0, zeroes($diag->type, $diff)) if $diff;
-  $mat;
 }
 
 =head2 mgsvd

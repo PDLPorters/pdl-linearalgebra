@@ -69,12 +69,12 @@ WriteMakefile(
     },
   },
   CONFIGURE_REQUIRES =>  {
-    "PDL" => '2.096',
+    "PDL" => '2.104',
     "Devel::CheckLib" => 0,
     "ExtUtils::F77" => '1.26',
   },
   PREREQ_PM => {
-    "PDL" => '2.096', # lib/*.pd
+    "PDL" => '2.104', # tritosym moved over
   },
   TEST_REQUIRES =>  {
     "Test::More" => '0.88', # done_testing

@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use PDL::LiteF;
-use PDL::MatrixOps qw(identity stretcher);
+use PDL::MatrixOps qw(identity stretcher gurney);
 use PDL::LinearAlgebra;
 use PDL::LinearAlgebra::Trans qw //;
 use PDL::LinearAlgebra::Real;
