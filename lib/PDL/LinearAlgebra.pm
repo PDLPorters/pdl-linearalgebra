@@ -20,7 +20,7 @@ use constant {
 
 use strict;
 
-our $VERSION = '0.434';
+our $VERSION = '0.435';
 $VERSION =~ tr/_//d;
 
 our @ISA = qw/PDL::Exporter/;
