@@ -29,7 +29,7 @@ our @EXPORT_OK = qw/diag issym minv mtriinv msyminv mposinv mdet mposdet mrcond
   mdsvd msvd mgsvd mpinv mlu mhessen mchol mqr mql mlq mrq meigen meigenx
   mgeigen  mgeigenx msymeigen msymeigenx msymgeigen msymgeigenx
   msolve mtrisolve msymsolve mpossolve msolvex msymsolvex mpossolvex
-  mrank mlls mllsy mllss mglm mlse mnorm mgschur mgschurx
+  mrank mlls mllsy mllss mglm mlse tritosym mnorm mgschur mgschurx
   mcrossprod mcond morth mschur mschurx
   NO WARN BARF setlaerror getlaerorr laerror/;
 our %EXPORT_TAGS = (Func=>\@EXPORT_OK);

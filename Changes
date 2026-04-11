@@ -1,4 +1,5 @@
 - fix mnull test instability by testing returns actual null space (#32) - thanks @sebastic for report
+- re-export tritosym
 
 0.435 2026-04-09
 - control parameters (usually passed to LAPACK as a character) changed to be OtherPars since handling broadcasting for those is problematic
