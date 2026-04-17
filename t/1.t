@@ -145,5 +145,9 @@ $A = sequence(2,3) + i;
 is_pdl $A x $A->mpinv x $A, $A, 'mpinv complex tall works';
 $A = sequence(3,2) + i;
 is_pdl $A x $A->mpinv x $A, $A, 'mpinv complex wide works';
+$A = sequence(2,3,2);
+is_pdl $A x $A->mpinv x $A, $A, 'mpinv tall broadcast works';
+$A = sequence(2,3,2) + i;
+is_pdl $A x $A->mpinv x $A, $A, 'mpinv tall complex broadcast works';
 
 done_testing;
