@@ -324,9 +324,7 @@ Works inplace.
 *positivise = \&PDL::positivise;
 sub PDL::positivise {
   my $m = shift->new_or_inplace;
-  my $tmp;
-  $tmp = $m->dice('X', which(($m->lt(0,0)->sumover > ($m->dim(0)/2))>0));
-  $tmp->inplace->mult(-1,0);
+  $m->dice('X', which(($m->lt(0,0)->sumover > ($m->dim(0)/2))>0)) *= -1;
   $m;
 }
 
@@ -391,14 +389,10 @@ sub PDL::mrank {
   my($m, $tol) = @_;
   my(@dims) = $m->dims;
   my $err = setlaerror(NO);
-  # Sometimes mdsvd bugs for  float (SGEBRD)
-  # ($sv, $info) = $m->msvd(0, 0);
   my ($sv, $info) = $m->mdsvd(0);
   setlaerror($err);
   barf("mrank: SVD algorithm did not converge\n") if $info;
-  unless (defined $tol){
-    $tol =  ($dims[1] > $dims[0] ? $dims[1] : $dims[0]) * $sv((0)) * lamch(3);
-  }
+  $tol //= ($dims[1] > $dims[0] ? $dims[1] : $dims[0]) * $sv((0)) * lamch(3);
   (which($sv > $tol))->dim(0);
 }
 
