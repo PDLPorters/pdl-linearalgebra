@@ -811,7 +811,6 @@ sub PDL::mpinv {
   my ($m, $tol) = @_;
   my @dims = $m->dims;
   my $err = setlaerror(NO);
-  #TODO: don't transpose
   my ($u, $s, $vt, $info) = $m->mdsvd(2);
   setlaerror($err);
   _error($info, "mpinv: SVD algorithm did not converge (PDL %s)");

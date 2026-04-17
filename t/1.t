@@ -94,6 +94,11 @@ my ($u, $s, $vt) = msvd($A);
 is_pdl $u x gurney($s, $A->dims) x $vt, $A, "msvd 2,3";
 ($u, $s, $vt) = mdsvd($A);
 is_pdl $u x gurney($s, $A->dims) x $vt, $A, "mdsvd 2,3";
+$A = sequence(2,3) + i;
+($u, $s, $vt) = mdsvd($A);
+is_pdl $u x gurney($s, $A->dims) x $vt, $A, "mdsvd complex 2,3";
+($u, $s, $vt) = msvd($A);
+is_pdl $u x gurney($s, $A->dims) x $vt, $A, "msvd complex 2,3";
 
 $A=pdl <<'EOF';
 [
@@ -105,6 +110,11 @@ EOF
 is_pdl $u x gurney($s, $A->dims) x $vt, $A, "msvd 3,2";
 ($u, $s, $vt) = mdsvd($A);
 is_pdl $u x gurney($s, $A->dims) x $vt, $A, "mdsvd 3,2";
+$A = sequence(3,2) + i;
+($u, $s, $vt) = mdsvd($A);
+is_pdl $u x gurney($s, $A->dims) x $vt, $A, "mdsvd complex 3,2";
+($u, $s, $vt) = msvd($A);
+is_pdl $u x gurney($s, $A->dims) x $vt, $A, "msvd complex 3,2";
 
 $A = pdl([0.43,0.03],[0.75,0.72]);
 $B = sequence(2,2);
@@ -131,5 +141,9 @@ $A = sequence(2,3);
 is_pdl $A x $A->mpinv x $A, $A, 'mpinv tall works';
 $A = sequence(3,2);
 is_pdl $A x $A->mpinv x $A, $A, 'mpinv wide works';
+$A = sequence(2,3) + i;
+is_pdl $A x $A->mpinv x $A, $A, 'mpinv complex tall works';
+$A = sequence(3,2) + i;
+is_pdl $A x $A->mpinv x $A, $A, 'mpinv complex wide works';
 
 done_testing;
