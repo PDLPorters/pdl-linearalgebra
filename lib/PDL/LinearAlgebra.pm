@@ -834,8 +834,8 @@ sub PDL::mpinv{
   my ($ind, $cind) = which_both( $s > $tol );
   $s->index($cind) .= 0 if defined $cind;
   $s->index($ind)  .= 1/$s->index($ind) ;
-  $ind = ($vt->t * ($m->_is_complex ? $s->r2C : $s)) x $u->t;
-  return wantarray ? ($ind, $info) : $ind;
+  my $pinv = ($vt->t * ($m->_is_complex ? $s->r2C : $s)) x $u->t;
+  return wantarray ? ($pinv, $info) : $pinv;
 }
 
 =head2 mlu
