@@ -128,10 +128,8 @@ for my $in ($rank2, $rank2->cdouble) {
 }
 
 $A = sequence(2,3);
-my $pinv = $A->mpinv;
-is_pdl $A x $pinv x $A, $A, 'mpinv tall works';
+is_pdl $A x $A->mpinv x $A, $A, 'mpinv tall works';
 $A = sequence(3,2);
-$pinv = $A->mpinv;
-is_pdl $A x $pinv x $A, $A, 'mpinv wide works';
+is_pdl $A x $A->mpinv x $A, $A, 'mpinv wide works';
 
 done_testing;

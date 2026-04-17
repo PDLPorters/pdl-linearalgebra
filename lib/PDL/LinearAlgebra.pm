@@ -819,7 +819,8 @@ sub PDL::mpinv {
   my ($ind, $cind) = which_both( $s > $tol );
   $s->index($cind) .= 0 if defined $cind;
   $s->index($ind)  .= 1/$s->index($ind) ;
-  my $pinv = $vt->t(1) x gurney($s,@dims[1,0,2..$#dims]) x $u->t(1);
+  my $pinv = gurney($s,@dims[1,0,2..$#dims]) x $u->t(1);
+  $pinv = $vt->t(1) x $pinv;
   return wantarray ? ($pinv, $info) : $pinv;
 }
 
