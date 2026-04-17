@@ -648,7 +648,7 @@ sub PDL::mnull {
   barf("mnull: SVD algorithm did not converge\n") if $info;
   #TODO: USE TRANSPOSED A
   my $rank = (which($s > $tol))->dim(0);
-  $rank < $dims[0] ? $vt->t->slice("$rank:")->sever : $m->_similar_null;
+  $rank < $dims[0] ? $vt->t(1)->slice("$rank:")->sever : $m->_similar_null;
 }
 
 =head2 minv
@@ -819,7 +819,7 @@ sub PDL::mpinv{
   my ($ind, $cind) = which_both( $s > $tol );
   $s->index($cind) .= 0 if defined $cind;
   $s->index($ind)  .= 1/$s->index($ind) ;
-  my $pinv = ($vt->t * ($m->_is_complex ? $s->r2C : $s)) x $u->t;
+  my $pinv = ($vt->t(1) * ($m->_is_complex ? $s->r2C : $s)) x $u->t(1);
   return wantarray ? ($pinv, $info) : $pinv;
 }
 
