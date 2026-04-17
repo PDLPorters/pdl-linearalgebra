@@ -118,21 +118,6 @@ sub laerror{
   }
 }
 
-=head2 t
-
-=for usage
-
- PDL = t(PDL, SCALAR(conj))
- conj : Conjugate Transpose = 1 | Transpose = 0, default = 0;
-
-=for ref
-
-Convenient function for transposing real or complex 2D array(s).
-For complex data, if conj is true returns conjugate transposed array(s) and doesn't support dataflow.
-Supports broadcasting.
-
-=cut
-
 sub PDL::_similar {
   my ($m, @vdims) = @_;
   ref($m)->new_from_specification($m->type, @vdims);
