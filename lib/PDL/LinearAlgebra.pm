@@ -392,8 +392,8 @@ sub PDL::mrank {
   my ($sv, $info) = $m->mdsvd(0);
   setlaerror($err);
   barf("mrank: SVD algorithm did not converge\n") if $info->any;
-  $tol //= ($dims[1] > $dims[0] ? $dims[1] : $dims[0]) * $sv((0)) * lamch(3);
-  (which($sv > $tol))->dim(0);
+  $tol //= ($dims[1] > $dims[0] ? $dims[1] : $dims[0]) * $sv->slice(0) * lamch(3);
+  ($sv > $tol)->sumover;
 }
 
 =head2 mnorm
@@ -601,7 +601,7 @@ Returns an orthonormal basis of the range space of matrix A.
 sub PDL::morth {
   &_2d_array;
   my ($m, $tol) = @_;
-  $tol =  (defined $tol) ? $tol  : ($m->type == double) ? 1e-8 : 1e-5;
+  $tol //= ($m->type >= double) ? 1e-8 : 1e-5;
   (my $u, my $s, undef, my $info) = $m->mdsvd;
   barf("morth: SVD algorithm did not converge\n") if $info->any;
   my $rank = (which($s > $tol))->dim(0) - 1;
@@ -804,7 +804,7 @@ sub PDL::mpinv {
   my ($u, $s, $vt, $info) = $m->mdsvd(2);
   setlaerror($err);
   _error($info, "mpinv: SVD algorithm did not converge (PDL %s)");
-  $tol //= ($dims[1] > $dims[0] ? $dims[1] : $dims[0]) * $s((0)) * lamch(3);
+  $tol //= ($dims[1] > $dims[0] ? $dims[1] : $dims[0]) * $s->slice('(0)') * lamch(3);
   my ($ind, $cind) = whichND_both( $s > $tol );
   $s->indexND($cind) .= 0 if defined $cind and !$cind->isempty;
   $s->indexND($ind)  .= 1/$s->indexND($ind);
