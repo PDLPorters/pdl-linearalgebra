@@ -86,7 +86,7 @@ warn about singularity or barf. BARF is the default value.
 
 =cut
 
-sub setlaerror($){
+sub setlaerror($) {
   my $err = $_laerror;
   $_laerror = shift;
   $err;
@@ -104,11 +104,11 @@ Gets action type when an error is encountered.
 
 =cut
 
-sub getlaerror{
+sub getlaerror {
   $_laerror;
 }
 
-sub laerror{
+sub laerror {
   return unless $_laerror;
   if ($_laerror < 2){
     warn "$_[0]\n";
@@ -322,7 +322,7 @@ Works inplace.
 =cut
 
 *positivise = \&PDL::positivise;
-sub PDL::positivise{
+sub PDL::positivise {
   my $m = shift->new_or_inplace;
   my $tmp;
   $tmp = $m->dice('X', which(($m->lt(0,0)->sumover > ($m->dim(0)/2))>0));
@@ -705,7 +705,7 @@ Returns C<inverse, info> in array context.
 =cut
 
 *mtriinv = \&PDL::mtriinv;
-sub PDL::mtriinv{
+sub PDL::mtriinv {
   &_square;
   my $m = shift->new_or_inplace;
   my $upper = @_ ? (1 - shift)  : pdl (long,1);
@@ -806,7 +806,7 @@ Works on transposed array.
 =cut
 
 *mpinv = \&PDL::mpinv;
-sub PDL::mpinv{
+sub PDL::mpinv {
   &_2d_array;
   my ($m, $tol) = @_;
   my @dims = $m->dims;
@@ -819,7 +819,7 @@ sub PDL::mpinv{
   my ($ind, $cind) = which_both( $s > $tol );
   $s->index($cind) .= 0 if defined $cind;
   $s->index($ind)  .= 1/$s->index($ind) ;
-  my $pinv = ($vt->t(1) * ($m->_is_complex ? $s->r2C : $s)) x $u->t(1);
+  my $pinv = ($vt->t(1) * $s) x $u->t(1);
   return wantarray ? ($pinv, $info) : $pinv;
 }
 
@@ -997,7 +997,7 @@ Works on transposed array(s).
 
  my $a = random(10,10);
  my $schur  = mschur($a);
- sub select{
+ sub select {
   my $w = shift;
   # select "discrete time" eigenspace
   return $w->Cabs < 1 ? 1 : 0;
@@ -1136,7 +1136,7 @@ Works on transposed array.
 
  my $a = random(10,10);
  my $schur  = mschurx($a);
- sub select{
+ sub select {
   my $m = shift;
   # select "discrete time" eigenspace
   return $m->Cabs < 1 ? 1 : 0;
@@ -1251,7 +1251,7 @@ Works on transposed array.
  my $a = random(10,10);
  my $b = random(10,10);
  my ($S,$T) = mgschur($a,$b);
- sub select{
+ sub select {
   my ($alpha,$beta) = @_;
   return $alpha->Cabs < abs($beta) ? 1 : 0;
  }
@@ -1403,7 +1403,7 @@ from LAPACK. Works on transposed array.
  my $a = random(10,10);
  my $b = random(10,10);
  my ($S,$T) = mgschurx($a,$b);
- sub select{
+ sub select {
   my ($alpha,$beta) = @_;
   return $alpha->Cabs < abs($beta) ? 1 : 0;
  }
@@ -1871,7 +1871,7 @@ Work on transposed array(s).
 =cut
 
 *mtrisolve = \&PDL::mtrisolve;
-sub PDL::mtrisolve{
+sub PDL::mtrisolve {
   &_square;
   my $uplo = splice @_, 1, 1;
   &_matrices_match;
@@ -2345,7 +2345,7 @@ from LAPACK. Works on transposed arrays.
 =cut
 
 *mglm = \&PDL::mglm;
-sub PDL::mglm{
+sub PDL::mglm {
   my($a, $b, $d) = @_;
   my(@adims) = $a->dims;
   my(@bdims) = $b->dims;
