@@ -391,7 +391,7 @@ sub PDL::mrank {
   my $err = setlaerror(NO);
   my ($sv, $info) = $m->mdsvd(0);
   setlaerror($err);
-  barf("mrank: SVD algorithm did not converge\n") if $info;
+  barf("mrank: SVD algorithm did not converge\n") if $info->any;
   $tol //= ($dims[1] > $dims[0] ? $dims[1] : $dims[0]) * $sv((0)) * lamch(3);
   (which($sv > $tol))->dim(0);
 }
@@ -603,7 +603,7 @@ sub PDL::morth {
   my ($m, $tol) = @_;
   $tol =  (defined $tol) ? $tol  : ($m->type == double) ? 1e-8 : 1e-5;
   (my $u, my $s, undef, my $info) = $m->mdsvd;
-  barf("morth: SVD algorithm did not converge\n") if $info;
+  barf("morth: SVD algorithm did not converge\n") if $info->any;
   my $rank = (which($s > $tol))->dim(0) - 1;
   $rank < 0 ? $m->_similar_null : $u->slice(":$rank,")->sever;
 }
@@ -635,7 +635,7 @@ sub PDL::mnull {
   my @dims = $m->dims;
   $tol //= ($m->type == double) ? 1e-8 : 1e-5;
   (undef, my $s, my $vt, my $info) = $m->mdsvd;
-  barf("mnull: SVD algorithm did not converge\n") if $info;
+  barf("mnull: SVD algorithm did not converge\n") if $info->any;
   #TODO: USE TRANSPOSED A
   my $rank = (which($s > $tol))->dim(0);
   $rank < $dims[0] ? $vt->t(1)->slice("$rank:")->sever : $m->_similar_null;
@@ -2298,7 +2298,7 @@ sub PDL::mllss {
   my $min = ($adims[0] > $adims[1]) ? $adims[1] : $adims[0];
   $method ||= 'gelsd';
   $a->_call_method($method, $x,  $rcond, $s, $rank, $info);
-  laerror("mllss: The algorithm for computing the SVD failed to converge\n") if $info;
+  laerror("mllss: The algorithm for computing the SVD failed to converge\n") if $info->any;
   $x = $x->t;
   my %ret = !wantarray ? () : (rank => $rank, s=>$s, info=>$info);
   $ret{V} = $a if wantarray and $method =~ /gelss/;
@@ -2831,7 +2831,7 @@ sub PDL::msymeigenx {
     print ("See support for details.\n") if $_laerror;
   }
   if ($jobz){
-    return ($w, $z->t->sever, $n, $info, $support) if $info;
+    return ($w, $z->t->sever, $n, $info, $support) if $info->any;
     return (undef,undef,$n,$info,$method =~ qr/evr/?$support:()) if $n == 0;
     return ($w(:$n-1)->sever, $z->t->slice(":@{[$n->sclr-1]}")->sever, $n, $info, $method =~ qr/evr/?$support:());
   }
@@ -3123,7 +3123,7 @@ sub PDL::mgsvd {
   $_ = null for my ($k, $l, $alpha, $beta, $iwork, $info);
   $_ = $a->_similar_null for my ($U, $V, $Q);
   $a->t->_call_method('ggsvd', $opt{U}, $opt{V}, $jobqx, $b->t, $k, $l, $alpha, $beta, $U, $V, $Q, $iwork, $info);
-  laerror("mgsvd: The Jacobi procedure fails to converge") if $info;
+  laerror("mgsvd: The Jacobi procedure fails to converge") if $info->any;
   my %ret = (rank=>$k + $l, info=>$info);
   warn "mgsvd: Effective rank of 0 in mgsvd" if (!$ret{rank} and $_laerror);
   if (%opt) {
