@@ -538,11 +538,7 @@ sub PDL::mcond {
   my ($sv, $info) = $m->msvd(0, 0);
   setlaerror($err);
   _error($info, "mcond: Algorithm did not converge for matrix (PDL(s) %s)");
-  my $temp = $sv->slice('(0)');
-        my $ret = $temp/$sv->((-1));
-  $info = $ret->flat->index(which($temp == 0));
-  $info .= inf() unless $info->isempty;
-  return $ret;
+  $sv->slice('(0)')/$sv->slice("(-1)");
 }
 
 =head2 mrcond
