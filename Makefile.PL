@@ -57,6 +57,7 @@ WriteMakefile(
   MIN_PERL_VERSION => '5.016',
   META_MERGE => {
     "meta-spec" => { version => 2 },
+    dynamic_config => 0,
     resources => {
       homepage => 'http://pdl.perl.org/',
       bugtracker  => {web=>"https://github.com/$repo/issues"},
