@@ -300,7 +300,7 @@ sub PDL::diag {
   my ($a,$i, $vec) = @_;
   my $z;
   my @dims = $a->dims;
-  my $diag = ($i < 0) ? -$i : $i ;
+  my $diag = ($i < 0) ? -$i : $i;
   if (@dims == 1 || $vec){
     my $dim = $dims[0];
     my $zz = $dim + $diag;
@@ -830,9 +830,7 @@ sub PDL::mpinv{
   my ($u, $s, $vt, $info) = $m->mdsvd(2);
   setlaerror($err);
   _error($info, "mpinv: SVD algorithm did not converge (PDL %s)");
-  unless (defined $tol){
-    $tol =  ($dims[1] > $dims[0] ? $dims[1] : $dims[0]) * $s((0)) * lamch(3);
-  }
+  $tol //= ($dims[1] > $dims[0] ? $dims[1] : $dims[0]) * $s((0)) * lamch(3);
   my ($ind, $cind) = which_both( $s > $tol );
   $s->index($cind) .= 0 if defined $cind;
   $s->index($ind)  .= 1/$s->index($ind) ;
