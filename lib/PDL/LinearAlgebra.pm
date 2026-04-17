@@ -582,7 +582,7 @@ sub PDL::mrcond {
 
 =for ref
 
-Returns an orthonormal basis of the range space of matrix A.
+Returns an orthonormal basis of the range space of matrix A. No broadcast.
 
 =for usage
 
@@ -612,8 +612,7 @@ sub PDL::morth {
 
 =for ref
 
-Returns an orthonormal basis of the null space of matrix A.
-Works on transposed array.
+Returns an orthonormal basis of the null space of matrix A. No broadcast.
 
 =for usage
 
