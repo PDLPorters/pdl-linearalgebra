@@ -127,4 +127,11 @@ for my $in ($rank2, $rank2->cdouble) {
   is_pdl $in x $res, zeroes($in->type, $res->dim(0), $in->dim(1)), 'mnull '.$in->type;
 }
 
+$A = sequence(2,3);
+my $pinv = $A->mpinv;
+is_pdl $A x $pinv x $A, $A, 'mpinv tall works';
+$A = sequence(3,2);
+$pinv = $A->mpinv;
+is_pdl $A x $pinv x $A, $A, 'mpinv wide works';
+
 done_testing;

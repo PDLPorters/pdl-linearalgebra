@@ -5,7 +5,7 @@ use PDL::Basic qw/sequence/;
 use PDL::Primitive qw/which which_both/;
 use PDL::Ufunc qw/sumover/;
 use PDL::NiceSlice;
-use PDL::MatrixOps qw(stretcher);
+use PDL::MatrixOps qw(stretcher gurney);
 use PDL::Slices;
 use PDL::LinearAlgebra::Real;
 use PDL::LinearAlgebra::Complex;
@@ -819,7 +819,7 @@ sub PDL::mpinv {
   my ($ind, $cind) = which_both( $s > $tol );
   $s->index($cind) .= 0 if defined $cind;
   $s->index($ind)  .= 1/$s->index($ind) ;
-  my $pinv = ($vt->t(1) * $s) x $u->t(1);
+  my $pinv = $vt->t(1) x gurney($s,@dims[1,0,2..$#dims]) x $u->t(1);
   return wantarray ? ($pinv, $info) : $pinv;
 }
 
