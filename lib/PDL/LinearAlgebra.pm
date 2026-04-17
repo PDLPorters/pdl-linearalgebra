@@ -659,11 +659,11 @@ sub PDL::mnull {
   my ($m, $tol) = @_;
   my @dims = $m->dims;
   $tol //= ($m->type == double) ? 1e-8 : 1e-5;
-  (undef, my $s, my $v, my $info) = $m->mdsvd;
+  (undef, my $s, my $vt, my $info) = $m->mdsvd;
   barf("mnull: SVD algorithm did not converge\n") if $info;
   #TODO: USE TRANSPOSED A
   my $rank = (which($s > $tol))->dim(0);
-  $rank < $dims[0] ? $v->t->slice("$rank:")->sever : $m->_similar_null;
+  $rank < $dims[0] ? $vt->t->slice("$rank:")->sever : $m->_similar_null;
 }
 
 =head2 minv
@@ -827,7 +827,7 @@ sub PDL::mpinv{
   my @dims = $m->dims;
   my $err = setlaerror(NO);
   #TODO: don't transpose
-  my ($u, $s, $v, $info) = $m->mdsvd(2);
+  my ($u, $s, $vt, $info) = $m->mdsvd(2);
   setlaerror($err);
   _error($info, "mpinv: SVD algorithm did not converge (PDL %s)");
   unless (defined $tol){
@@ -836,7 +836,7 @@ sub PDL::mpinv{
   my ($ind, $cind) = which_both( $s > $tol );
   $s->index($cind) .= 0 if defined $cind;
   $s->index($ind)  .= 1/$s->index($ind) ;
-  $ind = ($v->t * ($m->_is_complex ? $s->r2C : $s)) x $u->t;
+  $ind = ($vt->t * ($m->_is_complex ? $s->r2C : $s)) x $u->t;
   return wantarray ? ($ind, $info) : $ind;
 }
 
