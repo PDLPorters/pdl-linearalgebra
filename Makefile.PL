@@ -17,16 +17,20 @@ my $fortran_checklib = <<EOF;
 #define CONCAT(A, B) CONCAT_(A, B)
 #define FORTRAN(name) CONCAT(name, F77_USCORE)
 
-long c_zero = 0;
-long c_nine = 9;
-extern long FORTRAN(ilaenv)(long *ispec, char *name__, char *opts, long *n1,
-  long *n2, long *n3, long *n4, long name_len, long opts_len);
-long i = FORTRAN(ilaenv)(&c_nine, "SGESDD", " ", &c_zero, &c_zero, &c_zero, &c_zero, 6, 1);
-if (argc > 2) printf("%ld", i); /* try to stop optimiser eliminating */
-extern void FORTRAN(dgebal)(char job, int n, double *a, int lda, int ilo, int ihi, double *scale, int info);
-if (argc > 2) FORTRAN(dgebal)(0, 0, NULL, 0, 0, 0, NULL, 0);
-extern void FORTRAN(dgesdd)(char job, int m, int n, double *a, int lda, double *s, double *u, int ldu, double *vt, int ldvt, double *work, int lwork, int *iwork, int info);
-if (argc > 2) FORTRAN(dgesdd)(0, 0, 0, NULL, 0, NULL, NULL, 0, NULL, 0, NULL, 0, NULL, 0);
+/* dggsvd3 is LAPACK 3.7+ which in 2026 is not supported on macOS native */
+extern void FORTRAN(dggsvd3)(
+  char *jobu, char *jobv, char *jobq, long *m, long *n, long *p,
+  long *k, long *l, double *a, long *lda, double *b, long *ldb, double *alpha,
+  double *beta, double *u, long *ldu, double *v, long *ldv,
+  double *q, long *ldq, double *work, long *lwork, long *iwork, long *info);
+char n = 'N';
+long c_zero = 0, out_k=0, out_l=0, c_one = 1, c_m1 = -1, iwork[1], info;
+double A[]={0}, B[]={0}, alpha[1], beta[1], U[1], Q[1], work[1];
+/* argc is to try to stop optimiser eliminating */
+if (argc < 2) FORTRAN(dggsvd3)(&n, &n, &n, &c_zero, &c_zero, &c_zero,
+  &out_k, &out_l, A, &c_one, B, &c_one, alpha,
+  beta, U, &c_one, NULL, &c_one,
+  NULL, &c_one, work, &c_m1, iwork, &info);
 return 0;
 EOF
 our %ldloadlibs = ($^O =~ /MSWin/ && $Config{cc} eq 'cl')
@@ -48,6 +52,7 @@ our $libs0 = (
   $libs0 = join ' ', (map qq{-L"$_"}, @libpath), (map "-l$_", @lib);
   check_lib_or_exit(
     ldflags => $libs0,
+    lib => 'm', # "dummy" because assert_lib wants a lib
     header => [($^O =~ /MSWin/ ? 'float.h' : ()), qw(stdio.h math.h)],
     function => $fortran_checklib,
   );
@@ -117,10 +122,13 @@ sub find_libs {
 
 sub find_macos_libs {
   return if $^O ne 'darwin';
-  my $pref = `brew --prefix lapack`;
-  return if !$pref;
-  chomp $pref;
-  qq{-L"$pref/lib" -llapack -lblas};
+  for my $pkg (qw(openblas lapack)) {
+    my $pref = `brew --prefix $pkg`;
+    chomp $pref;
+    next if !$pref or !-d $pref; # --prefix is where is *or would be* installed
+    return qq{-L"$pref/lib" -llapack -lblas};
+  }
+  ();
 }
 
 my @pd_srcs;
