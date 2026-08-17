@@ -84,12 +84,12 @@ WriteMakefile(
     },
   },
   CONFIGURE_REQUIRES =>  {
-    "PDL" => '2.104',
+    "PDL" => '2.105',
     "Devel::CheckLib" => '1.16', # argc is not supplied in 1.05, but 1.16 works.
     "ExtUtils::F77" => '1.26',
   },
   PREREQ_PM => {
-    "PDL" => '2.104', # tritosym moved over
+    "PDL" => '2.105', # pdldoc_add
   },
   TEST_REQUIRES =>  {
     "Test::More" => '0.88', # done_testing
@@ -139,8 +139,4 @@ sub MY::init_PM {
   delete $self->{PM}{'pp_defc.pl'};
   @pd_srcs = ::pdlpp_eumm_update_deep($self);
 }
-sub MY::postamble {
-  my $oneliner = PDL::Core::Dev::_oneliner(qq{exit if \$ENV{DESTDIR}; use PDL::Doc; eval { PDL::Doc::add_module(shift); }});
-  pdlpp_postamble(@pd_srcs) .
-    qq|\ninstall :: pure_install\n\t$oneliner \$(NAME)\n|;
-}
+sub MY::postamble { pdlpp_postamble(@pd_srcs) . pdldoc_add() }
