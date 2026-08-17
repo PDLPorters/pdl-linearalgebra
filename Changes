@@ -1,3 +1,4 @@
+0.437 2026-08-17
 - fix mpinv,mnull to use conjugate-transpose not transpose
 - fix mpinv to work with non-square input
 - fix complex gesdd including mdsvd with non-square input
